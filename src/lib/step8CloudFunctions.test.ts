@@ -252,7 +252,8 @@ describe("R14 kbAdminDeleteUserData：身份与范围收口", () => {
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     const res = await main({ uid: "target-uid" });
     expect(res.ok).toBe(false);
-    expect(res.error).toContain("PG_500");
+    // 锚定整串：`toContain("PG_500")` 会把 `PG_5000` 也判过（前缀匹配），故收紧为精确等值。
+    expect(res.error).toBe("PG_500: boom");
   });
 });
 
