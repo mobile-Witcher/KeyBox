@@ -1,7 +1,9 @@
 /**
  * tailwind.config.ts —— Tailwind CSS v3 配置。
- * 只扫描 src 下的源码；暗色模式用 class 驱动（架构 §10 第 11 步：夜间模式只需切一个 class，
- * 后续 ThemeToggle 会给 <html> 加上/移除 dark 类）。
+ * 只扫描 src 与 index.html；暗色模式用 class 驱动（架构 §10 第 11 步：夜间模式只切 <html> 上的 dark 类）。
+ *
+ * 主题令牌（R24）：把语义色映射到 index.css 里集中定义的 CSS 变量，
+ * 组件用 `bg-kb-surface` / `text-kb-muted` / `border-kb-border` 等，切换主题时自动跟随。
  */
 import type { Config } from "tailwindcss";
 
@@ -18,6 +20,17 @@ const config: Config = {
           "Consolas",
           "monospace",
         ],
+      },
+      colors: {
+        kb: {
+          bg: "var(--kb-bg)",
+          surface: "var(--kb-surface)",
+          text: "var(--kb-text)",
+          muted: "var(--kb-muted)",
+          border: "var(--kb-border)",
+          primary: "var(--kb-primary)",
+          "primary-contrast": "var(--kb-primary-contrast)",
+        },
       },
     },
   },

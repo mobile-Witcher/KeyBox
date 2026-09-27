@@ -1,8 +1,10 @@
 /**
- * TopBar.tsx —— 顶栏（架构 §5.1 线框）：搜索框（本地检索） + 当前用户 + 退出。
+ * TopBar.tsx —— 顶栏（架构 §5.1 线框）：搜索框（本地检索） + 当前用户 + 退出 + 主题切换。
  *
  * R19：搜索框的输入只用于【本机内存过滤】，绝不发往云端；本组件不触发任何网络请求。
  */
+import ThemeToggle from "./ThemeToggle";
+
 interface TopBarProps {
   username: string;
   searchValue: string;
@@ -47,6 +49,8 @@ export default function TopBar({
         >
           退出登录
         </button>
+        {/* 主题切换固定在右上角（用户端/管理端同一位置） */}
+        <ThemeToggle />
       </div>
     </header>
   );

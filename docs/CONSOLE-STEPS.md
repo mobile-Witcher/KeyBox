@@ -186,3 +186,58 @@
 | 云函数返回 `ENV_ID_MISSING` | 附录 A 的 `TCB_ENV` 未注入 |
 | 前端启动即报缺少 `VITE_PUBLISHABLE_KEY` | 第 4 步未填 `.env.local` |
 | 登录后仍读不到任何数据 | 第 1 步未开，或会话未落到已登录角色 |
+
+---
+
+## 附录 B：第 9 步「第二段」执行清单（本机打包，需先装工具链）
+
+> **第一段（已完成）**只写配置与外观，**不需要装任何东西**。
+> 下面是**第二段**——在**本机**产出可安装包，需要安装 Rust / Android 工具链（体积较大，约 1–2 GB）。
+> **云端 CI 打包不需要这些**（见 `.github/workflows/`）：打 `v*` 标签后，`build-android` 出 apk、`build-desktop` 出 exe。
+> 因此本段**装与不装都可以**，取决于是否需要在本机验证安装包。
+
+### B.1 桌面端（Windows，Tauri）—— 需装 Rust
+
+1. 安装 Rust：访问 `https://rustup.rs`，下载并运行 `rustup-init.exe`，一路默认。
+   它会提示安装 **Visual Studio C++ 生成工具（MSVC）**；若未自动装，请手动安装
+   “Visual Studio Build Tools 2022 → 使用 C++ 的桌面开发”。
+2. 关掉并**重开终端**，验证：
+   - `rustc --version` → 出现 `rustc 1.9x.x (...)` 即成功。
+   - `cargo --version` → 出现 `cargo 1.9x.x (...)` 即成功。
+3. 打包（在**项目根目录**执行）：
+   - `npm run tauri build`
+   - 首次会编译较久（约 5–20 分钟）。成功时最后会打印 `Finished` 与产物路径。
+   - **预期产物**：
+     - `src-tauri/target/release/bundle/msi/KeyBox_0.1.0_x64_*.msi`
+     - `src-tauri/target/release/bundle/nsis/KeyBox_0.1.0_x64-setup.exe`
+     - 免安装可执行文件：`src-tauri/target/release/keybox.exe`
+   - 想先看效果而不打安装包：`npm run tauri dev`（会打开一个桌面窗口，指向本地 5173）。
+4. 图标：`src-tauri/icons/` 现为 Tauri 默认图标。更换方法：备一张 1024×1024 PNG，运行
+   `npm run tauri icon <你的logo.png>` 生成全套尺寸。（**待核实**：`icon` 子命令的确切参数以
+   `npx tauri icon --help` 为准。）
+
+### B.2 安卓端（可选，本机出 APK）—— 需装 Android SDK
+
+> 一般**不必**在本机做：打 `v*` 标签让 `build-android` 工作流出包即可。若坚持本机：
+1. 安装 Android Studio（含 SDK 与 platform-tools），并设置环境变量 `ANDROID_HOME`。
+2. 同步与构建：
+   - `npm run build`
+   - `npx cap sync android`
+   - `cd android`，然后 `./gradlew assembleDebug`（Windows 用 `gradlew.bat assembleDebug`）
+   - **预期产物**：`android/app/build/outputs/apk/debug/app-debug.apk`
+3. 出**正式签名**包还需 `android/key.properties` + keystore（格式见
+   `.github/workflows/build-android.yml` 顶部注释）；未配置时只能出未签名 debug 包。
+
+### B.3 用 GitHub Actions 出包（无需本机工具链）
+
+- 打标签即云端出包：`git tag v0.1.0 && git push origin v0.1.0`。
+- 或在 GitHub 仓库 → Actions → 选 `build-android` / `build-desktop` → **Run workflow**。
+- 安卓签名所需的 4 个 secret（keystore 用 base64）见 `.github/workflows/build-android.yml` 顶部注释。
+
+### B.4 本段「待核实」清单（未实测，勿当结论）
+
+- `npm run tauri build` 的确切产物文件名（含版本号/语言后缀）随 Tauri 版本可能微调，**以本机实际输出为准**。
+- `tauri icon` 子命令的确切名称与参数：以 `npx tauri icon --help` 为准。
+- 未配置 `android/key.properties` 时 `./gradlew assembleRelease` 的行为（预期产出未签名的
+  `app-release-unsigned.apk`，无法安装分发；确切文件名与是否报错**以本机实测为准**）。
+- `src-tauri/icons/` 为 Tauri 默认模板图标，正式发布前应替换为项目自有图标（见 B.1 第 4 条）。

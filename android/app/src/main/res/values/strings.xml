@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KeyBox</string>
+    <string name="title_activity_main">KeyBox</string>
+    <string name="package_name">com.jidongzhanshi.keybox</string>
+    <string name="custom_url_scheme">com.jidongzhanshi.keybox</string>
+</resources>

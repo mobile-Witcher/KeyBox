@@ -38,6 +38,20 @@ android/key.properties
 *.aab
 *.ap_
 *.dex
+# Capacitor 同步产物（由 dist/ 复制而来，`npx cap copy` 可随时重建）
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+android/capacitor-cordova-android-plugins/
+
+# ===== 打包与签名中间产物（CI 现场从 secrets 生成，绝不进仓库）=====
+# base64 文本 / 通用 key.properties / keystore 副本
+*.b64
+*.base64
+key.properties
+# Tauri 构建生成物（capabilities 的 schema 等）
+src-tauri/gen/
 
 # ===== 日志与缓存 =====
 *.log

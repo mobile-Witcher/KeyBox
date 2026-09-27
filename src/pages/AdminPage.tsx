@@ -13,6 +13,7 @@
  * ⚠️ 端到端验证状态：**待控制台配置后验证**（控制台四项操作未完成，登录链路尚无法真跑）。
  */
 import { useCallback, useEffect, useState } from "react";
+import ThemeToggle from "../components/ThemeToggle";
 import { api } from "../lib/api";
 import {
   adminDeleteUserData,
@@ -200,6 +201,8 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
           >
             退出登录
           </button>
+          {/* 主题切换固定在右上角（与用户端同一位置） */}
+          <ThemeToggle />
         </div>
       </header>
 

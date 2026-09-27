@@ -8,6 +8,38 @@
       content="KeyBox —— 20 人以内团队的本地加密密钥保管箱，云端只存密文。"
     />
     <title>KeyBox</title>
+    <script>
+      /*
+       * 首屏主题（R24）：在任何 CSS / 渲染之前定好主题，消除“白闪”（FOUC）。
+       * ⚠️ 与 src/lib/theme.ts 的 THEME_STORAGE_KEY / THEME_BG 保持一致：
+       *   - 存储键 "keybox.theme"，取值 "light" | "dark"；
+       *   - 无存储值时跟随系统 prefers-color-scheme；
+       *   - 底色 #f8fafc(浅) / #0b1120(深) 与 index.css 的 --kb-bg 一致。
+       * 该脚本必须保持极小且同步，不可改成模块或延后执行。
+       */
+      (function () {
+        try {
+          var KEY = "keybox.theme";
+          var stored = null;
+          try {
+            stored = window.localStorage.getItem(KEY);
+          } catch (e) {
+            stored = null;
+          }
+          var isDark =
+            stored === "dark" ||
+            (stored !== "light" &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var root = document.documentElement;
+          if (isDark) root.classList.add("dark");
+          root.style.colorScheme = isDark ? "dark" : "light";
+          root.style.backgroundColor = isDark ? "#0b1120" : "#f8fafc";
+        } catch (e) {
+          /* 任何异常都退化为默认浅色，不阻断渲染 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

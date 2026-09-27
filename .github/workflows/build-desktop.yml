@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# build-desktop.yml —— 云端构建 Windows 桌面安装包（Tauri 外壳，架构 §10 第 9 步）
+#
+# 触发：手动（Actions → Run workflow）或推送 v* 标签。
+# 产物：Artifact `keybox-desktop`（.msi 与 .exe 安装包）。
+#
+# 说明：本工作流在 GitHub 的 windows-latest 上运行，会【安装 Rust 工具链并编译】——
+#   这是云端构建，**本机无需安装 Rust/MSVC**。首次构建较慢（需编译依赖）。
+#
+# 签名：本工作流不涉及任何签名证书，文件里不含（也不应含）任何密钥。
+#   若将来启用 Windows 代码签名，证书与口令同样**只从 secrets 读取**，
+#   在下方加一步 `${{ secrets.WINDOWS_CERT_* }}` 即可，切勿内联到仓库。
+#
+# 前置：Rust 工具链由 dtolnay/rust-toolchain 安装；Tauri CLI 由 devDependency
+#   `@tauri-apps/cli` 提供（见 src-tauri/ 与 package.json）。
+# 参考：Tauri v2 官方分发指南 https://tauri.app/distribute/
+# ─────────────────────────────────────────────────────────────────────────────
+name: build-desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build desktop bundle (Tauri)
+        run: npx tauri build
+
+      - name: Upload desktop bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: keybox-desktop
+          path: |
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+          if-no-files-found: error

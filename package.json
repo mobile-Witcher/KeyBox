@@ -10,15 +10,20 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "tauri": "tauri"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.2",
     "@cloudbase/js-sdk": "^3.10.1",
     "idb": "^8.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@tauri-apps/cli": "^2.12.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.7.0",

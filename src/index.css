@@ -1,13 +1,40 @@
 /**
- * index.css —— 全局样式入口（Tailwind 三层指令 + 少量基础样式）。
- * 夜间模式由 <html class="dark"> 驱动（架构 §10 第 11 步）。
+ * index.css —— 全局样式入口（Tailwind 三层指令 + 主题变量 + 少量基础样式）。
+ *
+ * 主题（R24）：浅色/深色两套语义色**只在这里集中定义**；组件通过 Tailwind 令牌
+ *   `bg-kb-bg` / `bg-kb-surface` / `text-kb-text` / `text-kb-muted` / `border-kb-border`
+ *   / `text-kb-primary` 等消费（令牌映射见 tailwind.config.ts）。
+ * 夜间模式由 <html class="dark"> 驱动（Tailwind darkMode:"class"）。
+ *
+ * ⚠️ 深色底 `#0b1120` 与浅色底 `#f8fafc` 必须与 index.html 的 <head> 内联脚本、
+ *    src/lib/theme.ts 的 THEME_BG 三处保持一致，否则首屏会闪一下（FOUC）。
  */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  /* 浅色 */
+  --kb-bg: #f8fafc;
+  --kb-surface: #ffffff;
+  --kb-text: #0f172a;
+  --kb-muted: #64748b;
+  --kb-border: #e2e8f0;
+  --kb-primary: #4f46e5;
+  --kb-primary-contrast: #ffffff;
+  color-scheme: light;
+}
+
+.dark {
+  /* 深色 */
+  --kb-bg: #0b1120;
+  --kb-surface: #0f172a;
+  --kb-text: #e2e8f0;
+  --kb-muted: #94a3b8;
+  --kb-border: #1e293b;
+  --kb-primary: #818cf8;
+  --kb-primary-contrast: #0b1120;
+  color-scheme: dark;
 }
 
 html,
@@ -17,9 +44,16 @@ body,
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  background-color: var(--kb-bg);
+  color: var(--kb-text);
+  @apply antialiased;
+  /* 主题切换时仅对颜色做过渡，避免布局抖动 */
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
-.dark body {
-  @apply bg-slate-900 text-slate-100;
+/* 尊重“减少动态效果”偏好 */
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
 }

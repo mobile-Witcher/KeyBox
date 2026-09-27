@@ -5,7 +5,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { initTheme } from "./lib/theme";
 import "./index.css";
+
+// 应用启动即落实主题（与 index.html 内联脚本同源，做一次幂等校正）
+initTheme();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
