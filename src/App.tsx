@@ -11,14 +11,16 @@
  *   ALREADY_INITIALIZED 拒绝（R01 的服务端兜底），届时引导去登录。
  */
 import { useCallback, useEffect, useState } from "react";
+import { api } from "./lib/api";
 import { auth } from "./lib/cloudbase";
 import { log } from "./lib/log";
+import AdminPage from "./pages/AdminPage";
 import InitPage from "./pages/InitPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import VaultPage from "./pages/VaultPage";
 
-type Screen = "loading" | "init" | "login" | "register" | "home";
+type Screen = "loading" | "init" | "login" | "register" | "home" | "admin";
 
 /** 本机“已完成初始化”标记；与服务端 kb_users 非空共同构成“不再出现初始化页”的判据。 */
 const INIT_FLAG_KEY = "keybox.initialized";
@@ -26,6 +28,7 @@ const INIT_FLAG_KEY = "keybox.initialized";
 export default function App(): JSX.Element {
   const [screen, setScreen] = useState<Screen>("loading");
   const [displayName, setDisplayName] = useState<string>("");
+  const [role, setRole] = useState<string>("user");
 
   useEffect(() => {
     let alive = true;
@@ -38,6 +41,9 @@ export default function App(): JSX.Element {
           const user = session?.user;
           setDisplayName(user?.user_metadata?.username || user?.id || "已登录用户");
           setScreen("home");
+          // 取角色以决定是否显示“管理后台”入口（角色判定在云端，前端不写死）
+          const roleRes = await api.getMyRole();
+          if (alive && roleRes.ok && roleRes.data) setRole(roleRes.data.role);
           return;
         }
       } catch (error) {
@@ -57,9 +63,12 @@ export default function App(): JSX.Element {
     setScreen("login");
   }, []);
 
-  const handleLoggedIn = useCallback((username: string) => {
+  const handleLoggedIn = useCallback(async (username: string) => {
     setDisplayName(username);
     setScreen("home");
+    // 登录后取角色（决定是否显示管理后台入口）
+    const roleRes = await api.getMyRole();
+    if (roleRes.ok && roleRes.data) setRole(roleRes.data.role);
   }, []);
 
   const handleSignOut = useCallback(async () => {
@@ -97,9 +106,26 @@ export default function App(): JSX.Element {
     );
   }
 
-  // home：主界面（第 6 步：解锁 + 密钥增删改查 + 本地解密/遮掩/复制）
+  // home：主界面（密钥库；管理员额外显示“管理后台”入口）
   if (screen === "home") {
-    return <VaultPage username={displayName} onSignOut={handleSignOut} />;
+    return (
+      <VaultPage
+        username={displayName}
+        onSignOut={handleSignOut}
+        onOpenAdmin={role === "admin" ? () => setScreen("admin") : undefined}
+      />
+    );
+  }
+
+  // admin：管理后台（第 8 步，仅管理员可达）
+  if (screen === "admin") {
+    return (
+      <AdminPage
+        username={displayName}
+        onSignOut={handleSignOut}
+        onBack={() => setScreen("home")}
+      />
+    );
   }
 
   // 兜底（理论不可达）

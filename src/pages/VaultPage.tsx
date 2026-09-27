@@ -31,6 +31,7 @@ import {
   type MasterKey,
 } from "../lib/crypto";
 import { getAllCached } from "../lib/db";
+import { useSessionGuard } from "../hooks/useSessionGuard";
 import { log } from "../lib/log";
 import {
   deleteLocal,
@@ -51,9 +52,12 @@ import {
 export default function VaultPage({
   username,
   onSignOut,
+  onOpenAdmin,
 }: {
   username: string;
   onSignOut: () => void;
+  /** 仅管理员传入：顶栏显示“管理后台”入口（第 8 步）。 */
+  onOpenAdmin?: () => void;
 }): JSX.Element {
   const [uid, setUid] = useState<string>("");
   const [kdfSalt, setKdfSalt] = useState<string>("");
@@ -121,9 +125,20 @@ export default function VaultPage({
     setItems(list);
   }, [masterKey]);
 
-  // 3) 同步：拉取 → 合并 → 重放队列 → 本地重载
+  // 会话时效（R13）：命中即清空内存主密钥 + 丢弃内存中的解密数据（锁定本地缓存）+ 登出
+  const handleSessionExpired = useCallback((): void => {
+    setMasterKey(null);
+    setItems([]);
+    log.warn("会话失效：已清空内存主密钥并登出");
+    onSignOut();
+  }, [onSignOut]);
+  const { checkNow } = useSessionGuard(handleSessionExpired);
+
+  // 3) 同步：先校验会话时效 → 拉取 → 合并 → 重放队列 → 本地重载
   const runSync = useCallback(async (): Promise<void> => {
     if (!uid) return;
+    // 每次同步前先校验会话时效（R13：触发点之一）
+    if (!(await checkNow())) return;
     setBusy(true);
     try {
       const res = await syncVault(uid);
@@ -138,7 +153,7 @@ export default function VaultPage({
     } finally {
       setBusy(false);
     }
-  }, [uid, reload]);
+  }, [uid, reload, checkNow]);
 
   // uid 就绪或主密钥变更（解锁）后触发同步
   useEffect(() => {
@@ -285,6 +300,7 @@ export default function VaultPage({
         searchValue={keyword}
         onSearchChange={setKeyword}
         onSignOut={onSignOut}
+        onOpenAdmin={onOpenAdmin}
       />
 
       <div className="mx-auto flex w-full max-w-6xl flex-1">

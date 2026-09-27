@@ -107,6 +107,11 @@ export interface SecretDeleteData {
   deletedId: number;
 }
 
+/** kbAdminDeleteUserData 返回：**仅**删除条数（不含任何字段内容）。 */
+export interface AdminDeleteUserDataData {
+  deletedCount: number;
+}
+
 export const api = {
   /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。 */
   initAdmin(params: InitAdminParams): Promise<ApiResult<InitAdminData>> {
@@ -139,6 +144,13 @@ export const api = {
   /** R15：删除本人一条密钥记录。 */
   secretDelete(params: { id: number }): Promise<ApiResult<SecretDeleteData>> {
     return call<SecretDeleteData>("kbSecretDelete", { ...params });
+  },
+  /**
+   * R10/R14：管理员删除某用户全部密钥数据（唯一持 service_role 的云函数）。
+   * 入参只接受一个 uid；返回体仅 { deletedCount }。
+   */
+  adminDeleteUserData(params: { uid: string }): Promise<ApiResult<AdminDeleteUserDataData>> {
+    return call<AdminDeleteUserDataData>("kbAdminDeleteUserData", { ...params });
   },
 };
 

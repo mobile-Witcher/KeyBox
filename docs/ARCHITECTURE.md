@@ -190,7 +190,7 @@ CREATE TABLE public.kb_invites (
 >
 > **已落地**：本坑由迁移 2 `20260927193751_harden_keybox_grants` 修复（`REVOKE ALL → 精确 GRANT`）。**新增任何表都必须跟一条 REVOKE**（见 §11 风险 13）。
 >
-> **⚠️ 待办（第 8 / 10 步处理，不新增需求编号）**：实测 `is_admin()` 与 `kb_admin_user_list()` 的 **EXECUTE 同时授给了 `anon`**。实际危害**低**——真正防线是函数体内的 `is_admin()` 自检（anon 调用时 `auth.uid()` 为空 → 返回 false / 0 行，拿不到数据），与官方"PostgREST 不强制 GRANT EXECUTE、不能把'谁能调用'当防线"一致。但仍属**多余敞口**，建议加一条收紧迁移 `REVOKE EXECUTE ON FUNCTION public.is_admin(), public.kb_admin_user_list() FROM anon, PUBLIC;`，只留 `authenticated` 与 `service_role`，以减少将来误改函数体时的影响面。
+> **✅ 已落地（迁移 `20260927195508_tighten_function_execute`）**：实测 `is_admin()` 与 `kb_admin_user_list()` 的 **EXECUTE 默认也授给了 `anon`/`PUBLIC`**（危害**低**——真正防线是函数体内 `is_admin()` 自检，anon 调用时 `auth.uid()` 为空 → false/0 行）。已由该迁移 `REVOKE EXECUTE ON FUNCTION public.is_admin(), public.kb_admin_user_list() FROM anon, PUBLIC;` 收紧，只留 `authenticated` 与 `service_role`。
 
 ### 5.1 `kb_users`——列级授权 + 管理员可看列表（2 条 Policy）
 
@@ -202,7 +202,9 @@ ALTER TABLE public.kb_users ENABLE ROW LEVEL SECURITY;
 
 -- ① 列级授权：登录哈希 / salt / verifier 永不授予客户端，管理员也看不到
 GRANT SELECT (uid, username, role, status, key_epoch, created_at) ON public.kb_users TO authenticated;
--- ② 管理员只能改 status（停用/启用），改不了任何人的登录哈希
+-- ② 【列级】UPDATE(status)：管理员只能改 status（停用/启用），改不了任何人的登录哈希
+--    注意：表级 UPDATE 已被上面的 REVOKE 收回 → authenticated 对 kb_users 【没有表级 UPDATE】；
+--    任何 SET 其它列（如 login_hash / kdf_salt / kdf_verifier）的 UPDATE 都会被 PG 以**列权限不足**拒绝（数据库保证，不靠前端）
 GRANT UPDATE (status) ON public.kb_users TO authenticated;
 
 CREATE POLICY kb_users_select_self ON public.kb_users
@@ -253,6 +255,8 @@ CREATE POLICY kb_secrets_delete_own ON public.kb_secrets
 CREATE POLICY kb_secrets_delete_by_admin ON public.kb_secrets
   FOR DELETE TO authenticated
   USING ( (select public.is_admin()) );
+-- ⚠️ 第 8 步口径：R14 改走"受 scope 的云函数"（见 §5.4），本策略改为在【第 8 步迁移中 DROP】。
+--    该迁移下发前，本策略**仍在线上** → 管理员直连 FOR DELETE 对全表为真，**暂勿用直连删**。
 ```
 
 > **关键点（已核实：USING 按操作独立生效）**：PostgreSQL 的 `DELETE` 有**自己独立的 `FOR DELETE` 策略**，不需要先通过 `SELECT` 策略的可见性。多条 permissive 策略之间是 **OR** 关系。所以"能删但读不到"在 PG 里**可以直接用两条策略表达**，不需要绕过 RLS。这是 PG 相对文档型数据库的第二个红利（第一个是 `UPDATE ... RETURNING`）。
@@ -277,19 +281,23 @@ ALTER TABLE public.kb_invites ENABLE ROW LEVEL SECURITY;
 
 **为什么**：邀请码是开户凭证，客户端可读等于任何人都能领码开户。生成、作废、占用全部在云函数内完成（R02/R03）。启用 RLS 是第二重保险。
 
-### 5.4 R10「管理员可删不可读」在 PG 下落地——**现在由数据库保证，不是代码保证**
+### 5.4 R10「管理员可删不可读」在 PG 下落地
 
-> **⚠️ 本节已按 PM 提出的冲突修正。** 前一版把"管理员删除"写成走云函数绕过 RLS，那样 R10 就退化成**代码保证**（一个 `select *` 就能把他人密文带出去，且绕过 RLS 后数据库不会拦）。现改为**数据库保证**：删除走独立的 `FOR DELETE` 策略，SELECT 策略始终不含 `is_admin()`。
+> **第 8 步口径（本节为最终口径）**：**"不可读"由数据库保证**；**"可删"改走"受 scope 的云函数"**，因此删除路径的"不泄露明文"退为**代码保证**（已写死 + 列入第 8 步验收）。
 
 | 层 | 挡什么 | 具体落法 |
 |----|--------|----------|
-| **第一层：RLS Policy（访问控制，数据库保证）** | 挡"能不能取到这一行" | `kb_secrets` 的 SELECT Policy **只**匹配 `owner_id = auth.uid()`，没有 `is_admin()` 分支。管理员用自己的会话**就是一行都读不到**，且 PG 下没有"管理员读授权"开关可开 |
-| **同层：DELETE Policy（数据库保证）** | 放行"管理员删除他人" | 独立的 `FOR DELETE` 策略 `USING (is_admin())`。DELETE 不需要先通过 SELECT 的可见性（已核实 USING 按操作独立生效） |
-| **第二层：payload 是 AES-GCM 密文（机密性兜底）** | 挡"拿到字节也读不懂" | 即使第一层被绕过（`service_role` 凭据泄露、拖库），拿到的仍是密文 |
+| **读：SELECT Policy（数据库保证）** | 挡"管理员能不能读到他人密文" | `kb_secrets` 的 SELECT Policy **只**匹配 `owner_id = auth.uid()`，无 `is_admin()` 分支 → 管理员用自己的会话**一行都读不到**。**这是 R10「不可读」的真正保证** |
+| **删：受 scope 的云函数** | 放行"管理员删除**某一个**用户" | 云函数持 `service_role`，**入参只接受一个 `uid`**，函数内先 `is_admin()` 自检，仅 `DELETE ... WHERE owner_id=$1`。**按构造只作用于一个用户**，杜绝"漏写过滤条件→全表误删" |
+| **第二层：payload 是 AES-GCM 密文（机密性兜底）** | 挡"拿到字节也读不懂" | 即使删路径被绕过/凭据泄露，拿到的仍是密文 |
 
-**先后关系**：请求先过表级 GRANT → 再过行级 RLS → 才可能碰到 `payload` 字节 → 才有"读不读得懂"。第一层单独失效＝密文泄露仍读不懂；第二层单独失效＝全面泄露。**两层都必须有**。
+**为什么删路径不直接用 RLS 直连（能删，但故意不这么做）**：PG 的 `DELETE` 有独立 `FOR DELETE` 策略、**不需要先通过 SELECT 可见性**（已核实；`kb_secrets_delete_by_admin USING(is_admin())` 本可让管理员直连删除他人行）。但**直连删除是"无范围删除"**——`USING(is_admin())` 对**全表所有行**都为真，一旦前端漏写 `.eq('owner_id', uid)` 就会**误删全库密文**（密文不可恢复、无备份）。故改为**云函数按 uid 收口**，把最高危操作限制在单个用户。
 
-**管理员的"删"不再需要绕过 RLS**：管理员点击"删除数据"时，用**自己的会话**经客户端 SDK 执行 `db.from('kb_secrets').delete().eq('owner_id', 目标uid)`，由 `kb_secrets_delete_by_admin` 策略放行，全程不接触 `payload`。这比"云函数持服务端凭据 bypass"更强：**删除权限和读取权限由数据库分别授予，代码没有机会犯错**。
+**R10 在 PG 下的最终保证（写死 + 列验收）**：
+- **「不可读」= 数据库保证**：SELECT 策略无 `is_admin()`；云函数也**不读、不返回 `payload`**。
+- **「可删」= 云函数代码保证**：云函数持 `service_role` **会绕过 RLS**，故删除路径"绝不读取/返回 `payload`"退化为**代码保证**——须执行 §5.6（禁止 `RETURNING payload`、返回体仅 `{deletedCount}`）并列入第 8 步验收。PM 已明确要求"显式写死并列入验收"，本处落实。
+
+> **加固迁移（第 8 步下发，已定）**：`kb_secrets_delete_by_admin` 目前**仍在线上**（第 2 步按当时 §5.2 建的），它正是"直连无范围删除"的敞口源。第 8 步将下发迁移 `DROP POLICY kb_secrets_delete_by_admin ON public.kb_secrets;`（走 `applyMigration`，DDL **不用** `execute`）。**该迁移下发前，R14 一律走云函数，禁止直连删除。**
 
 ### 5.5 管理员判定函数与聚合函数（**只有 R12 依赖 SECURITY DEFINER**）
 
@@ -338,13 +346,13 @@ $$;
 即使权限已在数据库层保证，云函数仍可能写错，故列为**强制验收项**：
 
 1. **禁止 `select *`**：所有云函数查询必须显式列出字段白名单。
-2. **管理员类函数返回体白名单**：`kbAdminListUsers` 只允许返回 `username / status / created_at / item_count`，**不得出现 `payload`、`kdf_verifier`、`login_hash`**。
+2. **管理员列表返回体白名单**：管理后台调用的 `kb_admin_user_list()`（RPC）只允许返回 `uid / username / status / created_at / item_count`，**不得出现 `payload`、`kdf_verifier`、`login_hash`、`kdf_salt`**；`kbAdminDeleteUserData` 只允许返回 `{deletedCount}`。
 3. **聚合只能经 `kb_admin_user_list()` 取得**（唯一聚合出口，见 §5.5），不允许直接查 `kb_secrets` 后在代码里数行数。
 4. 第 10 节第 8 步验收：抓包确认管理后台所有响应体**不含任何密文字段**。
 
 因为：这是"数据库保证"之外的第二道人为保险，且成本极低。PM 要求"显式写死并列入验收"，已落实。
 
-**⚠️ 不要用 View 做管理后台聚合（已核实）**：PG 的 View 默认是 `security_definer`，**会绕过 RLS**，管理员通过一个 View 就能看到全表。PG 15+ 必须显式加 `WITH (security_invoker = true)` 才生效。本方案**不建任何 View**，用户列表一律由云函数聚合（见 7. `kbAdminListUsers`）。
+**⚠️ 不要用 View 做管理后台聚合（已核实）**：PG 的 View 默认是 `security_definer`，**会绕过 RLS**，管理员通过一个 View 就能看到全表。PG 15+ 必须显式加 `WITH (security_invoker = true)` 才生效。本方案**不建任何 View**，用户列表一律由 `kb_admin_user_list()`（DEFINER RPC）聚合（见 §7.1）。
 
 ---
 
@@ -411,8 +419,8 @@ sequenceDiagram
 
 > 全部为 Event 云函数（`exports.main(event, context)`），由前端 SDK 调用。
 > **身份获取一律用 `auth.getUserInfo()`（云函数运行时注入，返回 `{openId, appId, uid, customUserId}`）**，**绝不相信 `event.uid` 之类前端传来的身份**【已核实：官方明确要求不相信 event 里的身份字段】。
-> **⚠️ 已按 PM 反馈修正 + 已实测（第 7 节）**：管理员的删除与停用**不再需要绕过 RLS**（改由 5.2 的 `kb_secrets_delete_by_admin` 与 5.1 的 `kb_users_update_status_by_admin` 在数据库层放行）。下列 `kbAdmin*` 函数为**薄封装**。**第 5.5 的 DEFINER 方案已实测通过**（`kb_admin_user_list()` 建成、属主满足前提、authenticated 可调 0 行）——**"持服务端凭据 bypass"的回退路径已不需要**；5.6 代码层纪律仍保留作第二道保险。
-> **⚠️ PG 模式的角色模型**：`anon`（未登录）/ `authenticated`（登录态）/ `service_role`（API Key，**绕过 RLS**）。管理员操作优先走 `authenticated` + RLS 策略，而不是 `service_role`。
+> **⚠️ 已按 PM 反馈修正 + 已实测（第 7 节）**：管理员的**读**（R12）走**浏览器直连 RPC** `app.rdb().rpc("kb_admin_user_list")`（DEFINER + 函数体内自检，**不套云函数**）；**停用/启用**（R13）走**浏览器直连 rdb** `update({status}).eq('uid', 目标)`（数据库列级 GRANT + `is_admin()` 策略放行，**不套云函数**）；**只有"删除用户全部数据"（R14）**因需**按 uid 收口、避免"直连无范围删除"误删全库**，保留**持 `service_role` 的云函数**（**不是**"RLS 删不了"——RLS 能删，但按构造无法限制范围）。因此原 `kbAdminListUsers` / `kbAdminSetUserStatus` 两个云函数**已删除**（少两个敞口），云函数总数 **12 → 10**（详见 §7.1）。
+> **⚠️ PG 模式的角色模型**：`anon`（未登录）/ `authenticated`（登录态）/ `service_role`（API Key，**绕过 RLS**）。管理员读/停用优先走 `authenticated` + RLS 策略，**不用** `service_role`。
 > 统一返回 `{ ok: boolean, data?, error? }`，**不抛裸异常**，便于前端判断【已核实：官方最佳实践】。
 > 每个函数末尾"为什么不能放前端"一栏是硬约束 2 的落地说明。
 
@@ -421,14 +429,12 @@ sequenceDiagram
 | `kbInitAdmin` | 首次启动初始化页 | `username, loginPwd` | `{ok}` | ① 查 `kb_users` 是否为空 ② **非空直接拒绝**（防二次抢管理员）③ scrypt 存哈希 ④ `role='admin'` | R01 | 前端判断"有没有管理员"可绕过，谁都能刷一个 admin |
 | `kbInviteCreate` | 管理员后台 | 无 | `{code, createdAt}` | ① 取 uid ② 查 `role=='admin'` ③ `crypto.randomBytes` 生成码 ④ 写 `status='unused'` | R02 | 前端生成码＝任何人都能自己造码开户 |
 | `kbInviteRevoke` | 管理员后台 | `codeId` | `{ok}` | ① 管理员校验 ② 仅 `unused` 码可作废 | R02 | 同上 |
-| `kbRegister` | 注册页 | `code, username, loginPwd` | `{ok}` | ① 校验码存在且 `status='unused'` ② **原子占用（PG 下单语句即可，见下）** ③ 统计 `kb_users` 活跃数，**≥20 拒绝**（R22）④ 用户名查重 ⑤ 建用户记录（不含主密码任何字段） | R03/R04/R22/R26 | 前端判"码能不能用"改代码即可复用；20 人上限在前端等于没有上限 |
+| `kbRegister` | 注册页 | `code, username, loginPwd` | `{ok}` | ① 校验码存在且 `status='unused'` ② **原子占用（PG 下单语句即可，见下）** ③ 统计 `status <> 'deleted'` 的用户数，**≥20 拒绝**（R22；软删用户不占名额，R26）④ 用户名查重 ⑤ 建用户记录（不含主密码任何字段） | R03/R04/R22/R26 | 前端判"码能不能用"改代码即可复用；20 人上限在前端等于没有上限 |
 | `kbLogin` | 登录页 | `username, loginPwd` | `{ok, ticket?}` | ① 查用户 ② scrypt 比对哈希（恒定时间比较）③ `status!='active'` 直接拒绝 ④ 通过才签发自定义登录票据 | R05/R13 | 登录密码校验放前端＝把哈希交出去；停用状态放前端＝停用形同虚设 |
 | `kbGetMyRole` | App 启动 / 每次同步前 | 无 | `{role, status, kdfSalt, kdfVerifier, keyEpoch, userCount}` | ① 按会话 uid 查 ② 只返回本条 | R11/R26 | 前端本地写死 `isAdmin=true` 就能拿到管理员能力 |
 | `kbSecretUpsert` | 新增/编辑 | `id?, payload, keyEpoch` | `{id, updatedAt}` | ① 取 uid ② 更新时先查该条 `owner_id=uid`，不符即拒 ③ 写入时 **`owner_id` 用服务端 uid，忽略入参任何 owner_id** ④ `updated_at` 用服务端时间 | R08/R15 | 归属标记由前端传＝谁都能把记录挂到别人名下 |
 | `kbSecretDelete` | 列表删除 | `id` | `{ok}` | ① 取 uid ② `DELETE ... WHERE id=$1 AND owner_id=$2` | R15 | 同上 |
-| `kbAdminListUsers` | 管理员后台 | 无 | `[{username, status, createdAt, itemCount}]` | ① 调 `kb_admin_user_list()`（唯一 DEFINER 组件，只返 uid/username/status/created_at/count，**已实测可用**）② **返回体白名单，不含 `payload`** ③ 如需回退（云函数持 `service_role`）亦须严格白名单——**当前不需要** | R12/R26 | 必须走白名单聚合，不能 `select *` |
-| `kbAdminSetUserStatus` | 管理员后台 | `uid, status` | `{ok}` | ① 由 `kb_users_update_status_by_admin` 策略在数据库层放行 ② 列级 GRANT 限定只能改 `status` ③ 不允许改自己（应用层提示，数据库层兜底） | R13 | 前端改状态＝停用可被绕 |
-| `kbAdminDeleteUserData` | 管理员后台 | `uid` | `{deletedCount}` | ① 由 `kb_secrets_delete_by_admin` 策略在数据库层放行，**不 bypass、不读 payload** ② 用户记录置 `deleted`（改 `status`） | R14 | 最高危操作；现由数据库策略保证"可删不可读" |
+| `kbAdminDeleteUserData` | 管理员后台 | `uid` | `{deletedCount}` | ① **持 `service_role` 绕过 RLS**（R14 唯一路径）② 函数内**先校验 `is_admin()`** ③ `DELETE FROM kb_secrets WHERE owner_id=$1`（**禁止 `RETURNING payload`**，只取 id/count）④ 用户记录**软删**：`kb_users.status='deleted'`（释放名额，R22/R26）⑤ **返回体仅 `{deletedCount}`** | R14（名额 R22/R26） | 最高危操作需**按 uid 收口**：直连 `DELETE` 的 `USING(is_admin())` 对**全表**为真，漏写 `.eq()` 会误删全库；云函数＝单 uid + 函数内自检 + 白名单返回 |
 | `kbRotateMaster` | 改主密码 | `kdfSalt, kdfSaltPrev, kdfVerifier, items[]` | `{ok, keyEpoch}` | ① 取 uid ② 逐条校验 `owner_id=uid` ③ 整批覆盖写 + `keyEpoch+1` | R21 | 跨记录一致性只有服务端能保证 |
 
 **关于用户名密码登录（`kbRegister` / `kbLogin` 的平台前提，已核实口径）**
@@ -458,6 +464,37 @@ RETURNING id;
 【已核实】`createTicket(customUserId, { refresh, expire })` 的 `refresh` 即刷新间隔（默认 1 小时）、`expire` 默认 7 天；自定义登录 access_token 有效期 7200 秒、refresh_token 30 天。
 因为：CloudBase **未发现**"管理员吊销他人会话"的接口（第 12 节第 4 项），所以用"可控刷新间隔 + 客户端主动轮询"两把夹住；20 人规模下轮询成本可忽略（约 20 次/分钟）。若平台后续提供吊销接口，再叠加一层。
 
+### 7.1 第 8 步（管理员后台）施工规格（R12 / R13 / R14）
+
+> **一句话**：能交给数据库的（读、停用）一律**直连、不套云函数**；只有"删"因必须绕过 RLS 才用云函数，且**按 uid 收口**。
+
+**R12 · 用户列表 —— 直连 RPC，不要云函数**
+- 调用：`app.rdb().rpc('kb_admin_user_list')`（DEFINER、函数体内已 `is_admin()` 自检、EXECUTE 只授 `authenticated`/`service_role`）。
+- **不套 `kbAdminListUsers` 云函数**：包一层只会多一个持凭据者，数据库已经挡好了，纯增敞口。
+- **返回字段白名单**：`uid, username, status, created_at, item_count`（`uid` 作后续停用/删除的目标键，非敏感）。**绝不含** `payload / login_hash / kdf_salt / kdf_verifier`。
+- 因为：DEFINER 已解决"跨用户读"；SELECT 策略无 `is_admin()` 保证**仍读不到他人密文**。
+
+**R13 · 停用 / 启用 —— 直连 rdb 更新，不要云函数**
+- 调用：`app.rdb().from('kb_users').update({ status }).eq('uid', 目标uid)`。
+- 保证链：① 只有管理员能改（`kb_users_update_status_by_admin` 策略 `USING/WITH CHECK = is_admin()`）；② **只能改 `status`**——列级 `GRANT UPDATE (status)`，改 `login_hash` 等列被 PG 以**列权限不足**拒绝（**数据库保证**，不靠前端）；③ 由此，"不允许改他人 `login_hash`"由**列级授权**兜底，**不需要云函数**。
+- **"管理员不能停用自己"是防呆不是权限 → 放前端 UI 层**（自己那行不显示停用按钮 + 提示"请用另一个管理员操作"）。**数据库故意不拦**（保留"另一个管理员可恢复"的逃生口；权限边界仍由 `is_admin()` 保证）。
+- 因为：数据库已分别授予"改他人行（策略）+ 只改一列（列授权）"，云函数反而多一层可能写错的代码。
+- ⚠️ 直连改 `status` **永远带 `.eq('uid', ...)`**（无过滤＝全表）。
+
+**R14 · 删除某用户全部数据 —— 唯一走云函数、持 `service_role`**
+- 唯一推荐路径：`kbAdminDeleteUserData` 云函数，持 `service_role`（**全项目唯一绕过 RLS 的地方**）。护栏：
+  1. 入参**只接受一个 `uid`**（按构造限制影响范围）；
+  2. 函数内**先 `is_admin()` 自检**（身份用 `auth.getUserInfo()`，不信 `event.uid`）；
+  3. `DELETE FROM kb_secrets WHERE owner_id = $1`，**禁止 `RETURNING payload`**（只取行数）；
+  4. 用户记录**软删**：`kb_users.status='deleted'`；
+  5. **返回体仅 `{deletedCount}`**，绝不含任何字段内容。
+- **为什么不直连 RLS 删**：`DELETE` 策略 `USING(is_admin())` 对**全表**为真，直连即"无范围删除"，前端漏写 `.eq()` 会**误删全库密文**（不可恢复）；云函数按 uid 收口。→ 代价：删路径的"不读 payload"退为**代码保证**（§5.4 + §5.6 + 第 8 步验收）。加固：后续迁移 `DROP POLICY kb_secrets_delete_by_admin`。
+- **用户记录置 `status='deleted'`（软删），不硬删**：① **释放名额**——20 人上限统计 `status <> 'deleted'`（R22/R26）；② 保留审计痕迹；③ `kbLogin` 已在 `status!='active'` 时拒登，软删即无法登录。
+
+**会话时效（R13 双窗口，最终值）**
+- 云端访问窗口：`createTicket` 的 `refresh` 目标 **15 分钟**、**验收按 ≤30 分钟**（15 分钟仍是**未实测的文档值**，实测后回告再收紧）；兜底＝access_token 2 小时自然过期。
+- 本机已解锁窗口：前台**每 60 秒**调 `kbGetMyRole`；**触发点**＝启动、`visibilitychange` 回前台、每次同步前；发现 `status!=active` → 立即 `signOut()` + 清空内存主密钥 + 锁定本地缓存。→ ≤1 分钟。
+
 ---
 
 ## 8. 同步与冲突
@@ -469,9 +506,11 @@ RETURNING id;
 | 上行字段 | `payload`(密文) / `key_epoch`（`owner_id` **不传**，由列默认值写入） | 只传密文，云端无任何明文 |
 | 下行字段 | `id` / `payload` / `updated_at` / `owner_id` | 同上 |
 | 客户端查询写法 | **必须**用 `app.rdb().from('kb_secrets')` 的 postgREST 链式方法：`.eq()` / `.match()` / `.order()` / `.range()` / `.select('*',{count:'exact'})` | PG 模式下 `.where()` / `.count()` / `.orderBy()` 都**不存在**（NoSQL 习惯会直接报错） |
-| 冲突策略 | **后写覆盖（last-write-wins）**：以服务端 `updated_at` 为准，新者胜 | 20 人小团队、单人保管自己的密钥，几乎无并发编辑；做 CRDT/合并是过度设计 |
+| 冲突策略 | **后写覆盖（last-write-wins）**：以服务端 `updated_at` 为准，新者胜——**比大小必须转成 epoch 毫秒再比数值，禁止直接比时间戳字符串** | 20 人小团队、单人保管自己的密钥，几乎无并发编辑；做 CRDT/合并是过度设计 |
 | 断网行为 | 可正常增删改、可搜索、可解密查看本地缓存；变更进**待上传队列**，恢复后逐条重放 | R07 明确要求断网时本机仍可读 |
-| 重放冲突 | 若服务端 `updatedAt` 比本地新，保留服务端版本并把本地标为"已更新"，不静默覆盖 | 静默覆盖等于丢数据 |
+| 重放冲突 | 若服务端 `updatedAt` 的 **epoch 值**比本地新，保留服务端版本并把本地标为"已更新"，不静默覆盖（同样按 epoch 比较） | 静默覆盖等于丢数据 |
+
+> **⚠️ 时间戳比较陷阱（第 7 步实测 bug，已修）**：PostgREST 返回的时间戳以 `+00:00` 结尾，本机序列化常是 `Z` 结尾——**同一时刻的字符串按字典序会判反**（`'+'`=0x2B `< '.'`=0x2E）。**绝对不要对时间戳做字符串 `<` / `>` 比较**，一律先转 epoch（`Date.parse(x)` / `new Date(x).getTime()`）再比数值。`lib/sync.ts` 已改为 epoch 比较并附反例测试。
 | 搜索/标签 | 全部在**本机内存**对已解密数据过滤，关键词**一个字节都不发云端** | R19：关键词上云等于告诉云端你有哪些站点 |
 
 ---
@@ -492,8 +531,10 @@ KeyBox/
 ├─ scripts/setup-cloud.js           ← 驱动版本化迁移（applyMigration）下发建表+GRANT+RLS，再配云函数 invoke 规则与安全域名（幂等；DDL 一律不走 execute）
 ├─ scripts/setup-cloud.manual.md    ← 脚本跑不通时的手工操作清单（与脚本逐步对应，README 兜底用）
 ├─ cloudbase/migrations/            ← ⚠️ **仓库权威副本**；全新部署必须**按序执行**才能复现正确终态
-│    ├─ 20260927193625_init_keybox.sql           ← 建表 DDL + RLS Policy（7 条，表达式与 §5 一致）
-│    └─ 20260927193751_harden_keybox_grants.sql  ← 收回平台默认权限 + 精确 GRANT（见 §5.0.1）
+│    ├─ 20260927193625_init_keybox.sql              ← 建表 DDL + RLS Policy（7 条，表达式与 §5 一致）
+│    ├─ 20260927193751_harden_keybox_grants.sql     ← 收回平台默认权限 + 精确 GRANT（§5.0.1）
+│    ├─ 20260927195508_tighten_function_execute.sql ← 收回函数 anon/PUBLIC 的 EXECUTE（§5.0.1）
+│    └─ <第8步时间戳>_drop_kb_secrets_delete_by_admin.sql ← 【第8步执行中】DROP POLICY kb_secrets_delete_by_admin（R14 收口）
 ├─ .github/workflows/build-android.yml
 ├─ .github/workflows/build-desktop.yml
 ├─ src/
@@ -503,16 +544,16 @@ KeyBox/
 │  ├─ lib/db.ts                    ← IndexedDB 封装（main / staging 双区）
 │  ├─ lib/sync.ts                  ← 上下行 + 待上传队列重放
 │  ├─ lib/log.ts                   ← 脱敏日志（绝不出明文/密钥）
-│  ├─ lib/api.ts                   ← 12 个云函数的调用封装
+│  ├─ lib/api.ts                   ← 10 个云函数 + 1 个直连 RPC（`kb_admin_user_list`）的调用封装
 │  ├─ store/session.ts · store/secrets.ts
 │  ├─ components/  TopBar · ThemeToggle · TagSidebar · SecretTable · SecretDialog · StatusBar
 │  └─ pages/       InitPage · LoginPage · RegisterPage · VaultPage · AdminPage
 ├─ src-tauri/  Cargo.toml · tauri.conf.json · src/main.rs · icons/
 ├─ android/    （Capacitor 生成，进仓库以便 CI 复现）
 └─ cloudfunctions/  kbInitAdmin/ kbInviteCreate/ kbInviteRevoke/ kbRegister/ kbLogin/
-                    kbGetMyRole/ kbSecretUpsert/ kbSecretDelete/ kbAdminListUsers/
-                    kbAdminSetUserStatus/ kbAdminDeleteUserData/ kbRotateMaster/
-   （每个目录：index.js + package.json）
+                    kbGetMyRole/ kbSecretUpsert/ kbSecretDelete/ kbAdminDeleteUserData/
+                    kbRotateMaster/
+   （每个目录：index.js + package.json；**共 10 个**。管理员读/停用不经云函数：读走直连 RPC、停用走直连 rdb）
 ```
 
 **敏感文件纪律（硬约束 4）**：CloudBase 环境 ID、publishable key、自定义登录私钥（`tcb_custom_login.json`）、keystore 口令**一律只放 `.env.local` / 云函数环境变量 / CI Secrets**；`.gitignore` 必须覆盖 `.env*`、`.env.local`、`*.json`（自定义登录私钥）、`*.keystore`、`*.jks`。`.env.example` 只写 `VITE_CLOUDBASE_ENV=` 这样的空壳。**仓库内任何文件都不得出现真实环境 ID**（文档中一律写 `<YOUR_ENV_ID>`）。
@@ -529,7 +570,7 @@ KeyBox/
 | 3.5 | `scripts/setup-cloud.js` | 3 | 把第 3 步固化成**驱动迁移（applyMigration）**的可复跑脚本，开源后部署者才能一键复现；DDL 不走 `execute` |
 | 4 | `lib/cloudbase.ts` `lib/log.ts` | 2、3 | 所有网络与日志都从这里走，脱敏规则必须最早统一 |
 | 5 | `lib/crypto.ts` | 2 | 加密是地基中的地基，先写先测，后面所有功能都站在这上面 |
-| 6 | `lib/api.ts` + 12 个云函数 | 3、4 | 服务端校验是权限的真相来源，早于界面 |
+| 6 | `lib/api.ts` + 10 个云函数 + 直连 RPC | 3、4 | 服务端校验是权限的真相来源，早于界面 |
 | 7 | `store/session.ts` + `pages/InitPage` `LoginPage` `RegisterPage` | 4、6 | 没有账号就没有归属，后面一切数据无主 |
 | 8 | `lib/db.ts` `lib/sync.ts` | 5、6 | 本地优先与断网队列，决定核心功能手感 |
 | 9 | `components/*` + `pages/VaultPage` | 7、8 | R15–R19 主界面 |
@@ -550,7 +591,7 @@ KeyBox/
 | 5 | 客户端加密 | `lib/crypto.ts` + 单元测试（用**随机生成**的测试密码，不写死） | ☐ 同密码不同盐派生结果不同 ☐ 正确主密码能解 `kdf_verifier`，错误的主密码失败 ☐ 全仓检索无主密码明文 |
 | 6 | 核心功能 | `kbSecretUpsert/Delete` + `VaultPage` + 遮掩/复制/编辑/删除 | ☐ 数据库后台打开 `kb_secrets` 全字段乱码 ☐ 密钥列默认是圆点 ☐ 抓包无明文字段 ☐ **用 `app.rdb()` 而非 `app.database()`**（全仓检索无 `.where(`/`.count()`） |
 | 7 | 同步冲突 | `lib/db.ts` `lib/sync.ts` + 标签 + 本地搜索 | ☐ 断网可继续增删改 ☐ 恢复后队列自动重放 ☐ 搜索输入时抓包无关键词上行 |
-| 8 | 管理后台 | `kbAdminListUsers` `kbAdminSetUserStatus` `kbAdminDeleteUserData` + `AdminPage` | ☐ 列表有条目数与状态 ☐ **无"查看密钥"按钮** ☐ 管理员读他人密文返回空 ☐ **管理员能删他人数据且全程不读 payload** ☐ 管理员改不了他人 `login_hash`（列级 GRANT 生效）☐ **抓包确认管理后台所有响应体不含任何密文字段** ☐ 全仓无 `select *`、无 View |
+| 8 | 管理后台 | `AdminPage` + 直连 RPC `kb_admin_user_list`（R12）+ 直连 rdb 改 `status`（R13）+ `kbAdminDeleteUserData` 云函数（R14） | ☐ 列表含 username/status/created_at/itemCount、**响应体不含任何密文字段** ☐ **管理员直连 `kb_secrets` 读他人密文返回空/被拒**（SELECT 策略无 `is_admin()`）☐ **删除后该用户 `item_count` 归零、`kb_users.status='deleted'`、云函数返回体仅 `{deletedCount}`** ☐ 管理员改他人 `status` 成功、改他人 `login_hash` 被 PG **列权限**拒绝 ☐ **界面无任何"查看密钥"入口** ☐ **全仓无 View、云函数无 `select *`**（静态检索）☐ `lib/sync.ts` 时间戳按 epoch 比较且有反例测试 |
 | 9 | 外观与打包 | 夜间模式 + `src-tauri` + 两条 GitHub Actions | ☐ 右上角切换并刷新后仍记住 ☐ 本地产出可安装 exe ☐ 推送标签后能下载 apk 产物 |
 | 10 | 开源收尾 | README 补全、改主密码（R21）回归、仓库公开 | ☐ 改主密码中断后能回滚到一致状态 ☐ 全新克隆 + 填 `.env` 可跑通 ☐ 仓库为 public 且 LICENSE 正确 |
 
@@ -567,14 +608,15 @@ KeyBox/
 | 3 | **Tauri 首次打包必须装 Rust 工具链**（约 1–2 GB，首次编译 10 分钟以上），换机器要重装 | **中** |
 | 4 | **CloudBase 免费额度与实名限制**：需实名认证；超出免费额度（调用次数/存储）后会产生费用，20 人规模虽小但不能假设永远免费 | **中** |
 | 5 | **账号方案偏离原设想**：官方不允许"仅用户名+密码"注册（已核实），故走自建账号 + 自定义登录票据；若未来官方开放，可回退 | **中** |
-| 6 | **云函数绕过 RLS**：所有敏感校验集中在 12 个云函数里，任一处漏判即越权，必须逐个写测试。PG 下 `service_role` 更会**完全绕过 RLS**（已实测 `rolbypassrls = true`），凭据一旦进入前端即全盘失守 | **高** |
+| 6 | **云函数绕过 RLS**：所有敏感校验集中在 10 个云函数里，任一处漏判即越权，必须逐个写测试。PG 下 `service_role` 更会**完全绕过 RLS**（已实测 `rolbypassrls = true`），凭据一旦进入前端即全盘失守 | **高** |
 | 7 | **本环境无 NoSQL，只能用 PG**：已由负责人实测确认（`nosql:false`）并已按 PG + RLS 重写全文；**PG 模式仅新建环境支持，存量环境不能升级**，换环境必须重新确认 `RuntimeBackends` | **中**（已闭环） |
 | 8 | **自定义登录用户可能访问不了数据库**：已核实的既有坑是"自定义登录成功但调数据库报 UNAUTHORIZED，因新用户默认角色是外部用户"，须在实施第 2/4 步先验证角色与 GRANT，否则会卡住整个数据层 | **中** |
 | 9 | **账号类云函数必须持服务端凭据**（前提**已实测确认 → 降级**）：`kbInitAdmin` / `kbRegister` / `kbLogin` / `kbGetMyRole` / `kbRotateMaster` 要 INSERT 用户、读写 `login_hash` / `kdf_salt` / `kdf_verifier`，而这些列**刻意未授予 `authenticated`**（5.1 列级授权屏蔽）。**实测**：`service_role` 角色存在且 `rolbypassrls = true`，云函数持服务端凭据访问 PG、绕过 RLS 的路径**确实存在** → **R01/R04/R05/R11/R21 五个 P0 的前提成立**。剩余风险仅是**凭据本身绝不能进前端**（硬约束 4） | **中**（前提已闭环；第 12 节第 13 项已关闭） |
 | 12 | **只有 R12 依赖 SECURITY DEFINER**（**已实测通过 → 降级**）：`kb_admin_user_list()` 实测 `prosecdef=true`、owner 与表同为 `cloudbase_postgres_postgres_1xo6lkbo`、authenticated 可调且返回 0 行不泄露；`is_admin()` 实测 `prosecdef=false`（INVOKER）且能在策略内生效。**R12 不需要回退**，仍由数据库保证；R10/R13/R14 只用 INVOKER 版 `is_admin()`，同样不受影响 | **低**（已实测闭环） |
 | 10 | **View 会绕过 RLS**：PG 的 View 默认 `security_definer`，管理员可通过 View 看到全表。已决定不建任何 View，但后续任何人加 View 都会悄悄摧毁 R10 | **中** |
 | 11 | **JWT 旧声明问题**：权限变更后旧 JWT 在过期前仍携带旧 claims。官方明确要求"关键权限变更应结合短有效期、重新登录或服务端校验"——这正是 R13 采用短票据 + 服务端校验的依据 | **中** |
-| 13 | **平台默认权限静默覆盖列级 GRANT**（新增，已实测）：平台对 `public` schema 设了默认权限，**新建表自动带 `anon=SELECT` / `authenticated=ALL`**，会**无报错地覆盖**按列级设计的授权。加固前 `authenticated` 对 `kb_users` 拿到表级 SELECT，能读自己那行的 `login_hash` / `kdf_salt` / `kdf_verifier`（直接违背 §5.1）；`kb_invites` 也非零授权；`anon` 还拿到新表权限与序列 USAGE | **高**（已由迁移 2 `20260927193751_harden_keybox_grants` 修复；缓解：**每次新增表都必须紧跟 `REVOKE ALL ON <表> FROM anon, authenticated`**，见 §5.0.1；**函数 EXECUTE 同样要收回 `anon`/`PUBLIC` 默认授权**，见 §5.0.1 待办） |
+| 13 | **平台默认权限静默覆盖列级 GRANT**（新增，已实测）：平台对 `public` schema 设了默认权限，**新建表自动带 `anon=SELECT` / `authenticated=ALL`**，会**无报错地覆盖**按列级设计的授权。加固前 `authenticated` 对 `kb_users` 拿到表级 SELECT，能读自己那行的 `login_hash` / `kdf_salt` / `kdf_verifier`（直接违背 §5.1）；`kb_invites` 也非零授权；`anon` 还拿到新表权限与序列 USAGE | **高**（已由迁移 2 `20260927193751_harden_keybox_grants` 修复；缓解：**每次新增表都必须紧跟 `REVOKE ALL ON <表> FROM anon, authenticated`**，见 §5.0.1；**函数 EXECUTE 同样要收回 `anon`/`PUBLIC` 默认授权**，见 §5.0.1（已由迁移 `20260927195508_tighten_function_execute` 落地）） |
+| 14 | **`kbRegister` 20 人上限存在 TOCTOU（已知、已评估、已接受，不修）**：先 `count` 再 `INSERT` 非原子，并发提交多个邀请码时理论上可能突破 20。**依据**：① 每次注册都消耗一个**一次性邀请码**、而邀请码只由管理员手动生成发放，要撞上该竞态需**多个未使用邀请码被同时提交**，20 人自用场景实际不会发生；② 代价不划算——改单语句原子实现需在 PostgREST 层绕一大圈（自定义函数），为"有人数上限、超一点也不损坏数据"的场景引入复杂度不值。**若将来邀请码改为批量自动发放，需重新评估**。不改 §7 实现口径 | **低（已接受）** |
 
 ---
 

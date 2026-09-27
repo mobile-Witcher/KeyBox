@@ -45,9 +45,10 @@ exports.main = async (event) => {
     });
     if (Array.isArray(duplicated) && duplicated.length > 0) return fail("USERNAME_TAKEN");
 
-    // ② 20 人上限：统计 active 用户数
-    const activeCount = await pgCount("kb_users", { select: "uid", status: "eq.active" });
-    if (activeCount >= USER_LIMIT) return fail("LIMIT_REACHED");
+    // ② 20 人上限（R22/R26）：统计 status <> 'deleted' 的用户数
+    //    软删（status='deleted'）的用户【释放名额】，故用 neq.deleted 而非 eq.active
+    const usedSeats = await pgCount("kb_users", { select: "uid", status: "neq.deleted" });
+    if (usedSeats >= USER_LIMIT) return fail("LIMIT_REACHED");
 
     const uid = randomUid();
 

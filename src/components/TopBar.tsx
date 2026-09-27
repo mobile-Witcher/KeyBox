@@ -8,6 +8,8 @@ interface TopBarProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onSignOut: () => void;
+  /** 仅管理员传入：显示“管理后台”入口（第 8 步）。 */
+  onOpenAdmin?: () => void;
 }
 
 export default function TopBar({
@@ -15,6 +17,7 @@ export default function TopBar({
   searchValue,
   onSearchChange,
   onSignOut,
+  onOpenAdmin,
 }: TopBarProps): JSX.Element {
   return (
     <header className="flex items-center gap-4 border-b border-slate-200 px-6 py-3 dark:border-slate-700">
@@ -27,6 +30,15 @@ export default function TopBar({
         className="ml-2 w-full max-w-md rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
       <div className="ml-auto flex items-center gap-3 text-sm">
+        {onOpenAdmin ? (
+          <button
+            type="button"
+            onClick={onOpenAdmin}
+            className="rounded px-2 py-1 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            管理后台
+          </button>
+        ) : null}
         <span className="text-slate-600 dark:text-slate-300">{username}</span>
         <button
           type="button"
