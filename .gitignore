@@ -1,0 +1,56 @@
+# KeyBox .gitignore
+# 原则（硬约束 4）：密钥、主密码、环境 ID、secretId/secretKey、keystore 口令一律只在
+# .env.local / 云函数环境变量 / CI Secrets，绝不进仓库。仓库一旦推送，历史里的东西全世界都能翻出来。
+
+# ===== 环境变量与密钥 =====
+.env
+.env.*
+!.env.example
+# 自定义登录私钥（CloudBase 自定义登录票据签名用）
+tcb_custom_login.json
+*_custom_login*.json
+# 各类签名/密钥库
+*.keystore
+*.jks
+*.p12
+*.pfx
+# 本地证书与私钥
+*.pem
+*.key
+
+# ===== 依赖与构建产物 =====
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+# 桌面端 Rust 编译产物
+src-tauri/target/
+target/
+
+# ===== 安卓 / Capacitor（源码进仓库以便 CI 复现，构建产物与签名文件不进）=====
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+android/key.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ===== 日志与缓存 =====
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+*.tsbuildinfo
+
+# ===== 编辑器与系统 =====
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
