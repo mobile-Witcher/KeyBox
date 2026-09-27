@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@cloudbase/js-sdk": "^3.10.1",
+    "idb": "^8.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -22,10 +23,16 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "fake-indexeddb": "^6.2.5",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"
-  }
+  },
+  "optionalDependencies": {
+    "@esbuild/win32-x64": "^0.21.5",
+    "@rollup/rollup-win32-x64-msvc": "^4.63.5"
+  },
+  "//optionalDependencies": "npm 已知缺陷 #4828 的持久化规避：显式声明平台原生模块，避免 vite/esbuild/rollup 装不全。非 Windows 平台 npm 会按 os/cpu 字段自动跳过，不会报错。详见 docs/TROUBLESHOOTING.md。"
 }

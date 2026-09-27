@@ -101,6 +101,36 @@ npm run build
 
 ---
 
+## 问题 3（架构防雷，改代码前必读）：云函数写 `kb_secrets` 时 `owner_id` 必须显式写
+
+### 现象
+
+- 云函数新增记录时报类似 `null value in column "owner_id" violates not-null constraint`；
+- 或（若该列可空）库里出现一条 `owner_id` 为空的“无主记录”，谁都查不到、也删不掉。
+
+### 原因（说人话）——这是本项目最容易埋雷的一点
+
+架构说“归属由数据库列默认值 `DEFAULT auth.uid()` 自己写”。**这句话只在【客户端以登录态直连数据库】时成立。**
+
+而我们的**云函数走的是服务端凭据（`service_role`）**，它发起的数据库请求里**没有用户的登录 JWT**，
+于是数据库里的 `auth.uid()` 取不到人、返回 `null`，`owner_id` 的默认值就落成 **NULL**。
+
+> **一句话记住**：**service_role 请求没有用户 JWT，`DEFAULT auth.uid()` 会是 null，所以云函数新增记录时必须【显式】写 `owner_id`。**
+
+### 正确做法（已在代码中执行，改代码时别破坏）
+
+- 云函数**新增**记录：显式写入 `owner_id = 会话 uid`（见 `cloudfunctions/kbSecretUpsert/index.js` 新增分支）。
+- 云函数**更新 / 删除**：过滤条件里显式带 `owner_id = 会话 uid`（更新前还会先回读确认归属）。
+- 会话 uid 一律来自 `auth.getUserInfo().uid`，**绝不**相信前端传来的任何 owner 值。
+- 客户端直连（`app.rdb()`）的**读取**路径则相反：必须带 `.eq("owner_id", uid)`（见 `src/lib/vault.ts`）。
+
+### 怎么算修好了
+
+新增一条密钥后，在数据库后台看这条记录：`owner_id` 应等于该账号的 uid（而不是空），
+且该账号能读到、别人读不到。
+
+---
+
 ## 附：本手册的维护约定
 
 - 每遇到一个“别人 fork 后也会踩”的坑，就新开一节，保持 **现象 → 原因 → 一条命令 / 明确指引** 的结构。

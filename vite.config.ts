@@ -19,9 +19,12 @@ export default defineConfig({
     sourcemap: false,
   },
   test: {
-    // 加密层单元测试只依赖 WebCrypto（Node 18+ 自带 globalThis.crypto），无需浏览器环境。
+    // 加密层 / 本地层单元测试只依赖 WebCrypto 与（fake-）IndexedDB，无需浏览器环境。
     environment: "node",
     include: ["src/**/*.test.ts"],
     testTimeout: 30000,
+    // 串行执行测试文件：本机沙箱对 %TEMP% 的并行写入有限制，vitest 并行 worker 的 SSR 缓存
+    // 落盘会触发 EPERM 干扰（与用例无关）。串行可规避，结果更可复现。
+    fileParallelism: false,
   },
 });

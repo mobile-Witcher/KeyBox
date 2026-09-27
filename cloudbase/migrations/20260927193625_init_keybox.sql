@@ -3,6 +3,12 @@
 -- 下发方式：managePgDatabase(action="applyMigration")；文件名与 migrationVersion 必须一致。
 -- 段落顺序有讲究：两个函数必须先于引用它们的 RLS 策略创建（策略表达式在建策略时即校验函数是否存在）。
 -- 本文件包含：3 张业务表 DDL + 索引 + 表级 GRANT + 行级 RLS 策略（共 7 条）+ 2 个函数。
+--
+-- ⚠️ 关键陷阱（已写入 docs/TROUBLESHOOTING.md 问题 3）：kb_secrets.owner_id 的默认值是 auth.uid()，
+--    但 auth.uid() 只在【携带用户 JWT 的请求】里有值。云函数持 service_role 经 PG HTTP 网关写库时
+--    【没有用户 JWT】，DEFAULT auth.uid() 求值为 NULL。所以：**由云函数写入 kb_secrets 时，必须显式
+--    写 owner_id（取会话 uid），绝不能依赖列默认值**；否则要么整列 INSERT 因 NOT NULL 失败，要么
+--    （若默认被改动为可空）写入归属为空的行。客户端直连（authenticated + 用户 JWT）时才可依赖默认值。
 
 -- ============================================================
 -- 1. 建表（三张；归属列一律 text，因 auth.uid() 返回 text 不是 uuid）
@@ -22,6 +28,8 @@ CREATE TABLE public.kb_users (
 
 CREATE TABLE public.kb_secrets (
   id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  -- 归属列：客户端直连（authenticated + 用户 JWT）时默认取 auth.uid()；
+  -- ⚠️ 云函数（service_role，无用户 JWT）写库时 auth.uid() 为 NULL，必须【显式写 owner_id】。
   owner_id    text NOT NULL DEFAULT auth.uid(),
   payload     text NOT NULL,
   key_epoch   integer NOT NULL DEFAULT 0,
