@@ -16,6 +16,7 @@ import { log } from "./lib/log";
 import InitPage from "./pages/InitPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import VaultPage from "./pages/VaultPage";
 
 type Screen = "loading" | "init" | "login" | "register" | "home";
 
@@ -96,11 +97,15 @@ export default function App(): JSX.Element {
     );
   }
 
-  // home：主界面占位（第 6 步替换为 VaultPage + 遮掩/复制/编辑/删除）
+  // home：主界面（第 6 步：解锁 + 密钥增删改查 + 本地解密/遮掩/复制）
+  if (screen === "home") {
+    return <VaultPage username={displayName} onSignOut={handleSignOut} />;
+  }
+
+  // 兜底（理论不可达）
   return (
     <CenteredMessage
-      text={`已登录：${displayName}`}
-      hint="密钥主界面（VaultPage）将在第 6 步实现。"
+      text="状态异常，请刷新页面。"
       action={{ label: "退出登录", onClick: handleSignOut }}
     />
   );

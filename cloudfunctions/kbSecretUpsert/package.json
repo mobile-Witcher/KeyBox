@@ -1,0 +1,10 @@
+{
+  "name": "kb-secret-upsert",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：新增/更新密钥密文（R08/R15）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}

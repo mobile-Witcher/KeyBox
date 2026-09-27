@@ -1,0 +1,10 @@
+{
+  "name": "kb-secret-delete",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：删除本人密钥记录（R15）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}

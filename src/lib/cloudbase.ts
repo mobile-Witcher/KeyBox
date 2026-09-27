@@ -45,3 +45,26 @@ export const auth = app.auth;
 
 /** PG 数据访问客户端。架构 §9 明确：必须 app.rdb()，查询用 postgREST 风格链式方法。 */
 export const db = app.rdb();
+
+/**
+ * 取得“真实登录”的会话（唯一登录判据）。
+ * 已核实（postgresql-development / auth-web 技能）：只用 auth.getSession()，不要用 auth.getUser()
+ * （后者在无真实用户名密码会话时也可能返回非空包装对象）。
+ * 返回 null 表示未登录 / 匿名会话。
+ */
+export async function getActiveSession(): Promise<{
+  uid: string;
+  username: string;
+} | null> {
+  try {
+    const { data } = await auth.getSession();
+    const session = data?.session;
+    if (!session || session.user?.is_anonymous) return null;
+    const uid = session.user?.id;
+    if (!uid) return null;
+    const username = session.user?.user_metadata?.username || String(uid);
+    return { uid: String(uid), username: String(username) };
+  } catch {
+    return null;
+  }
+}

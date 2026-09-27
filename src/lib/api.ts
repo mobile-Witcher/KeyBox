@@ -91,6 +91,22 @@ export interface MyRoleData {
   userCount: number;
 }
 
+/** kbSecretUpsert 入参：payload 为 `KB1:` 密文；有 id 则更新、无 id 则新增。 */
+export interface SecretUpsertParams {
+  id?: number;
+  payload: string;
+  keyEpoch: number;
+}
+
+export interface SecretUpsertData {
+  id: number;
+  updatedAt: string;
+}
+
+export interface SecretDeleteData {
+  deletedId: number;
+}
+
 export const api = {
   /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。 */
   initAdmin(params: InitAdminParams): Promise<ApiResult<InitAdminData>> {
@@ -115,6 +131,14 @@ export const api = {
   /** R11/R26：取本人 role/status/密钥参数与用户数（只返回本人那一行）。 */
   getMyRole(): Promise<ApiResult<MyRoleData>> {
     return call<MyRoleData>("kbGetMyRole", {});
+  },
+  /** R08/R15：新增或更新一条密钥密文（owner_id 由云函数按会话身份写入）。 */
+  secretUpsert(params: SecretUpsertParams): Promise<ApiResult<SecretUpsertData>> {
+    return call<SecretUpsertData>("kbSecretUpsert", { ...params });
+  },
+  /** R15：删除本人一条密钥记录。 */
+  secretDelete(params: { id: number }): Promise<ApiResult<SecretDeleteData>> {
+    return call<SecretDeleteData>("kbSecretDelete", { ...params });
   },
 };
 
