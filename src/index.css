@@ -1,0 +1,25 @@
+/**
+ * index.css —— 全局样式入口（Tailwind 三层指令 + 少量基础样式）。
+ * 夜间模式由 <html class="dark"> 驱动（架构 §10 第 11 步）。
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+.dark body {
+  @apply bg-slate-900 text-slate-100;
+}

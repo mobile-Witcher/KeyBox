@@ -41,6 +41,8 @@ android/key.properties
 
 # ===== 日志与缓存 =====
 *.log
+# Vite 在处理 TS 配置时会生成临时文件，不应入库
+vite.config.ts.timestamp-*.mjs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

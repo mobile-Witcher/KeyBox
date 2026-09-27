@@ -167,9 +167,37 @@ CREATE TABLE public.kb_invites (
 
 > 若 INSERT 时报序列权限不足，补一条：`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;`（IDENTITY 列是否需要该授权尚待实测，第 12 节第 14 项）。
 
+### 5.0.1 ⚠️ 平台默认权限必须先收回（否则列级 GRANT 会被静默覆盖）
+
+> **实测（`pg_default_acl`）**：平台对 `public` schema 设了 **DEFAULT PRIVILEGES**——**任何新建表会自动带上 `anon=SELECT`、`authenticated=ALL`（含 `TRUNCATE` / `REFERENCES` / `TRIGGER`）**；同一个默认还让 `anon` 拿到新表权限与**序列 USAGE**。
+>
+> **后果（隐形陷阱）**：它会**静默覆盖**我们按 §5.1 / §5.2 写的列级 GRANT——**不报错、不告警**。加固前，`authenticated` 对 `kb_users` 拿到的是**表级 SELECT**，于是能读到自己那一行的 `login_hash` / `kdf_salt` / `kdf_verifier`，**直接违背 §5.1 的设计意图**；`kb_invites` 也不是"零授权"。
+>
+> **规则（强制）**：**任何按列级 GRANT 设计的表，建表后必须先 `REVOKE ALL`，再执行精确 GRANT。** 顺序写反或漏写，列级授权即形同虚设，且不会报错。
+>
+> ```sql
+> -- 每张表建完即可执行，但必须早于"精确 GRANT"
+> REVOKE ALL ON public.kb_users   FROM anon, authenticated;
+> REVOKE ALL ON public.kb_secrets FROM anon, authenticated;
+> REVOKE ALL ON public.kb_invites FROM anon, authenticated;
+> REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;  -- 收回默认的序列 USAGE
+> -- 收回之后再执行 §5.1 / §5.2 的精确 GRANT（列级 / 表级 + WITH CHECK）
+>
+> -- 函数权限同理：EXECUTE 默认也授给了 anon/PUBLIC，应收回，只留 authenticated / service_role（纵深防御）
+> REVOKE EXECUTE ON FUNCTION public.is_admin()           FROM anon, PUBLIC;
+> REVOKE EXECUTE ON FUNCTION public.kb_admin_user_list() FROM anon, PUBLIC;
+> ```
+>
+> **已落地**：本坑由迁移 2 `20260927193751_harden_keybox_grants` 修复（`REVOKE ALL → 精确 GRANT`）。**新增任何表都必须跟一条 REVOKE**（见 §11 风险 13）。
+>
+> **⚠️ 待办（第 8 / 10 步处理，不新增需求编号）**：实测 `is_admin()` 与 `kb_admin_user_list()` 的 **EXECUTE 同时授给了 `anon`**。实际危害**低**——真正防线是函数体内的 `is_admin()` 自检（anon 调用时 `auth.uid()` 为空 → 返回 false / 0 行，拿不到数据），与官方"PostgREST 不强制 GRANT EXECUTE、不能把'谁能调用'当防线"一致。但仍属**多余敞口**，建议加一条收紧迁移 `REVOKE EXECUTE ON FUNCTION public.is_admin(), public.kb_admin_user_list() FROM anon, PUBLIC;`，只留 `authenticated` 与 `service_role`，以减少将来误改函数体时的影响面。
+
 ### 5.1 `kb_users`——列级授权 + 管理员可看列表（2 条 Policy）
 
 ```sql
+-- ⚠️ 先收回平台默认权限（见 §5.0.1），否则下面的列级 GRANT 会被静默覆盖、且不报错
+REVOKE ALL ON public.kb_users FROM anon, authenticated;
+
 ALTER TABLE public.kb_users ENABLE ROW LEVEL SECURITY;
 
 -- ① 列级授权：登录哈希 / salt / verifier 永不授予客户端，管理员也看不到
@@ -195,6 +223,9 @@ CREATE POLICY kb_users_update_status_by_admin ON public.kb_users
 ### 5.2 `kb_secrets`——R09 与 R10 在这里被真正表达（5 条 Policy）
 
 ```sql
+-- ⚠️ 先收回平台默认权限（见 §5.0.1）
+REVOKE ALL ON public.kb_secrets FROM anon, authenticated;
+
 ALTER TABLE public.kb_secrets ENABLE ROW LEVEL SECURITY;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.kb_secrets TO authenticated;
@@ -237,8 +268,11 @@ CREATE POLICY kb_secrets_delete_by_admin ON public.kb_secrets
 ### 5.3 `kb_invites`——一张权限都不给（0 条 Policy）
 
 ```sql
+-- ⚠️ 先收回平台默认权限（见 §5.0.1），否则 kb_invites 并非"零授权"
+REVOKE ALL ON public.kb_invites FROM anon, authenticated;
+
 ALTER TABLE public.kb_invites ENABLE ROW LEVEL SECURITY;
--- 不对 anon / authenticated 做任何 GRANT
+-- 收回后，不再对 anon / authenticated 做任何 GRANT
 ```
 
 **为什么**：邀请码是开户凭证，客户端可读等于任何人都能领码开户。生成、作废、占用全部在云函数内完成（R02/R03）。启用 RLS 是第二重保险。
@@ -297,7 +331,7 @@ $$;
 - **R10 / R13 / R14** → 只用 ①（INVOKER），**不依赖 SECURITY DEFINER**
 - **R12** → 依赖 ②（SECURITY DEFINER）。这是全项目**唯一**的依赖点
 
-**⚠️ 待实测（第 12 节第 16 项）**：② 能否通过 `managePgDatabase` 创建、其属主是否与表同属主（表属主默认绕过 RLS，这是 DEFINER 生效前提）。**若 ② 建不成，只有 R12 需要回退**——改用云函数持 `service_role` 读取，此时 R12 的"不泄露他人敏感列"退化为代码保证（须执行 5.6）。R10/R13/R14 不受影响。
+**✅ 已实测（第 12 节第 16 项已关闭）**：`kb_admin_user_list()` 经迁移创建成功，`prosecdef=true`，owner 与 `kb_users` **同属主 `cloudbase_postgres_postgres_1xo6lkbo`**（DEFINER 生效前提成立）；`is_admin()` 为 `prosecdef=false`（INVOKER），以 `(select public.is_admin())` 作 USING / WITH CHECK 的策略创建成功并可用。role=authenticated 实调 `kb_admin_user_list()` 返回 0 行、不泄露。**R12 不需要回退**，仍由数据库保证；也**不需要**内联兜底写法。
 
 ### 5.6 代码层纪律（无论走哪条路都必须遵守）
 
@@ -305,7 +339,7 @@ $$;
 
 1. **禁止 `select *`**：所有云函数查询必须显式列出字段白名单。
 2. **管理员类函数返回体白名单**：`kbAdminListUsers` 只允许返回 `username / status / created_at / item_count`，**不得出现 `payload`、`kdf_verifier`、`login_hash`**。
-3. **聚合只用 `kb_secret_counts()`**，不允许直接查 `kb_secrets` 后在代码里数行数。
+3. **聚合只能经 `kb_admin_user_list()` 取得**（唯一聚合出口，见 §5.5），不允许直接查 `kb_secrets` 后在代码里数行数。
 4. 第 10 节第 8 步验收：抓包确认管理后台所有响应体**不含任何密文字段**。
 
 因为：这是"数据库保证"之外的第二道人为保险，且成本极低。PM 要求"显式写死并列入验收"，已落实。
@@ -377,7 +411,7 @@ sequenceDiagram
 
 > 全部为 Event 云函数（`exports.main(event, context)`），由前端 SDK 调用。
 > **身份获取一律用 `auth.getUserInfo()`（云函数运行时注入，返回 `{openId, appId, uid, customUserId}`）**，**绝不相信 `event.uid` 之类前端传来的身份**【已核实：官方明确要求不相信 event 里的身份字段】。
-> **⚠️ 已按 PM 反馈修正（第 7 节）**：管理员的删除与停用**不再需要绕过 RLS**（改由 5.2 的 `kb_secrets_delete_by_admin` 与 5.1 的 `kb_users_update_status_by_admin` 在数据库层放行）。下列 `kbAdmin*` 函数降级为**薄封装或可移除**，仅在 5.5 的 SECURITY DEFINER 方案实测不可用时才启用"持服务端凭据 bypass"的回退路径——**一旦走回退路径，必须同时执行 5.6 的代码层纪律**。
+> **⚠️ 已按 PM 反馈修正 + 已实测（第 7 节）**：管理员的删除与停用**不再需要绕过 RLS**（改由 5.2 的 `kb_secrets_delete_by_admin` 与 5.1 的 `kb_users_update_status_by_admin` 在数据库层放行）。下列 `kbAdmin*` 函数为**薄封装**。**第 5.5 的 DEFINER 方案已实测通过**（`kb_admin_user_list()` 建成、属主满足前提、authenticated 可调 0 行）——**"持服务端凭据 bypass"的回退路径已不需要**；5.6 代码层纪律仍保留作第二道保险。
 > **⚠️ PG 模式的角色模型**：`anon`（未登录）/ `authenticated`（登录态）/ `service_role`（API Key，**绕过 RLS**）。管理员操作优先走 `authenticated` + RLS 策略，而不是 `service_role`。
 > 统一返回 `{ ok: boolean, data?, error? }`，**不抛裸异常**，便于前端判断【已核实：官方最佳实践】。
 > 每个函数末尾"为什么不能放前端"一栏是硬约束 2 的落地说明。
@@ -392,7 +426,7 @@ sequenceDiagram
 | `kbGetMyRole` | App 启动 / 每次同步前 | 无 | `{role, status, kdfSalt, kdfVerifier, keyEpoch, userCount}` | ① 按会话 uid 查 ② 只返回本条 | R11/R26 | 前端本地写死 `isAdmin=true` 就能拿到管理员能力 |
 | `kbSecretUpsert` | 新增/编辑 | `id?, payload, keyEpoch` | `{id, updatedAt}` | ① 取 uid ② 更新时先查该条 `owner_id=uid`，不符即拒 ③ 写入时 **`owner_id` 用服务端 uid，忽略入参任何 owner_id** ④ `updated_at` 用服务端时间 | R08/R15 | 归属标记由前端传＝谁都能把记录挂到别人名下 |
 | `kbSecretDelete` | 列表删除 | `id` | `{ok}` | ① 取 uid ② `DELETE ... WHERE id=$1 AND owner_id=$2` | R15 | 同上 |
-| `kbAdminListUsers` | 管理员后台 | 无 | `[{username, status, createdAt, itemCount}]` | ① 调 `kb_admin_user_list()`（唯一 DEFINER 组件，只返 uid/username/status/created_at/count）② **返回体白名单，不含 `payload`** ③ 若该函数不可用则回退：云函数持 `service_role` 读取并严格执行白名单 | R12/R26 | 必须走白名单聚合，不能 `select *` |
+| `kbAdminListUsers` | 管理员后台 | 无 | `[{username, status, createdAt, itemCount}]` | ① 调 `kb_admin_user_list()`（唯一 DEFINER 组件，只返 uid/username/status/created_at/count，**已实测可用**）② **返回体白名单，不含 `payload`** ③ 如需回退（云函数持 `service_role`）亦须严格白名单——**当前不需要** | R12/R26 | 必须走白名单聚合，不能 `select *` |
 | `kbAdminSetUserStatus` | 管理员后台 | `uid, status` | `{ok}` | ① 由 `kb_users_update_status_by_admin` 策略在数据库层放行 ② 列级 GRANT 限定只能改 `status` ③ 不允许改自己（应用层提示，数据库层兜底） | R13 | 前端改状态＝停用可被绕 |
 | `kbAdminDeleteUserData` | 管理员后台 | `uid` | `{deletedCount}` | ① 由 `kb_secrets_delete_by_admin` 策略在数据库层放行，**不 bypass、不读 payload** ② 用户记录置 `deleted`（改 `status`） | R14 | 最高危操作；现由数据库策略保证"可删不可读" |
 | `kbRotateMaster` | 改主密码 | `kdfSalt, kdfSaltPrev, kdfVerifier, items[]` | `{ok, keyEpoch}` | ① 取 uid ② 逐条校验 `owner_id=uid` ③ 整批覆盖写 + `keyEpoch+1` | R21 | 跨记录一致性只有服务端能保证 |
@@ -457,7 +491,9 @@ KeyBox/
 ├─ capacitor.config.ts
 ├─ scripts/setup-cloud.js           ← 驱动版本化迁移（applyMigration）下发建表+GRANT+RLS，再配云函数 invoke 规则与安全域名（幂等；DDL 一律不走 execute）
 ├─ scripts/setup-cloud.manual.md    ← 脚本跑不通时的手工操作清单（与脚本逐步对应，README 兜底用）
-├─ cloudbase/migrations/20260101000000_init_keybox.sql  ← 建表 DDL + GRANT + RLS Policy（版本化迁移，进仓库；文件名与 migrationVersion 必须一致）
+├─ cloudbase/migrations/            ← ⚠️ **仓库权威副本**；全新部署必须**按序执行**才能复现正确终态
+│    ├─ 20260927193625_init_keybox.sql           ← 建表 DDL + RLS Policy（7 条，表达式与 §5 一致）
+│    └─ 20260927193751_harden_keybox_grants.sql  ← 收回平台默认权限 + 精确 GRANT（见 §5.0.1）
 ├─ .github/workflows/build-android.yml
 ├─ .github/workflows/build-desktop.yml
 ├─ src/
@@ -479,7 +515,9 @@ KeyBox/
    （每个目录：index.js + package.json）
 ```
 
-**敏感文件纪律（硬约束 4）**：CloudBase 环境 ID、publishable key、自定义登录私钥（`tcb_custom_login.json`）、keystore 口令**一律只放 `.env.local` / 云函数环境变量 / CI Secrets**；`.gitignore` 必须覆盖 `.env*`、`.env.local`、`*.json`（自定义登录私钥）、`*.keystore`、`*.jks`。`.env.example` 只写 `VITE_CLOUDBASE_ENV=` 这样的空壳。
+**敏感文件纪律（硬约束 4）**：CloudBase 环境 ID、publishable key、自定义登录私钥（`tcb_custom_login.json`）、keystore 口令**一律只放 `.env.local` / 云函数环境变量 / CI Secrets**；`.gitignore` 必须覆盖 `.env*`、`.env.local`、`*.json`（自定义登录私钥）、`*.keystore`、`*.jks`。`.env.example` 只写 `VITE_CLOUDBASE_ENV=` 这样的空壳。**仓库内任何文件都不得出现真实环境 ID**（文档中一律写 `<YOUR_ENV_ID>`）。
+
+**迁移脚本纪律（已实测）**：MCP 的 `applyMigration` 读取/校验"本地迁移文件"的位置是 **MCP 自己的 cwd**，**不是仓库目录 `F:\KeyBox`**。因此 `scripts/setup-cloud.js` **必须把完整 SQL 显式传给 `applyMigration(sql=...)`**，**不能依赖"本地文件匹配"**；`F:\KeyBox\cloudbase\migrations\` 才是**仓库权威副本**，脚本应与之一致（建议：脚本读取仓库内迁移文件后原样透传 SQL）。
 
 ### 依赖顺序表
 
@@ -487,7 +525,7 @@ KeyBox/
 |------|-----------|--------|----------------|
 | 1 | `.gitignore` `LICENSE` `SECURITY.md` `.env.example` | 无 | 开源卫生先行；**钥匙一旦提交进历史就永久泄露**，必须先上锁再写业务 |
 | 2 | `package.json` `vite.config.ts` `tailwind.config.ts` `index.html` `src/main.tsx` | 1 | 没有可运行的壳，后面所有代码都无法验证 |
-| 3 | `cloudbase/migrations/*.sql` + 三张 PG 表 + GRANT/RLS + 自定义登录配置 | 无（管理面操作） | 表结构与门禁是数据地基，改一次要迁移 |
+| 3 | `cloudbase/migrations/*.sql`（**按序执行**）+ 三张 PG 表 + REVOKE/GRANT/RLS + 自定义登录配置 | 无（管理面操作） | 表结构与门禁是数据地基，改一次要迁移；**两份迁移按序执行才是正确终态** |
 | 3.5 | `scripts/setup-cloud.js` | 3 | 把第 3 步固化成**驱动迁移（applyMigration）**的可复跑脚本，开源后部署者才能一键复现；DDL 不走 `execute` |
 | 4 | `lib/cloudbase.ts` `lib/log.ts` | 2、3 | 所有网络与日志都从这里走，脱敏规则必须最早统一 |
 | 5 | `lib/crypto.ts` | 2 | 加密是地基中的地基，先写先测，后面所有功能都站在这上面 |
@@ -506,7 +544,7 @@ KeyBox/
 | 步 | 名称 | 产出物 | 可勾选验收标准 |
 |----|------|--------|----------------|
 | 1 | 环境准备（**已由负责人完成**） | `envId=<YOUR_ENV_ID>`，确认 `postgresql:true, nosql:false`；安全域名白名单；本机 Node 18 / Rust 工具链 | ☑ `queryEnv(action="info")` 已实测 ☑ `localhost:5173` 已在安全域名白名单 ☐ 本机 `rustc --version` 有输出 ☐ 自定义登录方式已开启、publishable key 已取到 |
-| 2 | 云端基建 | **跑迁移**建三张表 + GRANT + RLS Policy + `is_admin()`(INVOKER) + `kb_admin_user_list()`(DEFINER) + 自定义登录私钥已注入 | ☐ **先跑 `scripts/setup-cloud.js`（驱动迁移，非 execute）** ☐ 迁移**文件名与 `migrationVersion` 一致**（不一致会 fail-closed）☐ 建表前先查 `information_schema.columns` 确认无残留错列 ☐ 已确认 `auth.uid()` 为 text、`owner_id` 列为 text ☐ `queryAppAuth(getLoginConfig)` 确认 `usernamePassword === true` ☐ 再验自定义登录用户能读到自己的记录 ☐ 用 A 账号查 B 的 `kb_secrets` 返回**空** ☐ 客户端伪造 `owner_id` 插入被 `WITH CHECK` 拒绝 ☐ **`is_admin()` 对管理员返回 true、对普通用户返回 false**（INVOKER 版，策略表达式内可用，属标准 PG 行为）☐ **`kb_admin_user_list()` 管理员能调出列表、普通用户调出 0 行，且属主与表同属主**（若建不成或普通用户也能调出，启用 R12 回退并同时执行 5.6） |
+| 2 | 云端基建 | **按序跑迁移**（`20260927193625_init_keybox` → `20260927193751_harden_keybox_grants`）建三张表 + REVOKE ALL + 精确 GRANT + RLS Policy(7 条) + `is_admin()`(INVOKER) + `kb_admin_user_list()`(DEFINER) + 自定义登录私钥已注入 | ☐ **先跑 `scripts/setup-cloud.js`（驱动迁移，显式传完整 sql，非 execute）** ☐ 迁移**按序执行、文件名与 `migrationVersion` 一致**（不一致会 fail-closed）☐ **已跑 REVOKE ALL**（否则列级 GRANT 被平台默认权限静默覆盖，见 §5.0.1）☐ 建表前先查 `information_schema.columns` 确认无残留错列 ☐ 已确认 `auth.uid()` 为 text、`owner_id` 列为 text ☐ `queryAppAuth(getLoginConfig)` 确认 `usernamePassword === true` ☐ 再验自定义登录用户能读到自己的记录 ☐ 用 A 账号查 B 的 `kb_secrets` 返回**空** ☐ 客户端伪造 `owner_id` 插入被 `WITH CHECK` 拒绝 ☐ **`is_admin()` 对管理员返回 true、对普通用户返回 false**（INVOKER 版，已实测策略内可用）☐ **`kb_admin_user_list()` 管理员能调出列表、普通用户调出 0 行、属主与表同属主**（已实测通过，无需回退） |
 | 3 | **开源卫生先行** | `.gitignore` `LICENSE` `SECURITY.md` `README.md` 骨架 `.env.example` | ☐ `git status` 看不到任何 `.env` ☐ LICENSE 含「机动战士」 ☐ 全仓搜索无环境 ID 明文 |
 | 4 | 账号与权限 | `kbInitAdmin` `kbInviteCreate/Revoke` `kbRegister` `kbLogin` `kbGetMyRole` + 初始化/登录/注册三页 | ☐ 第二个账号只能靠邀请码开出 ☐ **同一码并发提交只成功一次**（用 `UPDATE ... RETURNING` 验证）☐ 第 21 人被拒 ☐ 停用后无法登录 |
 | 5 | 客户端加密 | `lib/crypto.ts` + 单元测试（用**随机生成**的测试密码，不写死） | ☐ 同密码不同盐派生结果不同 ☐ 正确主密码能解 `kdf_verifier`，错误的主密码失败 ☐ 全仓检索无主密码明文 |
@@ -533,9 +571,10 @@ KeyBox/
 | 7 | **本环境无 NoSQL，只能用 PG**：已由负责人实测确认（`nosql:false`）并已按 PG + RLS 重写全文；**PG 模式仅新建环境支持，存量环境不能升级**，换环境必须重新确认 `RuntimeBackends` | **中**（已闭环） |
 | 8 | **自定义登录用户可能访问不了数据库**：已核实的既有坑是"自定义登录成功但调数据库报 UNAUTHORIZED，因新用户默认角色是外部用户"，须在实施第 2/4 步先验证角色与 GRANT，否则会卡住整个数据层 | **中** |
 | 9 | **账号类云函数必须持服务端凭据**（前提**已实测确认 → 降级**）：`kbInitAdmin` / `kbRegister` / `kbLogin` / `kbGetMyRole` / `kbRotateMaster` 要 INSERT 用户、读写 `login_hash` / `kdf_salt` / `kdf_verifier`，而这些列**刻意未授予 `authenticated`**（5.1 列级授权屏蔽）。**实测**：`service_role` 角色存在且 `rolbypassrls = true`，云函数持服务端凭据访问 PG、绕过 RLS 的路径**确实存在** → **R01/R04/R05/R11/R21 五个 P0 的前提成立**。剩余风险仅是**凭据本身绝不能进前端**（硬约束 4） | **中**（前提已闭环；第 12 节第 13 项已关闭） |
-| 12 | **只有 R12 依赖 SECURITY DEFINER**：`kb_admin_user_list()` 是唯一必须绕过 RLS 的组件（跨用户读）。若它建不成，则 **R12 单独**回退到云函数持 `service_role`，其"不泄露他人敏感列"退化为**代码保证**；**R10/R13/R14 不受影响**（它们只用 INVOKER 版 `is_admin()`） | **中**（影响面已从 4 条收窄到 1 条） |
+| 12 | **只有 R12 依赖 SECURITY DEFINER**（**已实测通过 → 降级**）：`kb_admin_user_list()` 实测 `prosecdef=true`、owner 与表同为 `cloudbase_postgres_postgres_1xo6lkbo`、authenticated 可调且返回 0 行不泄露；`is_admin()` 实测 `prosecdef=false`（INVOKER）且能在策略内生效。**R12 不需要回退**，仍由数据库保证；R10/R13/R14 只用 INVOKER 版 `is_admin()`，同样不受影响 | **低**（已实测闭环） |
 | 10 | **View 会绕过 RLS**：PG 的 View 默认 `security_definer`，管理员可通过 View 看到全表。已决定不建任何 View，但后续任何人加 View 都会悄悄摧毁 R10 | **中** |
 | 11 | **JWT 旧声明问题**：权限变更后旧 JWT 在过期前仍携带旧 claims。官方明确要求"关键权限变更应结合短有效期、重新登录或服务端校验"——这正是 R13 采用短票据 + 服务端校验的依据 | **中** |
+| 13 | **平台默认权限静默覆盖列级 GRANT**（新增，已实测）：平台对 `public` schema 设了默认权限，**新建表自动带 `anon=SELECT` / `authenticated=ALL`**，会**无报错地覆盖**按列级设计的授权。加固前 `authenticated` 对 `kb_users` 拿到表级 SELECT，能读自己那行的 `login_hash` / `kdf_salt` / `kdf_verifier`（直接违背 §5.1）；`kb_invites` 也非零授权；`anon` 还拿到新表权限与序列 USAGE | **高**（已由迁移 2 `20260927193751_harden_keybox_grants` 修复；缓解：**每次新增表都必须紧跟 `REVOKE ALL ON <表> FROM anon, authenticated`**，见 §5.0.1；**函数 EXECUTE 同样要收回 `anon`/`PUBLIC` 默认授权**，见 §5.0.1 待办） |
 
 ---
 
@@ -558,8 +597,9 @@ KeyBox/
 | 13 | **已核实（关闭，实测）** | ~~PG 模式下云函数如何访问 PG、以什么角色执行~~ → **实测 `pg_roles`：`service_role` 存在且 `rolbypassrls = true`；`anon`、`authenticated` 均存在**。平台口径：API Key→`service_role`（绕过 RLS），Publishable Key→`anon`，登录态→`authenticated`。故云函数持服务端凭据访问 PG、绕过 RLS 写入用户记录的路径**确实存在**，**R01/R04/R05/R11/R21 五个 P0 的前提成立**（风险第 9 条同步降级） | 核实动作：**团队负责人只读体检**（查询 `pg_roles`、`auth` schema 函数）。结论：账号类函数走 `service_role`；管理员删除/停用走 `authenticated` + RLS 策略、**不 bypass** |
 | 14 | **否（新增）** | `bigint GENERATED ALWAYS AS IDENTITY` 列是否需要额外 `GRANT USAGE, SELECT ON SEQUENCE` 给 `authenticated`；官方模板只对 `serial/bigserial` 提到这条 | 第 10 节第 2 步实测：客户端 INSERT 若报序列权限不足即补 |
 | 15 | **否（新增）** | 是否给 `kb_secrets.owner_id` / `kb_users.uid` 加**外键约束到 `auth.users`**（自定义登录 uid 由我们签发，加约束可能影响注册时序，故先不加；第 4.4 节引用本项） | `postgresql-development-cloudbase` 技能；用 `information_schema.columns` 查 `auth` schema 的 `users` 表结构 |
-| 16 | **否（唯一一项：仅影响 R12）** | ① 能否通过 `managePgDatabase(applyMigration)` 创建 **SECURITY DEFINER** 函数 `kb_admin_user_list()`？② 其属主是否与 `kb_users` 同属主（**表属主默认绕过 RLS**，是 DEFINER 生效前提）？〔原 ③④ 已并入第 2 步验收、不再单列：`auth.uid()` 已实测存在；INVOKER 版 `is_admin()` 在策略表达式内可用属**标准 PG 行为**，随第 2 步一并确认〕 | 第 10 节第 2 步实测：`SELECT proname, prosecdef, pg_get_userbyid(proowner) FROM pg_proc WHERE proname IN ('is_admin','kb_admin_user_list')`；分别用管理员与普通用户会话调用 `kb_admin_user_list()` |
+| 16 | **已核实（关闭，实测）** | ~~DEFINER 聚合函数能否创建、属主是否满足前提；INVOKER `is_admin()` 能否在策略内生效~~ → **全部通过**：`is_admin` `prosecdef=false`；`kb_admin_user_list` `prosecdef=true`；两者 owner 与三表 owner **同为 `cloudbase_postgres_postgres_1xo6lkbo`**；role=authenticated 实调 `is_admin()` 返回 false 无报错、`kb_admin_user_list()` 可调 0 行不泄露；以 `(select public.is_admin())` 作 USING/WITH CHECK 的策略创建成功并可用。**R12 不需回退** | 核实动作：**工程师实施第 2 步（迁移 1 `20260927193625_init_keybox`）实测**：7 条策略全建成、表达式与 §5 一致 |
 | 17 | **否（`kbRegister` / `kbLogin` 前提）** | 平台上用户名密码登录是否已开启：`queryAppAuth(action="getLoginConfig")` 的 `loginMethods.usernamePassword === true`？另：Web 端原生登录用 `auth.signInWithPassword({username, password})`，**不要假设 `signUp()` 能建用户名密码用户**（官方已拒绝"仅用户名+密码"注册） | `queryAppAuth` 文档；`auth-web-cloudbase` 技能（用户名密码登录章节）；第 7 节"关于用户名密码登录" |
+| 18 | **已核实（关闭，实测）** | ~~`public` schema 是否有平台默认权限~~ → **有**：新建表自动带 `anon=SELECT` / `authenticated=ALL`（含 TRUNCATE/REFERENCES/TRIGGER），会**静默覆盖**列级 GRANT；`anon` 还拿到新表权限与序列 USAGE。**已由迁移 2 `20260927193751_harden_keybox_grants` 以 `REVOKE ALL → 精确 GRANT` 修复** | 核实动作：工程师实测 `pg_default_acl`；详见 §5.0.1、§11 风险 13 |
 
 ---
 

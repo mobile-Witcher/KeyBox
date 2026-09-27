@@ -1,0 +1,10 @@
+{
+  "name": "kb-get-my-role",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：返回本人角色/状态/密钥参数（R11/R26）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}

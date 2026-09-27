@@ -1,0 +1,10 @@
+{
+  "name": "kb-login",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：登录校验并签发自定义登录票据（R05/R13）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}

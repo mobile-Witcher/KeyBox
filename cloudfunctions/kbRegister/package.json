@@ -1,0 +1,10 @@
+{
+  "name": "kb-register",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：邀请码自助注册（R03/R04/R22/R26）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}

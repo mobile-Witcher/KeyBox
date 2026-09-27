@@ -1,0 +1,135 @@
+/**
+ * App.tsx —— 应用外壳与最简页面流转（第 4 步：账号与权限）。
+ *
+ * 流转规则：
+ *   - 有会话 → 主界面（本步骤先给占位；VaultPage 在第 6 步实现）。
+ *   - 无会话且本机标记“未初始化” → InitPage（R01：仅首次出现）。
+ *   - 否则 → LoginPage（可跳 RegisterPage，R03/R04）。
+ *
+ * 说明：本步骤未引入路由库，用受控状态在页面间切换，减少依赖面。
+ *   “是否已初始化”的判断：以本机标记为主；若换设备误入初始化页，云函数会以
+ *   ALREADY_INITIALIZED 拒绝（R01 的服务端兜底），届时引导去登录。
+ */
+import { useCallback, useEffect, useState } from "react";
+import { auth } from "./lib/cloudbase";
+import { log } from "./lib/log";
+import InitPage from "./pages/InitPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+
+type Screen = "loading" | "init" | "login" | "register" | "home";
+
+/** 本机“已完成初始化”标记；与服务端 kb_users 非空共同构成“不再出现初始化页”的判据。 */
+const INIT_FLAG_KEY = "keybox.initialized";
+
+export default function App(): JSX.Element {
+  const [screen, setScreen] = useState<Screen>("loading");
+  const [displayName, setDisplayName] = useState<string>("");
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await auth.getSession();
+        const session = data?.session;
+        const hasSession = Boolean(session) && !session?.user?.is_anonymous;
+        if (hasSession && alive) {
+          const user = session?.user;
+          setDisplayName(user?.user_metadata?.username || user?.id || "已登录用户");
+          setScreen("home");
+          return;
+        }
+      } catch (error) {
+        log.warn("读取会话失败", error);
+      }
+      if (!alive) return;
+      const initialized = localStorage.getItem(INIT_FLAG_KEY) === "1";
+      setScreen(initialized ? "login" : "init");
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleInitialized = useCallback(() => {
+    localStorage.setItem(INIT_FLAG_KEY, "1");
+    setScreen("login");
+  }, []);
+
+  const handleLoggedIn = useCallback((username: string) => {
+    setDisplayName(username);
+    setScreen("home");
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      log.warn("登出失败", error);
+    }
+    setScreen("login");
+  }, []);
+
+  if (screen === "loading") {
+    return <CenteredMessage text="正在启动…" />;
+  }
+
+  if (screen === "init") {
+    return <InitPage onInitialized={handleInitialized} onGoLogin={() => setScreen("login")} />;
+  }
+
+  if (screen === "login") {
+    return (
+      <LoginPage
+        onLoggedIn={handleLoggedIn}
+        onGoRegister={() => setScreen("register")}
+      />
+    );
+  }
+
+  if (screen === "register") {
+    return (
+      <RegisterPage
+        onRegistered={handleLoggedIn}
+        onGoLogin={() => setScreen("login")}
+      />
+    );
+  }
+
+  // home：主界面占位（第 6 步替换为 VaultPage + 遮掩/复制/编辑/删除）
+  return (
+    <CenteredMessage
+      text={`已登录：${displayName}`}
+      hint="密钥主界面（VaultPage）将在第 6 步实现。"
+      action={{ label: "退出登录", onClick: handleSignOut }}
+    />
+  );
+}
+
+interface CenteredMessageProps {
+  text: string;
+  hint?: string;
+  action?: { label: string; onClick: () => void };
+}
+
+/** 居中提示块（骨架期用于 loading / home 占位）。 */
+function CenteredMessage({ text, hint, action }: CenteredMessageProps): JSX.Element {
+  return (
+    <div className="flex min-h-full items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <h1 className="text-xl font-semibold">KeyBox</h1>
+        <p className="mt-3 text-slate-700 dark:text-slate-200">{text}</p>
+        {hint ? <p className="mt-2 text-sm text-slate-500">{hint}</p> : null}
+        {action ? (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="mt-6 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900"
+          >
+            {action.label}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}

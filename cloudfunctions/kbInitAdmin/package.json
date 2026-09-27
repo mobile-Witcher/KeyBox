@@ -1,0 +1,10 @@
+{
+  "name": "kb-init-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：首个管理员初始化（R01）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}
