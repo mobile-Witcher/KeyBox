@@ -143,12 +143,18 @@ async function flushQueue(): Promise<number> {
         await markSynced(entry.id, res.data.updatedAt);
       }
     } else {
-      if (entry.id < 0) {
-        await deleteCached(entry.id); // 从未上传的新条目：本地删掉即可
-      } else {
-        const res = await api.secretDelete({ id: entry.id });
-        if (!res.ok && res.error !== "NOT_FOUND") throw new Error(res.error || "DELETE_FAILED");
+      // 删除分支：临时 id(<0) 必须经 tempMap 解析成服务端真实 id。
+      // 否则「离线新增 → 未同步即删除」时：前面的 upsert 已建出服务端行并把临时 id 换成真 id，
+      // 这条 delete 却仍按临时 id 处理 → 服务端残留孤儿行（下次同步又会重新出现）。
+      // 回归测试见 sync.test.ts「离线「新增→删除」不残留孤儿行」。
+      const realId = entry.id < 0 ? tempMap.get(entry.id) : entry.id;
+      if (realId === undefined) {
+        // 该临时条目从未成功上传（或对应的 upsert 已不在本次重放中）→ 服务端无对应行，直接丢弃此队列项即可
         await deleteCached(entry.id);
+      } else {
+        const res = await api.secretDelete({ id: realId });
+        if (!res.ok && res.error !== "NOT_FOUND") throw new Error(res.error || "DELETE_FAILED");
+        await deleteCached(realId);
       }
     }
     await deleteQueueEntry(entry.qid);

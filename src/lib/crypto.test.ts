@@ -140,7 +140,7 @@ describe("R28 恢复码原语", () => {
     expect(recoverySalt).not.toEqual(kdfSalt);
 
     const recoveryCode = generateRecoveryCode();
-    const blob = await wrapMasterKeyWithRecovery(recoveryCode, recoverySalt, mk.raw, ITER);
+    const blob = await wrapMasterKeyWithRecovery(recoveryCode, recoverySalt, kdfSalt, mk.raw, ITER);
     expect(blob.startsWith(RECOVERY_PREFIX)).toBe(true);
 
     const recoveredRaw = await unwrapMasterKeyWithRecovery(recoveryCode, recoverySalt, blob, ITER);
@@ -153,10 +153,11 @@ describe("R28 恢复码原语", () => {
   });
 
   it("错误恢复码无法解出主密钥", async () => {
-    const mk = await deriveMasterKey(randomPassword(), generateSaltB64(), ITER);
+    const kdfSalt = generateSaltB64();
+    const mk = await deriveMasterKey(randomPassword(), kdfSalt, ITER);
     const recoverySalt = generateSaltB64();
     const rightCode = generateRecoveryCode();
-    const blob = await wrapMasterKeyWithRecovery(rightCode, recoverySalt, mk.raw, ITER);
+    const blob = await wrapMasterKeyWithRecovery(rightCode, recoverySalt, kdfSalt, mk.raw, ITER);
 
     let wrongCode = generateRecoveryCode();
     while (normalizeRecoveryCode(wrongCode) === normalizeRecoveryCode(rightCode)) {
@@ -169,6 +170,15 @@ describe("R28 恢复码原语", () => {
 
   it("恢复码长度不足时拒绝派生", async () => {
     await expect(deriveRecoveryKeyRaw("SHORT", generateSaltB64(), ITER)).rejects.toBeTruthy();
+  });
+
+  it("recovery_salt 复用 kdf_salt → 入口显式拒绝（A4 强校验）", async () => {
+    const kdfSalt = generateSaltB64();
+    const mk = await deriveMasterKey(randomPassword(), kdfSalt, ITER);
+    // 故意把 kdf_salt 当作 recovery_salt 传入（复核 A4 时曾可正常往返，现必须抛错）
+    await expect(
+      wrapMasterKeyWithRecovery(generateRecoveryCode(), kdfSalt, kdfSalt, mk.raw, ITER)
+    ).rejects.toBeTruthy();
   });
 });
 

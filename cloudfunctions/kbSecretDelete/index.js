@@ -21,11 +21,18 @@ exports.main = async (event) => {
     const id = Number.parseInt(rawId, 10);
     if (!Number.isInteger(id)) return fail("INVALID_ID");
 
-    const deleted = await pgRequest("DELETE", "kb_secrets", {
-      query: { id: `eq.${id}`, owner_id: `eq.${uid}` },
-      prefer: "return=representation",
+    // ① 先按会话身份确认该行存在（GET 只取 id 列，**绝不把 payload 密文读回服务端内存**）。
+    //    这样"是否删到"完全由行数判断，与 kbSecretUpsert 的更新分支同款先查后改风格。
+    const owned = await pgRequest("GET", "kb_secrets", {
+      query: { select: "id", id: `eq.${id}`, owner_id: `eq.${uid}` },
     });
-    if (!Array.isArray(deleted) || deleted.length === 0) return fail("NOT_FOUND");
+    if (!Array.isArray(owned) || owned.length === 0) return fail("NOT_FOUND");
+
+    // ② 条件删除；return=minimal 表示不把删掉的行回传（旧写法 return=representation 会把整行读回内存）。
+    await pgRequest("DELETE", "kb_secrets", {
+      query: { id: `eq.${id}`, owner_id: `eq.${uid}` },
+      prefer: "return=minimal",
+    });
 
     return ok({ deletedId: id });
   } catch (error) {

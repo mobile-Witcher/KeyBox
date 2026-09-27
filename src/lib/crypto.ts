@@ -301,14 +301,23 @@ export async function deriveRecoveryKeyRaw(
 
 /**
  * 用恢复码把主密钥（原始字节）包裹成 `KBRC1:` 串。
- * 注意：recoverySalt 必须独立于 kdf_salt（架构要求，不得复用）。
+ *
+ * 入口**强校验**：`recoverySalt` 必须独立于 `kdf_salt`（架构 §6 要求，不得复用）。
+ * 早先这里只把“两盐不同”当作调用方口头契约（A4 复核发现）；现改为**函数入口显式校验并抛错**，
+ * 避免将来接 R28 恢复码 UI 时误把 kdf_salt 拿来当 recovery_salt，导致恢复码安全性退化。
+ *
+ * @param kdfSaltB64 账号的主密码派生盐（kb_users.kdf_salt，base64）。**仅用于与 recoverySalt 做不同性校验，不参与派生。**
  */
 export async function wrapMasterKeyWithRecovery(
   recoveryCode: string,
   recoverySaltB64: string,
+  kdfSaltB64: string,
   masterKeyRaw: Uint8Array,
   iterations: number = PBKDF2_ITERATIONS
 ): Promise<string> {
+  if (recoverySaltB64 === kdfSaltB64) {
+    throw new Error("recovery_salt 必须独立于 kdf_salt（不得复用主密码派生盐）");
+  }
   const rk = await deriveRecoveryKeyRaw(recoveryCode, recoverySaltB64, iterations);
   const rkKey = await importAesKey(rk);
   const boxed = await aesGcmEncrypt(rkKey, masterKeyRaw);
