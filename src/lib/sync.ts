@@ -30,6 +30,7 @@ import {
   type CachedSecret,
 } from "./db";
 import { log } from "./log";
+import { isNewer } from "./time";
 import { encryptPlain, type SecretPlain } from "./vault";
 
 /** 一次同步的结果。 */
@@ -95,8 +96,8 @@ async function mergeRemote(uid: string, remote: RemoteRow[]): Promise<SyncConfli
       await putCached(toCached(uid, r, false));
       continue;
     }
-    if (r.updated_at > local.updatedAt) {
-      // 服务端版本更新 → 覆盖本地
+    if (isNewer(r.updated_at, local.updatedAt)) {
+      // 服务端版本更新 → 覆盖本地（按 epoch 比较，兼容 "Z" 与 "+00:00" 两种 ISO 写法）
       if (local.pending) {
         // 本地有未上传改动却被服务端更新覆盖：丢弃本地待上传项并记录冲突（界面会显式提示）
         await deleteQueueByRowId(local.id);
