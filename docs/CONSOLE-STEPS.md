@@ -234,10 +234,30 @@
 - 或在 GitHub 仓库 → Actions → 选 `build-android` / `build-desktop` → **Run workflow**。
 - 安卓签名所需的 4 个 secret（keystore 用 base64）见 `.github/workflows/build-android.yml` 顶部注释。
 
-### B.4 本段「待核实」清单（未实测，勿当结论）
+### B.4 「已核实 / 仍未核实」清单（2026-09-28 更新）
 
-- `npm run tauri build` 的确切产物文件名（含版本号/语言后缀）随 Tauri 版本可能微调，**以本机实际输出为准**。
-- `tauri icon` 子命令的确切名称与参数：以 `npx tauri icon --help` 为准。
+**已核实（实测）：**
+- ✅ `tauri icon` 子命令：名称与参数已实测（`npx tauri icon --help`）——用法
+  `npm run tauri icon [OPTIONS] [INPUT]`；`INPUT` 缺省 `./app-icon.png`（方形 PNG 或 SVG，需带透明），
+  `-o/--output` 缺省为 `tauri.conf.json` 同级的 `icons/` 目录；`-p/--png` 可自定义尺寸组。
+- ✅ `src-tauri/icons/` 确为 Tauri **默认模板图标**（含 `icon.ico`/`icon.icns`/`icon.png` 及一套
+  `Square*Logo.png` / `StoreLogo.png`）；正式发布前应替换为项目自有图标（见 B.1 第 4 条）。
+
+**仍未核实（写明原因，勿当结论）：**
+- `npm run tauri build` 的确切产物文件名（含版本号/语言后缀）随 Tauri 版本可能微调；
+  **本机未产出**（原因：本机缺 MSVC 链接器，见 B.5），**以首次成功构建的实际输出为准**。
 - 未配置 `android/key.properties` 时 `./gradlew assembleRelease` 的行为（预期产出未签名的
-  `app-release-unsigned.apk`，无法安装分发；确切文件名与是否报错**以本机实测为准**）。
-- `src-tauri/icons/` 为 Tauri 默认模板图标，正式发布前应替换为项目自有图标（见 B.1 第 4 条）。
+  `app-release-unsigned.apk`，无法安装分发）；**本机未产出**（原因：本机未装 Android SDK），
+  **以本机实测为准**。
+
+### B.5 本机出包的先决条件（含**所有者手动**步骤）
+
+> 本机 Rust 工具链已装（`rustc`/`cargo` **1.98.1**，`minimal` profile，见下方证据），但**缺 MSVC 链接器**，
+> 故 `tauri build` 在链接阶段即失败、无法出 exe。
+>
+> **证据**：`rustc` 链接一个最小程序报
+> `error: linking with link.exe failed ... note: you may need to install Visual Studio build tools with the "C++ build tools" workload`；
+> 且本机无 `C:\Program Files\Microsoft Visual Studio` 目录、无 `vswhere.exe`。
+
+1. **安装 MSVC「C++ 生成工具」（需所有者手动、需管理员权限，约 1–2 GB）**——逐条见本轮汇报清单。
+2. 装好后在**项目根目录**执行 `npm run tauri build`；产物见 B.1。
