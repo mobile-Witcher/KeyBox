@@ -28,8 +28,10 @@
 - **在哪个菜单**：控制台 → 你的环境 → 「身份认证 / 登录管理」页内找到「自定义登录（Custom Login）」区块。
 - **点什么**：
   1. 点「生成私钥」，浏览器会下载一个文件，文件名形如 `tcb_custom_login.json`。
-  2. 把该文件放到**服务器/云函数能读到、但不在仓库里**的位置（例如本机 `F:\KeyBox-secrets\tcb_custom_login.json`）。
-  3. 在云函数的环境变量里，把它的路径写进 `TCB_CUSTOM_LOGIN_KEY_FILE`（见文末附录）。
+  2. 先把它**妥善保存到你自己的密码管理器/安全目录**（**不要**放进仓库；`.gitignore` 已挡住该文件名）。
+  3. “怎么让云函数读到这把私钥”见**附录 A.2**：推荐直接把 JSON 内容填进云函数环境变量
+     `TCB_CUSTOM_LOGIN_CREDENTIALS`；或把该文件放进 `kbLogin` / `kbRegister` 函数目录（随函数上传）。
+     ⚠️ 注意：云函数在云上运行，**读不到你本机的 `F:\...`**，所以要按 A.2 的方式投递，而不是只留在本地。
 - **出现什么算成功**：页面显示“已生成私钥/私钥已存在”，且你本地多出该 json 文件。
   此时 kbLogin / kbRegister 才能用 `createTicket` 签发票据。
 
@@ -57,21 +59,120 @@
 
 ---
 
-## 附录 A：云函数侧还需要两个环境变量（服务端凭据）
+## 附录 A：给云函数注入环境变量（服务端凭据）
 
-> 这一步不是上面四项控制台点选，而是**为云函数注入环境变量**，但同样必须做，否则云函数
-> 读不到账号表（`login_hash` / `kdf_salt` / `kdf_verifier` 刻意未对客户端开放）。
+> 附录 A 不是上面四项“点一下就完”的开关，而是要**逐个云函数填环境变量**。必须做完，
+> 否则云函数读不到账号表（`login_hash` / `kdf_salt` / `kdf_verifier` 刻意未对客户端开放）。
+> 本附录每一步都给了“在哪个页面、点什么、出现什么算成功”，照做即可。
+> **背景一句话**：云函数跑在云端，它不认识你本机的文件；所以凡是要用到的“文件/凭据”，
+> 都得放进**云函数自己能读到的地方**（见 A.2）。
 
-1. **创建服务端 API Key**：控制台 → 环境 → 「API 密钥」页 → 新建一个 **API Key（服务端密钥，映射 service_role）**，
-   名称建议 `keybox-cloudfunction`。复制其值。
-2. **注入到 6 个云函数的环境变量**（`kbInitAdmin` / `kbInviteCreate` / `kbInviteRevoke` / `kbRegister` / `kbLogin` / `kbGetMyRole`）：
-   - `TCB_ENV` = `{你的环境Id}`（云函数据此拼接 PG 网关地址）
-   - `CLOUDBASE_API_KEY` = 上一步复制的服务端 API Key（**service_role，绕过 RLS，绝不能进前端**）
-   - `TCB_CUSTOM_LOGIN_KEY_FILE` = 第 2 步那个私钥文件在运行时可读到的路径
-3. **成功判据**：随便调一次 `kbGetMyRole`（登录后），若不报 `SERVICE_CREDENTIAL_MISSING` / `ENV_ID_MISSING` 即注入成功。
+### A.0 本附录要注入的变量总表（先看清有几个）
 
-> 安全提醒：`CLOUDBASE_API_KEY`（service_role）等于数据库万能钥匙，只放云函数环境变量；
-> 一旦落到前端或仓库，等于全库失守，需立即在控制台吊销并重建。
+| 变量名 | 值是什么 | 谁需要 |
+|--------|----------|--------|
+| `TCB_ENV` | 你的环境 ID（`{你的环境Id}`） | **全部 8 个函数** |
+| `CLOUDBASE_API_KEY` | A.1 里新建的**服务端 API Key**（service_role） | **全部 8 个函数** |
+| `TCB_CUSTOM_LOGIN_KEY_FILE` | 自定义登录私钥文件的**路径**（A.2） | 仅 `kbLogin`、`kbRegister` 需要；其余可不填 |
+| `TCB_CUSTOM_LOGIN_CREDENTIALS` | 自定义登录私钥的**JSON 内容**（A.2 的替代方案） | 同上（二选一，不必都填） |
+
+> 说明：`TCB_CUSTOM_LOGIN_KEY_FILE` 与 `TCB_CUSTOM_LOGIN_CREDENTIALS` 是**两种投递私钥的方式，二选一**即可。
+> 嫌文件路径麻烦就用后者（直接把 json 内容粘进环境变量）。
+
+### A.1 创建“服务端 API Key”（映射 service_role）
+
+- **在哪个菜单**：控制台 → 你的环境 → 「环境 / API 密钥（API Key）」。
+  直达：`https://tcb.cloud.tencent.com/dev?envId={你的环境Id}#/env/apikey`
+- **点什么**：
+  1. 找到「API Key（服务端密钥）」区域，点「新建」。
+  2. 名称填 `keybox-cloudfunction`（便于日后识别），权限保持默认的服务端权限（service_role）。
+  3. 创建后点「复制」，得到一串服务端密钥。
+- **出现什么算成功**：列表里出现名为 `keybox-cloudfunction` 的一条，且你能复制到它的值。
+  ⚠️ 这串值**只在创建时完整显示一次**，请立刻存到你自己的密码管理器；丢了就删掉重建。
+- **不要**把它填进 `.env.local` 的 `VITE_` 前缀变量（那是会打进前端的），只用于 A.4 的云函数环境变量。
+
+### A.2 生成“自定义登录私钥”，并放到云函数读得到的地方
+
+> 为什么需要它：我们的用户身份是自己建的（`kb_users` 表），云端据此签发“登录票据”，这需要一把签名私钥。
+> **关键认知**：云函数在云上运行，**读不到你本机的 `F:\...`**。私钥必须随函数“上传”或在环境变量里给它。
+
+**第一步：生成私钥文件**
+- **在哪个菜单**：控制台 → 你的环境 → 「身份认证 / 登录管理」页 → 「自定义登录（Custom Login）」区块。
+- **点什么**：点「生成私钥」，浏览器会下载一个文件，文件名形如 `tcb_custom_login.json`。
+- **出现什么算成功**：页面显示“已生成 / 私钥已存在”，且本地多出该文件。
+- ⚠️ **此文件是私钥，绝不进仓库**（`.gitignore` 已挡住 `tcb_custom_login.json`）。
+
+**第二步：把这把私钥交给云函数 —— 两种方式，任选其一**
+
+- **方式一（推荐，最省事）：把 JSON 内容直接放进环境变量 `TCB_CUSTOM_LOGIN_CREDENTIALS`**
+  1. 用记事本打开 `tcb_custom_login.json`，**全选复制**全部内容（是一整段以 `{` 开头、`}` 结尾的 JSON）。
+  2. 到 A.4 的云函数环境变量里，新增 `TCB_CUSTOM_LOGIN_CREDENTIALS`，值粘贴这段 JSON。
+  3. 只需给 `kbLogin`、`kbRegister` 两个函数加。
+  > 若控制台的变量值输入框不接受多行，可看方式二。
+
+- **方式二：把私钥文件放进函数目录，用路径引用**
+  1. 把 `tcb_custom_login.json` 复制到**本机**的 `F:\KeyBox\cloudfunctions\kbLogin\` 与
+     `F:\KeyBox\cloudfunctions\kbRegister\` 两个目录里（与该目录下已有的 `index.js` 并排）。
+  2. 这样它会在**部署/上传函数时**一起上传到云端（注意：它仍在 `.gitignore` 保护下，不会被提交到仓库）。
+  3. 给这两个函数加环境变量 `TCB_CUSTOM_LOGIN_KEY_FILE`，值填 `./tcb_custom_login.json`。
+     （云函数会优先按这个路径找；找不到时会自动在**函数自己所在目录**找同名文件，所以方式二也稳。）
+- **出现什么算成功**：`kbLogin` 登录成功时会返回票据；失败则返回 `TICKET_UNAVAILABLE`（见 A.5 对照表）。
+
+### A.3 八个云函数各自的变量需求（逐条核对）
+
+| 函数名（目录） | 用途 | `TCB_ENV` | `CLOUDBASE_API_KEY` | 自定义登录私钥 |
+|----------------|------|:--:|:--:|:--:|
+| `kbInitAdmin` | 首次初始化管理员（R01） | ✅ | ✅ | — |
+| `kbInviteCreate` | 管理员生成邀请码（R02） | ✅ | ✅ | — |
+| `kbInviteRevoke` | 作废邀请码（R02） | ✅ | ✅ | — |
+| `kbRegister` | 用邀请码注册 + 签发登录票据（R03/R04/R22） | ✅ | ✅ | **✅ 必须** |
+| `kbLogin` | 登录校验 + 签发登录票据（R05/R13） | ✅ | ✅ | **✅ 必须** |
+| `kbGetMyRole` | 取本人角色/停用状态/密钥参数（R11/R26） | ✅ | ✅ | — |
+| `kbSecretUpsert` | 写入一条密钥密文（R08/R15） | ✅ | ✅ | — |
+| `kbSecretDelete` | 删除一条密钥（R15） | ✅ | ✅ | — |
+
+> 若图省事，**8 个函数都注入前两个变量即可**；只有 `kbLogin` / `kbRegister` 额外需要私钥。
+> 在前两个变量之外多注入私钥不影响其它函数（它们不会用到）。
+
+### A.4 在控制台逐个注入（照做步骤）
+
+- **函数列表页**：`https://tcb.cloud.tencent.com/dev?envId={你的环境Id}#/scf`
+- **单个函数详情页**：`https://tcb.cloud.tencent.com/dev?envId={你的环境Id}#/scf/detail?id={函数名}&NameSpace={你的环境Id}`
+  （把 `{函数名}` 换成 `kbInitAdmin`、`kbLogin` …… 逐个打开）
+
+**逐函数操作（8 次，流程相同）：**
+1. 打开该函数的详情页。
+2. 找到「**函数配置 / 环境变量**」区块（有的版本在“配置”标签页里，或标为“环境变量”）。
+3. 点「**编辑 / 添加环境变量**」，按 A.3 逐条「新增」键值对：
+   - 键：`TCB_ENV`　值：`{你的环境Id}`
+   - 键：`CLOUDBASE_API_KEY`　值：A.1 复制的服务端密钥
+   - （仅 `kbLogin`、`kbRegister`）键：`TCB_CUSTOM_LOGIN_CREDENTIALS`（或 `TCB_CUSTOM_LOGIN_KEY_FILE`）
+4. 点「**保存**」。若页面另有「**发布 / 更新配置 / 部署**」按钮，再点一次让配置对线上生效。
+5. **对照“成功样式”**：保存后页面「环境变量」列表里应**看得到这些键名**（`TCB_ENV`、`CLOUDBASE_API_KEY` …）。
+6. 回到函数列表，重复第 1~5 步，把 8 个函数都配好。
+
+> ⚠️ **重要：是“新增/合并”，不是“整体覆盖”。** 有些控制台若整段替换环境变量，会**丢掉原有的其它变量**。
+> 操作前先看一眼现有变量，确保新变量是**加**进去，而不是把已有的一起删掉。
+
+### A.5 怎么确认“真的生效了”（不写代码也能看出来）
+
+| 你看到的现象 / 返回字样 | 含义 |
+|-------------------------|------|
+| 云函数返回 `ENV_ID_MISSING` | 该函数的 `TCB_ENV` 没填对 |
+| 云函数返回 `SERVICE_CREDENTIAL_MISSING` | 该函数的 `CLOUDBASE_API_KEY` 没填对 |
+| 登录返回 `TICKET_UNAVAILABLE` | 私钥没给对（`kbLogin` / `kbRegister` 的 `TCB_CUSTOM_LOGIN_CREDENTIALS` 或路径不对） |
+| 登录成功、紧接着能取到本人角色/密钥参数 | ✅ 附录 A 注入成功 |
+
+- **最省事的验证**：登录成功后调一次 `kbGetMyRole`；只要**不再**出现上面两条 `...MISSING`，就说明前两个变量注入到位。
+- **看日志**：控制台 → 「日志监控」`https://tcb.cloud.tencent.com/dev?envId={你的环境Id}#/logs`，
+  选对应函数，能看到上面这些错误字样出现在调用日志里。
+
+### A.6 安全提醒
+
+> - `CLOUDBASE_API_KEY`（service_role）＝数据库万能钥匙，**只放云函数环境变量**；
+>   一旦落到前端或仓库，等于全库失守，需**立即**在控制台吊销并重建。
+> - `tcb_custom_login.json` / `TCB_CUSTOM_LOGIN_CREDENTIALS` 是签名私钥，同样只进云函数，**绝不进仓库、绝不发截图**。
+> - 环境变量填完后，别把控制台页面截图外发（可能带明文密钥）。
 
 ---
 

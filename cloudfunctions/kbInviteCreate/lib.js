@@ -3,7 +3,8 @@
  * lib.js —— KeyBox 云函数公共助手（每个函数目录内置一份，内容等价）。
  *
  * 为什么每个目录各放一份：CloudBase 事件函数按“函数目录”独立打包，运行期无法 require 到兄弟目录，
- *   因此公共代码必须在每个函数目录内各保留一份；此文件是唯一副本来源，改动请同步到 6 个目录。
+ *   因此公共代码必须在每个函数目录内各保留一份；此文件是唯一副本来源，改动请同步到 8 个目录。
+ *   （校验：对 cloudfunctions 下每个 `<函数目录>/lib.js` 求 md5，应全部一致。）
  *
  * 职责与“依据文档”出处：
  *  1) 统一返回体 { ok, data?, error? } —— 架构 §7 要求“不抛裸异常”。
@@ -12,6 +13,10 @@
  *     依据：技能 auth-nodejs-cloudbase《Scenario 2: Get caller identity in a CloudBase function》。
  *  3) 自定义登录票据：auth.createTicket(customUserId, { refresh, expire })。
  *     依据：技能 auth-nodejs-cloudbase《Scenario 8: Issue a custom login ticket》，需注入自定义登录私钥。
+ *     私钥来源按优先级：① 环境变量 TCB_CUSTOM_LOGIN_CREDENTIALS(JSON 串)
+ *                      → ② 环境变量 TCB_CUSTOM_LOGIN_KEY_FILE(路径)
+ *                      → ③ 与本文件同目录的 tcb_custom_login.json（随函数包一起上传）。
+ *                    （依据：技能 auth-nodejs-cloudbase《Scenario 7》推荐 __dirname 同目录写法。）
  *  4) 服务端访问 PG：走 CloudBase PG HTTP 网关 /v1/rdb/rest（PostgREST 风格），
  *     凭据取自环境变量（= service_role，绕过 RLS）。
  *     依据：技能 postgresql-development-cloudbase/references/auth-and-rls.md《Accessing PG from a cloud function》
@@ -22,6 +27,7 @@
  */
 const tcb = require("@cloudbase/node-sdk");
 const fs = require("fs");
+const path = require("path");
 const crypto = require("crypto");
 
 // ---------------------------------------------------------------------------
@@ -32,6 +38,8 @@ const ENV_ID = process.env.TCB_ENV || process.env.ENV_ID || "";
 const API_KEY = process.env.CLOUDBASE_API_KEY || process.env.CLOUDBASE_APIKEY || "";
 /** 自定义登录私钥文件路径（文件本身被 .gitignore 挡住，不进仓库）。 */
 const CUSTOM_LOGIN_KEY_FILE = process.env.TCB_CUSTOM_LOGIN_KEY_FILE || "";
+/** 自定义登录私钥 JSON 串（直接把文件内容放进环境变量，免去路径问题）。 */
+const CUSTOM_LOGIN_CREDENTIALS = process.env.TCB_CUSTOM_LOGIN_CREDENTIALS || "";
 const PG_BASE = ENV_ID ? `https://${ENV_ID}.api.tcloudbasegateway.com/v1/rdb/rest` : "";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_.-]{3,32}$/;
@@ -49,15 +57,36 @@ const UID_LENGTH = 24;
 // ---------------------------------------------------------------------------
 let cachedApp = null;
 
-/** 读取自定义登录私钥（缺失时返回 null，不抛异常）。 */
+/**
+ * 读取自定义登录私钥（多来源，缺失时返回 null，不抛异常）。
+ *  优先级：① TCB_CUSTOM_LOGIN_CREDENTIALS(JSON 串) → ② TCB_CUSTOM_LOGIN_KEY_FILE(路径)
+ *          → ③ 与本文件同目录的 tcb_custom_login.json。
+ *  任一步解析失败都静默跳过，交由调用方以 TICKET_UNAVAILABLE 反馈。
+ */
 function loadCustomLoginCredentials() {
-  if (!CUSTOM_LOGIN_KEY_FILE) return null;
-  try {
-    if (!fs.existsSync(CUSTOM_LOGIN_KEY_FILE)) return null;
-    return JSON.parse(fs.readFileSync(CUSTOM_LOGIN_KEY_FILE, "utf8"));
-  } catch (error) {
-    return null;
+  // ① 直接放在环境变量里的 JSON 串（owner 无需处理文件路径）
+  if (CUSTOM_LOGIN_CREDENTIALS) {
+    try {
+      return JSON.parse(CUSTOM_LOGIN_CREDENTIALS);
+    } catch (error) {
+      // 解析失败则继续尝试其他来源
+    }
   }
+  // ② 显式指定的文件路径；③ 与本文件同目录（随函数目录一起打包）
+  const candidates = [];
+  if (CUSTOM_LOGIN_KEY_FILE) candidates.push(CUSTOM_LOGIN_KEY_FILE);
+  candidates.push(path.join(__dirname, "tcb_custom_login.json"));
+  for (let i = 0; i < candidates.length; i += 1) {
+    const file = candidates[i];
+    try {
+      if (file && fs.existsSync(file)) {
+        return JSON.parse(fs.readFileSync(file, "utf8"));
+      }
+    } catch (error) {
+      // 继续尝试下一个来源
+    }
+  }
+  return null;
 }
 
 /**
@@ -103,9 +132,9 @@ function fail(code) {
 // ---------------------------------------------------------------------------
 
 /** 组装带过滤的 URL。 */
-function buildUrl(path, query) {
+function buildUrl(pathname, query) {
   if (!PG_BASE) throw new Error("ENV_ID_MISSING");
-  const url = new URL(`${PG_BASE}/${path}`);
+  const url = new URL(`${PG_BASE}/${pathname}`);
   const map = query || {};
   Object.keys(map).forEach((key) => {
     const value = map[key];
@@ -117,10 +146,10 @@ function buildUrl(path, query) {
 }
 
 /** 执行一次 PG REST 请求并解析 JSON；非 2xx 抛错（含 PG_<status> 与响应体）。 */
-async function pgRequest(method, path, options) {
+async function pgRequest(method, pathname, options) {
   const opts = options || {};
   if (!API_KEY) throw new Error("SERVICE_CREDENTIAL_MISSING");
-  const url = buildUrl(path, opts.query);
+  const url = buildUrl(pathname, opts.query);
   const headers = { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" };
   if (opts.prefer) headers.Prefer = opts.prefer;
   const response = await fetch(url.toString(), {
@@ -145,9 +174,9 @@ async function pgRequest(method, path, options) {
 }
 
 /** 精确计数：读 PostgREST 的 Content-Range（用于 20 人上限与初始化判定）。 */
-async function pgCount(path, query) {
+async function pgCount(pathname, query) {
   if (!API_KEY) throw new Error("SERVICE_CREDENTIAL_MISSING");
-  const url = buildUrl(path, query);
+  const url = buildUrl(pathname, query);
   const response = await fetch(url.toString(), {
     method: "GET",
     headers: {
