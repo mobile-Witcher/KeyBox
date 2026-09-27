@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLOUD_ROOT = resolve(HERE, "../../cloudfunctions");
@@ -51,20 +51,32 @@ interface DeleteCall {
   table: string;
   opts: Dict & { query?: Dict; prefer?: string; body?: Dict };
 }
+interface FetchCall {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+}
+interface FetchInit {
+  method: string;
+  headers: Record<string, string>;
+}
 
+/**
+ * R14 契约已于 Q3 变更（team-lead 授权同步）：删除改为 index.js 内本地 `deleteWithCount()`，
+ * 走**全局 `fetch`**（而不是 `pgRequest`），故 fake lib 需提供 `ENV_ID`，并用 `stubFetch` 驱动。
+ * `pgCount` 仍保留在 fake lib —— 但用法从“被调用两次”变为“**断言根本不再调用**”（抓回退回归）。
+ */
 function makeDeleteLib(cfg: {
   callerUid?: string;
   callerRow?: Array<{ role: string; status: string }>;
-  countSeq?: number[];
 }): { lib: Dict; calls: { pgRequest: DeleteCall[]; pgCount: Array<{ table: string; query: Dict }>; getCaller: number } } {
   const calls = {
     pgRequest: [] as DeleteCall[],
     pgCount: [] as Array<{ table: string; query: Dict }>,
     getCaller: 0,
   };
-  let countIdx = 0;
-  const seq = cfg.countSeq ?? [0];
   const lib: Dict = {
+    ENV_ID: "test-env", // deleteWithCount 需要（与 pgRequest 同源的网关地址）
     ok: (data?: unknown) => ok(data),
     fail: (code: string) => fail(code),
     getCaller: () => {
@@ -80,9 +92,7 @@ function makeDeleteLib(cfg: {
     },
     pgCount: async (table: string, query: Dict) => {
       calls.pgCount.push({ table, query });
-      const value = seq[Math.min(countIdx, seq.length - 1)];
-      countIdx += 1;
-      return value;
+      return 0;
     },
   };
   return { lib, calls };
@@ -92,7 +102,38 @@ function deleteCalls(calls: DeleteCall[]): DeleteCall[] {
   return calls.filter((c) => c.method === "DELETE" && c.table === "kb_secrets");
 }
 
+/** 安装假 `fetch`：捕获请求，并用 Content-Range 响应头给出精确行数；返回捕获数组。 */
+function stubFetch(count: number, okFlag = true): FetchCall[] {
+  const fetchCalls: FetchCall[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: FetchInit) => {
+    fetchCalls.push({ url, method: init.method, headers: init.headers });
+    return {
+      ok: okFlag,
+      status: okFlag ? 204 : 500,
+      headers: {
+        get: (name: string) => (name.toLowerCase() === "content-range" ? `*/${count}` : null),
+      },
+      text: async () => (okFlag ? "" : "boom"),
+    };
+  });
+  return fetchCalls;
+}
+
+/** 从 fetch 捕获里挑出 DELETE。 */
+function deleteFetches(fetchCalls: FetchCall[]): FetchCall[] {
+  return fetchCalls.filter((c) => c.method === "DELETE");
+}
+
 describe("R14 kbAdminDeleteUserData：身份与范围收口", () => {
+  // Q3 起删除走本地 deleteWithCount()（全局 fetch）+ 读服务端凭据环境变量；此处注入、用后还原。
+  beforeEach(() => {
+    process.env.CLOUDBASE_API_KEY = "test-svc-key";
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.CLOUDBASE_API_KEY;
+  });
+
   it("★身份取自服务端 getCaller，【不采信】event.uid：非管理员即便伪造 event.uid=管理员 也被拒", async () => {
     const { lib, calls } = makeDeleteLib({
       callerUid: "attacker-uid",
@@ -137,23 +178,24 @@ describe("R14 kbAdminDeleteUserData：身份与范围收口", () => {
     expect(deleteCalls(calls.pgRequest)).toHaveLength(0);
   });
 
-  it("DELETE 只按 owner_id=目标收口，且 prefer=return=minimal（绝无 representation）", async () => {
-    const { lib, calls } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
+  it("★删除是【单次】DELETE，带 owner_id=目标收口，prefer 含 return=minimal 与 count=exact（绝无 representation）", async () => {
+    const { lib } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
+    const fetchCalls = stubFetch(3);
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     await main({ uid: "target-uid" });
 
-    const dels = deleteCalls(calls.pgRequest);
-    expect(dels).toHaveLength(1);
-    expect(dels[0].opts.query).toEqual({ owner_id: "eq.target-uid" });
-    expect(dels[0].opts.prefer).toBe("return=minimal");
-    expect(String(dels[0].opts.prefer)).not.toContain("representation");
-    // 任何请求都不得使用 representation
-    const anyRepr = calls.pgRequest.some((c) => String(c.opts.prefer ?? "").includes("representation"));
-    expect(anyRepr).toBe(false);
+    const dels = deleteFetches(fetchCalls);
+    expect(dels).toHaveLength(1); // 单次删除（抓“改回多次”回归）
+    expect(dels[0].url).toContain("owner_id=eq.target-uid"); // 范围收口（抓“忘带 owner_id”回归）
+    const prefer = dels[0].headers.Prefer ?? "";
+    expect(prefer).toContain("return=minimal"); // 不回传行内容
+    expect(prefer).toContain("count=exact"); // 单次拿精确行数（抓“丢 count=exact”回归）
+    expect(prefer).not.toContain("representation");
   });
 
   it("用户记录【软删】status='deleted'（PATCH，而非 DELETE 物理删行）", async () => {
     const { lib, calls } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
+    stubFetch(2);
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     await main({ uid: "target-uid" });
 
@@ -165,57 +207,52 @@ describe("R14 kbAdminDeleteUserData：身份与范围收口", () => {
     expect(calls.pgRequest.some((c) => c.method === "DELETE" && c.table === "kb_users")).toBe(false);
   });
 
-  it("★返回体【只】含 {deletedCount}，且为 before-after 的差值", async () => {
-    const { lib } = makeDeleteLib({
-      callerRow: [{ role: "admin", status: "active" }],
-      countSeq: [5, 2],
-    });
+  it("★返回体【只】含 {deletedCount}，且取自单次 DELETE 响应头 Content-Range", async () => {
+    const { lib, calls } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
+    stubFetch(3); // 响应头 Content-Range: */3
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     const res = await main({ uid: "target-uid" });
 
     expect(res.ok).toBe(true);
     expect(res.data).toBeTruthy();
     expect(Object.keys(res.data as Dict)).toEqual(["deletedCount"]);
-    expect((res.data as Dict).deletedCount).toBe(3);
+    expect((res.data as Dict).deletedCount).toBe(3); // 精确值来自响应头
+    expect(calls.pgCount).toHaveLength(0); // 抓“改回 before/after 两次计数”回归
     // 响应体不含任何内容字段
     const serialized = JSON.stringify(res);
     expect(serialized).not.toContain("payload");
     expect(serialized).not.toContain("KB1:");
   });
 
-  it("before<after（异常）时 deletedCount 不为负（Math.max 兜底）", async () => {
-    const { lib } = makeDeleteLib({
-      callerRow: [{ role: "admin", status: "active" }],
-      countSeq: [1, 4],
-    });
+  it("0 行 → deletedCount 0（保持原外部语义：软删照做、不报错；不改成 NOT_FOUND）", async () => {
+    const { lib } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
+    stubFetch(0); // Content-Range: */0
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     const res = await main({ uid: "target-uid" });
+    expect(res.ok).toBe(true);
     expect((res.data as Dict).deletedCount).toBe(0);
   });
 
-  it("计数口径一致：两次 pgCount 都按 owner_id=目标 收口", async () => {
-    const { lib, calls } = makeDeleteLib({
-      callerRow: [{ role: "admin", status: "active" }],
-      countSeq: [2, 0],
-    });
+  it("计数【单次】：不再调用 pgCount，且带 count=exact 的请求恰好 1 个", async () => {
+    const { lib, calls } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
+    const fetchCalls = stubFetch(2);
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     await main({ uid: "target-uid" });
-    expect(calls.pgCount).toHaveLength(2);
-    for (const c of calls.pgCount) {
-      expect(c.table).toBe("kb_secrets");
-      expect(c.query.owner_id).toBe("eq.target-uid");
-    }
+
+    expect(calls.pgCount).toHaveLength(0); // 抓“回退到两次 pgCount”回归
+    const countReqs = fetchCalls.filter((c) => (c.headers.Prefer ?? "").includes("count=exact"));
+    expect(countReqs).toHaveLength(1);
+    expect(countReqs[0].method).toBe("DELETE");
+    expect(countReqs[0].url).toContain("owner_id=eq.target-uid");
   });
 
-  it("异常路径：底层抛错 → 返回 fail(message)，不抛裸异常", async () => {
+  it("异常路径：DELETE 失败 → 返回 PG_<status>，不抛裸异常", async () => {
     const { lib } = makeDeleteLib({ callerRow: [{ role: "admin", status: "active" }] });
-    (lib.pgCount as unknown) = async () => {
-      throw new Error("PG_500");
-    };
+    stubFetch(0, false); // fetch 返回非 2xx（500）
     const { main } = loadFunction("kbAdminDeleteUserData", lib);
     const res = await main({ uid: "target-uid" });
     expect(res.ok).toBe(false);
-    expect(res.error).toBe("PG_500");
+    expect(res.error).toContain("PG_500");
   });
 });
 
