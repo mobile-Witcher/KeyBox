@@ -33,9 +33,15 @@ interface PlanResult {
 interface SetupModule {
   MIGRATIONS_DIR: string;
   DEFAULT_SECURITY_DOMAINS: string[];
+  PUBLIC_FUNCTIONS: string[];
   DESIRED_FUNCTION_INVOKE_RULE: string;
+  LOGIN_REQUIRED_INVOKE_RULE: string;
+  MIN_TCB_VERSION: string;
   DOCS_HINT: string;
   SetupError: new (code: string, message: string) => Error & { code: string };
+  buildInvokeRule: (functions?: string[]) => string;
+  cliMissingHint: (tcbBin?: string) => string;
+  versionDriftHint: (subcommand?: string) => string;
   parseArgs: (argv: string[]) => {
     env: string;
     dryRun: boolean;
@@ -226,10 +232,15 @@ describe("setup-cloud：幂等计划（只做差量、不覆盖既有）", () =>
     };
     expect(mod.planSetup({ ...base, invokeRule: { found: true, rule: null } }).invokeRuleAction).toBe("apply");
     expect(
-      mod.planSetup({ ...base, invokeRule: { found: true, rule: '{"invoke":true}' } }).invokeRuleAction
+      mod.planSetup({ ...base, invokeRule: { found: true, rule: mod.DESIRED_FUNCTION_INVOKE_RULE } })
+        .invokeRuleAction
     ).toBe("skip-equal");
     expect(
       mod.planSetup({ ...base, invokeRule: { found: true, rule: '{"invoke":false}' } }).invokeRuleAction
+    ).toBe("apply");
+    // 旧的「放通全部」策略 ≠ 新的最小名单 → 视为不同，需重新下发（收敛到最小名单）
+    expect(
+      mod.planSetup({ ...base, invokeRule: { found: true, rule: '{"invoke":true}' } }).invokeRuleAction
     ).toBe("apply");
     expect(
       mod.planSetup({ ...base, invokeRule: { found: false, rule: null } }).invokeRuleAction
@@ -395,7 +406,7 @@ describe("setup-cloud：CLI 客户端命令拼装", () => {
     const client = mod.createCliClient({ envId: "env-abc", repoRoot: PROJECT_ROOT, exec });
     expect(await client.listMigrations()).toEqual(["20260927193625"]);
 
-    await client.setFunctionInvokeRule('{"invoke":true}');
+    await client.setFunctionInvokeRule(mod.DESIRED_FUNCTION_INVOKE_RULE);
     const setCall = calls.find((c) => c.args.includes("set"));
     expect(setCall!.args).toEqual([
       "permission",
@@ -404,7 +415,7 @@ describe("setup-cloud：CLI 客户端命令拼装", () => {
       "--level",
       "custom",
       "--rule",
-      '{"invoke":true}',
+      mod.DESIRED_FUNCTION_INVOKE_RULE,
       "-e",
       "env-abc",
       "--yes",
@@ -435,7 +446,7 @@ describe("setup-cloud：CLI 客户端命令拼装", () => {
     }
   });
 
-  it("命令失败（如未安装 tcb）→ SetupError(TCB_COMMAND_FAILED) 且含安装/登录指引", async () => {
+  it("★CLI 缺失（ENOENT）→ 可照做的补救（安装→校验版本→登录），非裸报错", async () => {
     const exec = async (): Promise<{ stdout: string }> => {
       const e = new Error("spawn tcb ENOENT") as Error & { stderr?: string };
       e.stderr = "command not found";
@@ -449,6 +460,95 @@ describe("setup-cloud：CLI 客户端命令拼装", () => {
       err = e as Error & { code?: string };
     }
     expect(err!.code).toBe("TCB_COMMAND_FAILED");
-    expect(String(err!.message)).toMatch(/@cloudbase\/cli|tcb login/);
+    const msg = String(err!.message);
+    expect(msg).toMatch(/npm i -g @cloudbase\/cli/); // 装什么
+    expect(msg).toContain("--version"); // 怎么校验版本
+    expect(msg).toMatch(/login/); // 怎么登录
+    expect(msg).toContain(mod.MIN_TCB_VERSION); // 需要 ≥ 3.0.0
+  });
+
+  it("★子命令失败（非缺失）→ 附【版本漂移提示】（先怀疑版本，再核对 --help）", async () => {
+    const exec = async (): Promise<{ stdout: string }> => {
+      const e = new Error("Command failed") as Error & { stderr?: string };
+      e.stderr = "error: unknown option '--env-id'";
+      throw e;
+    };
+    const client = mod.createCliClient({ envId: "env-abc", repoRoot: PROJECT_ROOT, exec });
+    let err: (Error & { code?: string }) | null = null;
+    try {
+      await client.setFunctionInvokeRule(mod.DESIRED_FUNCTION_INVOKE_RULE);
+    } catch (e) {
+      err = e as Error & { code?: string };
+    }
+    expect(err!.code).toBe("TCB_COMMAND_FAILED");
+    const msg = String(err!.message);
+    expect(msg).toContain("--help"); // 指向帮助
+    expect(msg).toMatch(/版本差异|版本/); // 版本漂移措辞
+    expect(msg).toContain(mod.MIN_TCB_VERSION);
+    expect(msg).toContain("permission set function"); // 具体子命令，便于核对
+  });
+
+  it("★失败信息不含凭据：login 用 API Key 失败时，错误文本必须打码（绝不回显）", async () => {
+    const exec = async (): Promise<{ stdout: string }> => {
+      const e = new Error("Command failed") as Error & { stderr?: string };
+      e.stderr = "auth failed";
+      throw e;
+    };
+    const client = mod.createCliClient({
+      envId: "env-abc",
+      apiKey: "SUPER-SECRET-KEY",
+      repoRoot: PROJECT_ROOT,
+      exec,
+    });
+    let err: (Error & { code?: string }) | null = null;
+    try {
+      await client.listSecurityDomains();
+    } catch (e) {
+      err = e as Error & { code?: string };
+    }
+    expect(err!.code).toBe("TCB_COMMAND_FAILED");
+    const msg = String(err!.message);
+    expect(msg).not.toContain("SUPER-SECRET-KEY"); // 绝不回显凭据
+    expect(msg).toContain("***"); // 已打码
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 最小放通名单（不放通全部）+ 放宽首选形式（条件表达式）
+// ---------------------------------------------------------------------------
+describe("setup-cloud：invoke 最小放通名单", () => {
+  it("PUBLIC_FUNCTIONS 恰好是「登录前必须可调」的三个函数", () => {
+    expect(mod.PUBLIC_FUNCTIONS).toEqual(["kbInitAdmin", "kbRegister", "kbLogin"]);
+  });
+
+  it("★DESIRED_FUNCTION_INVOKE_RULE 是 per-function 最小名单，且【不是】放通全部", () => {
+    const parsed = JSON.parse(mod.DESIRED_FUNCTION_INVOKE_RULE) as Record<string, unknown>;
+    expect(Object.keys(parsed).sort()).toEqual([...mod.PUBLIC_FUNCTIONS].sort());
+    for (const name of mod.PUBLIC_FUNCTIONS) {
+      expect(parsed[name]).toEqual({ invoke: true });
+    }
+    // 不得含通配键（通配=对所有函数生效，等于放宽）
+    expect(parsed["*"]).toBeUndefined();
+    // 不得等于旧的「放通全部」写法
+    expect(mod.rulesEqual(mod.DESIRED_FUNCTION_INVOKE_RULE, '{"invoke":true}')).toBe(false);
+    // 明确排除"非登录链路的函数"混入名单
+    expect(Object.keys(parsed)).not.toContain("kbGetMyRole");
+    expect(Object.keys(parsed)).not.toContain("kbSecretUpsert");
+    expect(Object.keys(parsed)).not.toContain("kbSecretDelete");
+  });
+
+  it("buildInvokeRule 由名单派生（默认=最小名单；空名单=空对象；可自定义）", () => {
+    expect(mod.buildInvokeRule()).toBe(mod.DESIRED_FUNCTION_INVOKE_RULE);
+    expect(JSON.parse(mod.buildInvokeRule([]))).toEqual({});
+    expect(JSON.parse(mod.buildInvokeRule(["kbLogin"]))).toEqual({ kbLogin: { invoke: true } });
+  });
+
+  it("LOGIN_REQUIRED_INVOKE_RULE＝文档出处里的【仅已登录且非匿名】条件表达式（放宽首选）", () => {
+    const parsed = JSON.parse(mod.LOGIN_REQUIRED_INVOKE_RULE) as Record<string, { invoke: string }>;
+    expect(parsed["*"]).toBeTruthy();
+    expect(parsed["*"].invoke).toContain("auth != null");
+    expect(parsed["*"].invoke).toContain("ANONYMOUS");
+    // 它比放通全部更精确：不是布尔 true
+    expect(parsed["*"].invoke).not.toBe("true");
   });
 });

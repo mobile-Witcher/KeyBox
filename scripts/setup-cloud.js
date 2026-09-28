@@ -4,7 +4,8 @@
  *
  * 它做什么（把 `docs/CONSOLE-STEPS.md` 里能干的部分固化成可复跑的一步）：
  *   ① 驱动【版本化迁移】下发建表 + REVOKE/GRANT + RLS（DDL 一律走迁移，绝不走 execute）；
- *   ② 下发云函数的 invoke 规则（注册/登录在未登录时也要能调到云函数）；
+ *   ② 下发云函数的 invoke 规则（**最小放通**：只放通「登录前必须可调」的
+ *      `kbInitAdmin` / `kbRegister` / `kbLogin`——**不放通全部**；其余函数不下发放通规则）；
  *   ③ 配置【安全域名白名单】（至少 `localhost:5173`，浏览器跨域 origin 白名单）。
  * 它不做什么（**必须仍手工**，见 `docs/CONSOLE-STEPS.md` 附录 C）：
  *   · 开启「用户名密码登录」开关；· 生成并注入「自定义登录私钥」；
@@ -42,10 +43,83 @@ const execFileAsync = promisify(execFile);
 export const MIGRATIONS_DIR = "cloudbase/migrations";
 /** 至少必须放行的浏览器安全域名（本地 Vite dev server）。 */
 export const DEFAULT_SECURITY_DOMAINS = ["localhost:5173"];
-/** 期望的云函数 invoke 规则（未登录也要能调用云函数；函数内部各自做身份/权限自检）。 */
-export const DESIRED_FUNCTION_INVOKE_RULE = '{"invoke":true}';
+
+/**
+ * 「登录前（尚未认证）就必须能调用」的函数——本次下发的**最小放通名单**。
+ * 这三个是登录/注册链路的前置：没有会话也得能调，否则用户永远进不来。
+ * 其余函数（kbGetMyRole / kbSecretUpsert / kbSecretDelete / kbInviteCreate / kbInviteRevoke）
+ * **不下发放通规则**（保持平台默认的严格策略），其可用性由「配置后必验」按实测结果决定。
+ */
+export const PUBLIC_FUNCTIONS = ["kbInitAdmin", "kbRegister", "kbLogin"];
+
+/**
+ * 由函数名列表派生 per-function invoke 规则（只列出的函数 `{"invoke":true}`）。
+ *
+ * ⚠️ **待核实**：平台文档只演示了两种函数 invoke 规则写法——
+ *   · 通配键 `{"*":{"invoke":<条件表达式>}}`（见 cloudbase-cli 参考 `permission.md`）；
+ *   · 整段 `package authz.user` Rego（见 cloud-functions 参考 `http-functions.md`，PG 环境专用）。
+ *   "以具体函数名为键"的 per-function map **在文档里未直接给出**，故标注【待核实】。
+ *   本脚本按最小名单下发，并以 `docs/CONSOLE-STEPS.md` 附录 D.3「配置后必验」兜底：
+ *   登录后调用 `kbGetMyRole` 必须成功；若被拒（权限错误），按实测结果放宽（首选下方条件表达式），
+ *   并在文档中记录"为什么放宽"。**绝不为了"能跑"就放通全部。**
+ * @param {string[]} [functions]
+ * @returns {string} JSON 文本
+ */
+export function buildInvokeRule(functions = PUBLIC_FUNCTIONS) {
+  const rule = {};
+  for (const name of functions) rule[name] = { invoke: true };
+  return JSON.stringify(rule);
+}
+
+/** 期望的云函数 invoke 规则：**只放通登录前必须可调的三个函数**（不放通全部）。 */
+export const DESIRED_FUNCTION_INVOKE_RULE = buildInvokeRule(PUBLIC_FUNCTIONS);
+
+/**
+ * 更精确的「仅已登录（且非匿名）用户可调」条件——**放宽时的首选形式**（非默认）。
+ * 出处：CloudBase 官方 CLI 参考 `permission.md`（cloudbase-cli）给出的官方示例：
+ *   tcb permission set function --level custom \
+ *     --rule '{"*":{"invoke":"auth != null && auth.loginType != '\''ANONYMOUS'\''"}}'
+ * 语义：`auth != null`＝存在登录会话；`loginType != 'ANONYMOUS'`＝排除匿名会话。
+ * 若"配置后必验"发现登录后仍被拒，优先用它放宽（比 `{"invoke":true}` 精确），而非放通全部。
+ */
+export const LOGIN_REQUIRED_INVOKE_RULE = JSON.stringify({
+  "*": { invoke: "auth != null && auth.loginType != 'ANONYMOUS'" },
+});
+
 /** 缺凭据时的指路文案（指向仓库文档）。 */
 export const DOCS_HINT = "获取方式见 docs/CONSOLE-STEPS.md 附录 A 与仓库根 .env.example。";
+
+/** 官方 CLI 要求的最低版本。 */
+export const MIN_TCB_VERSION = "3.0.0";
+
+/**
+ * 缺 `tcb` 命令时可照做的补救（安装 → 校验版本 → 登录）。**不是一句 "command not found"。**
+ * @param {string} [tcbBin]
+ * @returns {string}
+ */
+export function cliMissingHint(tcbBin = "tcb") {
+  return [
+    `未找到 \`${tcbBin}\` 命令（CloudBase 官方 CLI）。请照做：`,
+    `  1) 安装：  npm i -g @cloudbase/cli`,
+    `  2) 校验：  ${tcbBin} --version        （需 ≥ ${MIN_TCB_VERSION}）`,
+    `  3) 登录：  ${tcbBin} login             （交互式；或用环境 API Key 免账号登录：`,
+    `            ${tcbBin} login --cloudbase-api-key <key> -e <envId>）`,
+    `完成后重跑本脚本。详见 docs/CONSOLE-STEPS.md 附录 D。`,
+  ].join("\n");
+}
+
+/**
+ * 版本漂移提示：`tcb` 的参数名/子命令随版本可能变化，报错先怀疑版本。
+ * @param {string} [subcommand] 形如 "db pg migration" / "permission set function"
+ * @returns {string}
+ */
+export function versionDriftHint(subcommand = "") {
+  const probe = subcommand ? `\`tcb ${subcommand} --help\`` : "该子命令的 `tcb <cmd> --help`";
+  return (
+    `若报错涉及**参数名或子命令本身**，可能是 CLI 版本差异：先 \`tcb --version\`` +
+    `（需 ≥ ${MIN_TCB_VERSION}），再核对 ${probe} 与本机实际用法。`
+  );
+}
 
 /** 结构化错误：带可读的 code 与"怎么修"的提示。 */
 export class SetupError extends Error {
@@ -243,16 +317,58 @@ export function createCliClient(opts) {
 
   let authed = false;
 
+  /** 取【开头连续的非 flag 词】作为人类可读子命令名（遇到首个 `-` 即停，避免把选项值带进来）。 */
+  function subcommandLabel(args) {
+    const out = [];
+    for (const a of args) {
+      if (typeof a !== "string" || a.startsWith("-")) break;
+      out.push(a);
+      if (out.length >= 3) break;
+    }
+    return out.join(" ");
+  }
+
+  /** 需要打码的「取值为机密」的开关。 */
+  const SECRET_FLAGS = new Set(["--cloudbase-api-key", "--apiKey", "--apiKeyId", "--token", "--key"]);
+
+  /** 生成【不含凭据】的命令行文本：机密开关的下一个参数一律替换为 `***`。 */
+  function redactArgs(args) {
+    const out = [];
+    let maskNext = false;
+    for (const a of args) {
+      if (maskNext) {
+        out.push("***");
+        maskNext = false;
+        continue;
+      }
+      if (typeof a === "string" && SECRET_FLAGS.has(a)) {
+        out.push(a);
+        maskNext = true;
+        continue;
+      }
+      out.push(a);
+    }
+    return out.join(" ");
+  }
+
   /** 执行一条 tcb 命令（凭据只经环境/CLI 自身处理，**绝不 put 进日志**）。 */
   async function run(args) {
     try {
       return await exec(tcbBin, args, { cwd: repoRoot });
     } catch (err) {
+      const msg = String((err && err.message) || "");
       const stderr = err && err.stderr ? String(err.stderr) : "";
-      const hint = /ENOENT|not found/i.test(String(err && err.message))
-        ? `未找到 \`${tcbBin}\` 命令：请先安装官方 CLI —— \`npm i -g @cloudbase/cli\`，再 \`tcb login\`。`
-        : "命令执行失败。若为鉴权问题，请先 `tcb login`（或设置 CLOUDBASE_API_KEY 供免账号登录）。";
-      throw new SetupError("TCB_COMMAND_FAILED", `执行 \`${tcbBin} ${args.join(" ")}\` 失败：${stderr || (err && err.message) || "未知错误"}。${hint}`);
+      // ① CLI 缺失：ENOENT / command not found → 给出可照做的安装/登录补救（而非裸报错）
+      if (/ENOENT|command not found|not found/i.test(msg) || /not found/i.test(stderr)) {
+        throw new SetupError("TCB_COMMAND_FAILED", cliMissingHint(tcbBin));
+      }
+      // ② 其它失败：命令文本经打码（绝不含凭据）+ 鉴权指引 + 版本漂移提示
+      const authHint = `若为鉴权问题，请先 \`${tcbBin} login\`（或设置 CLOUDBASE_API_KEY 供免账号登录）。`;
+      throw new SetupError(
+        "TCB_COMMAND_FAILED",
+        `执行 \`${tcbBin} ${redactArgs(args)}\` 失败：${stderr || msg || "未知错误"}。\n` +
+          `提示：${authHint}\n${versionDriftHint(subcommandLabel(args))}`
+      );
     }
   }
 
@@ -334,7 +450,11 @@ export function createCliClient(opts) {
       }
     },
 
-    /** 下发云函数 invoke 规则（未登录也可调用云函数；函数内部自检身份/权限）。 */
+    /**
+     * 下发云函数 invoke 规则。
+     * 默认规则为**最小放通名单**（仅 kbInitAdmin/kbRegister/kbLogin，`{"invoke":true}`）；
+     * 其它函数不下发放通规则。`function` 仅支持 `--level custom`（见 CLI 参考 permission.md）。
+     */
     async setFunctionInvokeRule(rule) {
       await ensureAuth();
       await run([
@@ -428,7 +548,7 @@ export async function runSetup(client, options) {
   log(`· 已应用迁移：${appliedVersions.length} 条；待下发：${plan.pendingMigrations.length} 条`);
   for (const m of plan.pendingMigrations) log(`    → 迁移 ${m.version}_${m.name}`);
   log(`· 安全域名待添加：${plan.domainsToAdd.length ? plan.domainsToAdd.join(", ") : "（无）"}`);
-  log(`· 云函数 invoke 规则：${plan.invokeRuleAction}`);
+  log(`· 云函数 invoke 规则：${plan.invokeRuleAction}（目标：最小放通 ${PUBLIC_FUNCTIONS.join("/")}）`);
 
   if (dryRun) {
     log("[dry-run] 仅预览，未做任何改动。");
@@ -476,11 +596,14 @@ const USAGE = [
   "  node scripts/setup-cloud.js [--env <envId>] [--dry-run] [--json] [--force-invoke-rule]",
   "",
   "做什么：① 版本化迁移下发建表+GRANT+RLS（DDL 走迁移，不走 execute）",
-  "        ② 下发云函数 invoke 规则  ③ 配置安全域名白名单（至少 localhost:5173）",
+  "        ② 下发云函数 invoke 规则（最小放通：仅 kbInitAdmin/kbRegister/kbLogin）",
+  "        ③ 配置安全域名白名单（至少 localhost:5173）",
   "幂等：重复运行不报错、不重复创建、不覆盖既有策略（先查后写）。",
   "凭据：环境 ID 取 --env / TCB_ENV / ENV_ID / VITE_CLOUDBASE_ENV_ID；",
   "      可选 CLOUDBASE_API_KEY 用于免账号登录；均只从 .env.local / 环境变量读，绝不回显。",
+  `依赖官方 CLI：npm i -g @cloudbase/cli（需 ≥ ${MIN_TCB_VERSION}）并 tcb login。`,
   "仍须手工：开启用户名密码登录、注入自定义登录私钥、取 Publishable Key、首次管理员初始化。",
+  "配置后必验：登录后调用 kbGetMyRole 必须成功；若被拒，按附录 D.3 放宽并记录原因。",
   "详见 docs/CONSOLE-STEPS.md。",
 ].join("\n");
 
