@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./lib/api";
-import { auth } from "./lib/cloudbase";
+import { auth, initError } from "./lib/cloudbase";
 import { log } from "./lib/log";
 import AdminPage from "./pages/AdminPage";
 import InitPage from "./pages/InitPage";
@@ -20,7 +20,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import VaultPage from "./pages/VaultPage";
 
-type Screen = "loading" | "init" | "login" | "register" | "home" | "admin";
+type Screen = "loading" | "init" | "login" | "register" | "home" | "admin" | "config-error";
 
 /** 本机“已完成初始化”标记；与服务端 kb_users 非空共同构成“不再出现初始化页”的判据。 */
 const INIT_FLAG_KEY = "keybox.initialized";
@@ -31,6 +31,11 @@ export default function App(): JSX.Element {
   const [role, setRole] = useState<string>("user");
 
   useEffect(() => {
+    // 配置缺失时不触碰任何云端调用——渲染指引页（否则打包环境缺 VITE_ 变量会白屏）。
+    if (initError) {
+      setScreen("config-error");
+      return;
+    }
     let alive = true;
     (async () => {
       try {
@@ -82,6 +87,16 @@ export default function App(): JSX.Element {
 
   if (screen === "loading") {
     return <CenteredMessage text="正在启动…" />;
+  }
+
+  // 配置缺失（例如从源码构建时未填 .env.local）：给出明确指引，而不是白屏。
+  if (screen === "config-error") {
+    return (
+      <CenteredMessage
+        text="应用配置缺失，无法连接云端。"
+        hint={`${initError}。如果你是从源码构建：请复制 .env.example 为 .env.local，填入你的 CloudBase 环境 ID 与 Publishable Key 后重新构建；安装包用户请重新下载官方构建产物。`}
+      />
+    );
   }
 
   if (screen === "init") {
