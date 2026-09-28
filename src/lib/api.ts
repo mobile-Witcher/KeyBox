@@ -126,6 +126,30 @@ export interface AdminDeleteUserDataData {
   deletedCount: number;
 }
 
+/** kbRotateMaster 入参：改主密码时本机【重加密后】的全量新代密文（不含任何明文/密钥）。 */
+export interface RotateMasterParams {
+  /** 新一代主密码派生盐（base64）。 */
+  kdfSalt: string;
+  /** 上一代主密码派生盐（base64，供本机回滚窗口使用；§6.3）。 */
+  kdfSaltPrev: string;
+  /** 新一代 kdf_verifier（`KB1:` 密文）。 */
+  kdfVerifier: string;
+  /** R28：若账号已设恢复码，则用【新】主密钥重包裹后的 `KBRC1:` 密文（可选）。 */
+  recoveryBlob?: string;
+  /** 本机重加密后的全部密文行（id 为服务端行 id，payload 为 `KB1:` 密文）。 */
+  items: Array<{ id: number; payload: string }>;
+}
+
+/** kbRotateMaster 返回：推进后的 key_epoch（服务端 +1）。 */
+export interface RotateMasterData {
+  keyEpoch: number;
+}
+
+/** kbAckRecovery 返回：本次写入的 recovery_ack_at（ISO）。 */
+export interface AckRecoveryData {
+  ackedAt: string;
+}
+
 export const api = {
   /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。 */
   initAdmin(params: InitAdminParams): Promise<ApiResult<InitAdminData>> {
@@ -165,6 +189,17 @@ export const api = {
    */
   adminDeleteUserData(params: { uid: string }): Promise<ApiResult<AdminDeleteUserDataData>> {
     return call<AdminDeleteUserDataData>("kbAdminDeleteUserData", { ...params });
+  },
+  /**
+   * R21：整批提交重加密后的全量密文（单请求、原子；key_epoch+1 由服务端完成）。
+   * 只传密文与盐/校验串，主密钥与主密码绝不进入本请求。
+   */
+  rotateMaster(params: RotateMasterParams): Promise<ApiResult<RotateMasterData>> {
+    return call<RotateMasterData>("kbRotateMaster", { ...params });
+  },
+  /** R28：确认“已抄下恢复码”（写 recovery_ack_at；仅本人那一行）。 */
+  ackRecovery(): Promise<ApiResult<AckRecoveryData>> {
+    return call<AckRecoveryData>("kbAckRecovery", {});
   },
 };
 

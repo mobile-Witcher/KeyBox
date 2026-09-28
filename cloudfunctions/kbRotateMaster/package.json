@@ -1,0 +1,10 @@
+{
+  "name": "kb-rotate-master",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyBox 云函数：改主密码整批重写（R21）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}
