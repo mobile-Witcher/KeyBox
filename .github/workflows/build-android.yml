@@ -70,6 +70,11 @@ jobs:
           java-version: "21"
 
       - name: Setup Android SDK
+        # ⚠️ 已停用：android-actions/setup-android@v3 的 sdkmanager 在 runner 上偶发
+        #    exit code 1（已实测失败一次）。ubuntu-latest 镜像自带 Android SDK
+        #    （ANDROID_HOME 已指向预装目录），此步本就多余；许可证改在下方
+        #    Build APK 步骤里统一接受。
+        if: false
         uses: android-actions/setup-android@v3
 
       - name: Sync Capacitor Android
@@ -97,6 +102,7 @@ jobs:
 
       - name: Build APK
         run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           chmod +x android/gradlew
           cd android
           ./gradlew "$GRADLE_TASK" --no-daemon
