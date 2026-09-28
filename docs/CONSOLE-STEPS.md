@@ -288,13 +288,15 @@
 | 脚本负责 | 说明 | 对应本文 |
 |----------|------|----------|
 | ① 下发**版本化迁移**（建表 + `REVOKE`/精确 `GRANT` + RLS 策略） | DDL 一律走**版本化迁移**（等价 `applyMigration`），**绝不**用 `execute` 跑 DDL；迁移以仓库 `cloudbase/migrations/` 为权威副本，按版本顺序执行 | 第 2 步（迁移部分） |
-| ② 下发云函数 **invoke 规则**（**最小放通**） | **只**放通「登录前必须可调」的 `kbInitAdmin` / `kbRegister` / `kbLogin`（**不放通全部**）；其余函数不下发放通规则。已是期望值则跳过 | 第 2 步（云函数权限） |
+| ② 下发云函数 **invoke 规则**（**默认＝文档确证的通配写法**） | 默认下发 `{"*":{"invoke":true}}`（放通全部；理由见 D.3）。**如需收紧**，用 `--invoke-rule login-only` 或 `minimal`（D.3 两个档位）。已是期望值则跳过 | 第 2 步（云函数权限） |
 | ③ 配置**安全域名白名单**（至少 `localhost:5173`） | 浏览器跨域 origin 白名单；已存在的不重复添加 | 第 3 步 |
 
 **运行（在项目根目录）：**
 ```
-node scripts/setup-cloud.js --dry-run     # 先看一眼"将要做什么"，不改任何东西
-node scripts/setup-cloud.js               # 真正执行（幂等，可重复跑）
+node scripts/setup-cloud.js --dry-run                       # 先看一眼"将要做什么"，不改任何东西
+node scripts/setup-cloud.js                                 # 真正执行（幂等，可重复跑；invoke 用默认档位）
+node scripts/setup-cloud.js --invoke-rule login-only        # 可选收紧①：仅登录用户可调（见 D.3）
+node scripts/setup-cloud.js --invoke-rule minimal           # 可选收紧②：仅放通三个登录前函数【待实测】（见 D.3）
 ```
 
 **凭据**：脚本只从 `.env.local` / 环境变量读，**绝不硬编码、绝不回显**。
@@ -321,48 +323,55 @@ node scripts/setup-cloud.js               # 真正执行（幂等，可重复跑
 > 结论：`setup-cloud.js` 覆盖"数据库地基 + 云函数可调用性 + 安全域名"三块；上面五条仍需你按本文手工完成。
 > 两件事都做完，登录/注册链路才能端到端跑通。
 
-### D.3 配置后必验（必须做）+ 放宽路径
+### D.3 invoke 规则：默认口径 + 配置后必验 + 可选收紧档位
 
-> ⚠️ invoke 规则采用**最小放通名单**（只放通 `kbInitAdmin`/`kbRegister`/`kbLogin`）。
-> 该名单**是否正确以实测为准**——因此跑完脚本、并做完上面五条手工项后，**必须**做这一步验证。
+**默认口径（脚本默认下发）：`{"*":{"invoke":true}}`（放通全部）。** 为什么默认选它而非"最小名单"：
+- 它是**官方文档确证**的写法（CloudBase CLI 参考有该示例原文，见下方"出处"）；而"以函数名为键"的
+  per-function 写法**文档未直接给出**（标注**【待实测】**）。
+- **失败模式不对等**：默认必须是已被证明的东西。若用未核实的写法、而平台判其非法或整体不生效，
+  最可能的后果是**登录前的三个函数也一起调不到 → 初始化/注册/登录整条链路直接断**；这三条恰是
+  项目**最先被用、也最难排查**的路径。**拿未核实的语法去担这个风险不划算。**
+- 真正的安全防线在每个云函数 `index.js` 内部的**身份/权限自检**（QA 已逐个核实），调用方"能否够到函数"
+  **不是**安全边界。故默认放通**不降低实际安全性**，只是把"够得着但会被拒"的范围放大了一点。
 
-**① 必验（判定"最小名单"够不够）：**
-1. 打开应用，用管理员账号**登录成功**（登录走 `kbLogin`，它的放通必须已生效）。
-2. 登录后，应用紧接着会调用 **`kbGetMyRole`**（取本人角色/停用状态/密钥参数，见 附录 A.5）。
-3. **判定**：
-   - ✅ 能正常取到角色、**无任何权限报错** → invoke 配置**通过**，收工。
-   - ❌ 若返回**权限错误**（典型：`EXCEED_AUTHORITY`、403、"无权限调用"）→ 说明 `kbGetMyRole`
-     这类"**登录后才需要调**"的函数**也必须放通**，请进入 ② 放宽。
+---
 
-**② 放宽路径（按实测逐级放宽，并**记录"为什么放宽"**）：**
+**① 必验（两条，缺一不可）——控制台配好后必须实测：**
 
-| 顺序 | 放宽做法 | 何时用 | 记录什么 |
-|------|----------|--------|----------|
-| **1（首选）** | 改用**条件表达式**规则：**仅"已登录且非匿名"用户可调**（命令见下） | `kbGetMyRole` 等被拒，但你只想放开给**登录用户** | 记："`kbGetMyRole` 被拒 → 放宽为'仅登录用户可调'" |
-| **2（最后手段）** | 放通**全部函数** `{"invoke":true}` | 条件表达式在你的环境**不生效**（平台不支持）时 | 记："条件表达式无效 → **被迫**放通全部（附平台返回的错误）" |
+| 序 | 验什么 | 怎么判 | 失败意味着 |
+|----|--------|--------|------------|
+| 1 | **登录前**能调 `kbInitAdmin` / `kbRegister` / `kbLogin` | 未登录状态下：初始化管理员 / 输入邀请码注册 / 登录取票据，**都能正常走到**（不报 `EXCEED_AUTHORITY`） | 这三个"登录前函数"没放通 → **链路直接断**（用户"打不开/注册不了"）；若你用了收紧档位，多半是档位写错 |
+| 2 | **登录后**能调 `kbGetMyRole` | 登录后应用能取到本人角色/停用状态/密钥参数（见附录 A.5） | 该函数未放通 → 登录后被拒 |
 
-- **首选：条件表达式**（出处：CloudBase 官方 CLI 参考 `permission.md` 的官方示例）：
+> ⚠️ **两条都要验**：第 1 条是"最小化/收紧"可能踩断的那条（之前只验了第 2 条）；第 2 条是"登录后可用"的那条。
+
+**② 可选收紧档位（默认不动；需要更严时**依次**收紧，并记录"档位/实测结果/为什么"）：**
+
+| 档位 | 规则 | 命令 | 说明 |
+|------|------|------|------|
+| **默认** | `{"*":{"invoke":true}}` | `node scripts/setup-cloud.js` | 文档确证；放通全部 |
+| **档位① `login-only`** | `{"*":{"invoke":"auth != null && auth.loginType != 'ANONYMOUS'"}}` | `node scripts/setup-cloud.js --invoke-rule login-only` | **文档示例确证**；**仅登录（非匿名）用户**可调（比放通全部精确、但比最小名单宽） |
+| **档位② `minimal`** | `{"kbInitAdmin":{"invoke":true},"kbRegister":{"invoke":true},"kbLogin":{"invoke":true}}` | `node scripts/setup-cloud.js --invoke-rule minimal` | per-function 写法 **【待实测】**；只放通登录前三个函数，其余回到平台默认 |
+
+- **收紧顺序**：先 ① 再考虑 ②；**每级都要重跑上面的"两条必验"**。
+- **档位① 命令全貌**（也可直接手敲，出处同下）：
   ```
   tcb permission set function --level custom \
     --rule '{"*":{"invoke":"auth != null && auth.loginType != '\''ANONYMOUS'\''"}}' \
     -e {你的环境Id} --yes
   ```
   语义：`auth != null`＝存在登录会话；`loginType != 'ANONYMOUS'`＝排除匿名会话。
-  它**只放通登录用户**、不放开"未登录也能调"，**比放通全部安全**。
-- **最后手段：放通全部**（仅在条件表达式被平台拒绝/无效时用）：
-  ```
-  tcb permission set function --level custom --rule '{"invoke":true}' -e {你的环境Id} --yes
-  ```
+- **档位② 若实测被平台拒绝/不生效** → **回退到默认或档位①**（不要卡住），并在部署备注写明平台返回的错误。
 
-> **为什么"最小名单"要留放宽？** 因为"以函数名为键"的 per-function 写法**在官方文档里未直接给出**
-> （文档演示的是通配键 `{"*":{"invoke":…}}` 与整段 `package authz.user` Rego）——故本项标注
-> **【待核实】**。**实测结论优先于推断**：只要 ① 验证通过就用最小名单；一旦被拒，按 ② 放宽并写明缘由。
->
-> **附：出处**
-> - `permission.md`（CloudBase 官方 CLI 参考，`tcb permission set function --level custom --rule …`，含条件表达式示例）。
-> - `http-functions.md`（PG 环境：平台 `ModifyResourcePermission`/`DescribeResourcePermission` 拒绝 PG 环境，
->   回退到 `authz.user.rego`；`{"invoke":true}`＝公开放通策略）——见 `https://docs.cloudbase.net/cli-v1/policy/management`。
-> - 云函数安全规则官方说明：`https://docs.cloudbase.net/cloud-function/security-rules`。
+> **记录要求**：一旦选了收紧档位，请在部署备注里写下 **"用了哪个档位（①/②）、两条必验的实测结果、为什么选它"**。
+> 因为档位②是**基于文档的推断**（**【待实测】**），**实测结论优先于推断**。
+
+**出处：**
+- 通配键 + 条件表达式官方示例：CloudBase 官方 CLI 参考 `permission.md`
+  （`tcb permission set function --level custom --rule '{"*":{"invoke":…}}'`）。
+- PG 环境说明：平台 `ModifyResourcePermission`/`DescribeResourcePermission` **拒绝 PG 环境**，回退到
+  `authz.user.rego`；`{"invoke":true}`＝公开放通策略 —— 见 `https://docs.cloudbase.net/cli-v1/policy/management`。
+- 云函数安全规则官方说明：`https://docs.cloudbase.net/cloud-function/security-rules`。
 
 **③ 若怀疑是 CLI 版本问题：** `setup-cloud.js` 在**子命令失败**时会提示"可能是 CLI 版本差异"。
 先 `tcb --version`（官方要求 **≥ 3.0.0**），再核对 `tcb permission set function --help`

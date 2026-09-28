@@ -34,12 +34,17 @@ interface SetupModule {
   MIGRATIONS_DIR: string;
   DEFAULT_SECURITY_DOMAINS: string[];
   PUBLIC_FUNCTIONS: string[];
-  DESIRED_FUNCTION_INVOKE_RULE: string;
+  WILDCARD_INVOKE_RULE: string;
+  MINIMAL_INVOKE_RULE: string;
   LOGIN_REQUIRED_INVOKE_RULE: string;
+  DESIRED_FUNCTION_INVOKE_RULE: string;
+  INVOKE_PRESETS: Record<string, string>;
+  DEFAULT_INVOKE_PRESET: string;
   MIN_TCB_VERSION: string;
   DOCS_HINT: string;
   SetupError: new (code: string, message: string) => Error & { code: string };
   buildInvokeRule: (functions?: string[]) => string;
+  resolveInvokeRule: (preset?: string) => string;
   cliMissingHint: (tcbBin?: string) => string;
   versionDriftHint: (subcommand?: string) => string;
   parseArgs: (argv: string[]) => {
@@ -49,6 +54,7 @@ interface SetupModule {
     help: boolean;
     json: boolean;
     forceInvokeRule: boolean;
+    invokeRule: string;
   };
   parseMigrationFilename: (f: string) => { version: string; name: string } | null;
   loadMigrations: (
@@ -88,7 +94,7 @@ const mod = (await import(/* @vite-ignore */ pathToFileURL(SCRIPT_PATH).href)) a
 // 参数解析
 // ---------------------------------------------------------------------------
 describe("setup-cloud：参数解析", () => {
-  it("解析 --env/-e/--dry-run/--yes/--json/--force-invoke-rule/--help", () => {
+  it("解析 --env/-e/--dry-run/--yes/--json/--force-invoke-rule/--invoke-rule/--help", () => {
     expect(mod.parseArgs([])).toEqual({
       env: "",
       dryRun: false,
@@ -96,6 +102,7 @@ describe("setup-cloud：参数解析", () => {
       help: false,
       json: false,
       forceInvokeRule: false,
+      invokeRule: mod.DEFAULT_INVOKE_PRESET,
     });
     expect(mod.parseArgs(["--env", "env-1", "--dry-run", "--yes"])).toMatchObject({
       env: "env-1",
@@ -109,6 +116,8 @@ describe("setup-cloud：参数解析", () => {
       forceInvokeRule: true,
       help: true,
     });
+    expect(mod.parseArgs(["--invoke-rule", "minimal"]).invokeRule).toBe("minimal");
+    expect(mod.parseArgs(["--invoke-rule=login-only"]).invokeRule).toBe("login-only");
   });
 });
 
@@ -238,7 +247,7 @@ describe("setup-cloud：幂等计划（只做差量、不覆盖既有）", () =>
     expect(
       mod.planSetup({ ...base, invokeRule: { found: true, rule: '{"invoke":false}' } }).invokeRuleAction
     ).toBe("apply");
-    // 旧的「放通全部」策略 ≠ 新的最小名单 → 视为不同，需重新下发（收敛到最小名单）
+    // 旧的 `{"invoke":true}`（无通配键）≠ 默认通配写法 `{"*":{"invoke":true}}` → 视为不同，收敛下发
     expect(
       mod.planSetup({ ...base, invokeRule: { found: true, rule: '{"invoke":true}' } }).invokeRuleAction
     ).toBe("apply");
@@ -358,6 +367,22 @@ describe("setup-cloud：runSetup 编排", () => {
     const r2 = await mod.runSetup(c2, { migrations: MIGS, forceInvokeRule: true, log: () => {} });
     expect(r2.invokeRuleApplied).toBe(true);
     expect(c2.calls.some((c) => c[0] === "setFunctionInvokeRule")).toBe(true);
+  });
+
+  it("--invoke-rule minimal：把【档位规则】原样下发（而非默认通配写法）", async () => {
+    const client = makeFakeClient({
+      applied: MIGS.map((m) => m.version),
+      domains: ["localhost:5173"],
+      invoke: { found: true, rule: null },
+    });
+    const res = await mod.runSetup(client, {
+      migrations: MIGS,
+      desiredInvokeRule: mod.resolveInvokeRule("minimal"),
+      log: () => {},
+    });
+    expect(res.invokeRuleApplied).toBe(true);
+    expect(client.calls).toContainEqual(["setFunctionInvokeRule", mod.MINIMAL_INVOKE_RULE]);
+    expect(mod.rulesEqual(mod.MINIMAL_INVOKE_RULE, mod.DESIRED_FUNCTION_INVOKE_RULE)).toBe(false);
   });
 });
 
@@ -514,41 +539,58 @@ describe("setup-cloud：CLI 客户端命令拼装", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 最小放通名单（不放通全部）+ 放宽首选形式（条件表达式）
+// invoke 规则档位：默认＝文档确证的通配写法；收紧＝可选硬化档位
 // ---------------------------------------------------------------------------
-describe("setup-cloud：invoke 最小放通名单", () => {
+describe("setup-cloud：invoke 规则档位", () => {
+  it("★默认 DESIRED_FUNCTION_INVOKE_RULE ＝【官方文档确证】的通配写法 {\"*\":{\"invoke\":true}}", () => {
+    expect(mod.DESIRED_FUNCTION_INVOKE_RULE).toBe(mod.WILDCARD_INVOKE_RULE);
+    expect(JSON.parse(mod.DESIRED_FUNCTION_INVOKE_RULE)).toEqual({ "*": { invoke: true } });
+    // 默认＝通配写法（文档示例原文），**不是**未核实的 per-function 写法
+    expect(mod.rulesEqual(mod.DESIRED_FUNCTION_INVOKE_RULE, mod.WILDCARD_INVOKE_RULE)).toBe(true);
+    expect(mod.rulesEqual(mod.DESIRED_FUNCTION_INVOKE_RULE, mod.MINIMAL_INVOKE_RULE)).toBe(false);
+  });
+
   it("PUBLIC_FUNCTIONS 恰好是「登录前必须可调」的三个函数", () => {
     expect(mod.PUBLIC_FUNCTIONS).toEqual(["kbInitAdmin", "kbRegister", "kbLogin"]);
   });
 
-  it("★DESIRED_FUNCTION_INVOKE_RULE 是 per-function 最小名单，且【不是】放通全部", () => {
-    const parsed = JSON.parse(mod.DESIRED_FUNCTION_INVOKE_RULE) as Record<string, unknown>;
-    expect(Object.keys(parsed).sort()).toEqual([...mod.PUBLIC_FUNCTIONS].sort());
-    for (const name of mod.PUBLIC_FUNCTIONS) {
-      expect(parsed[name]).toEqual({ invoke: true });
-    }
-    // 不得含通配键（通配=对所有函数生效，等于放宽）
-    expect(parsed["*"]).toBeUndefined();
-    // 不得等于旧的「放通全部」写法
-    expect(mod.rulesEqual(mod.DESIRED_FUNCTION_INVOKE_RULE, '{"invoke":true}')).toBe(false);
-    // 明确排除"非登录链路的函数"混入名单
-    expect(Object.keys(parsed)).not.toContain("kbGetMyRole");
-    expect(Object.keys(parsed)).not.toContain("kbSecretUpsert");
-    expect(Object.keys(parsed)).not.toContain("kbSecretDelete");
-  });
-
-  it("buildInvokeRule 由名单派生（默认=最小名单；空名单=空对象；可自定义）", () => {
-    expect(mod.buildInvokeRule()).toBe(mod.DESIRED_FUNCTION_INVOKE_RULE);
-    expect(JSON.parse(mod.buildInvokeRule([]))).toEqual({});
-    expect(JSON.parse(mod.buildInvokeRule(["kbLogin"]))).toEqual({ kbLogin: { invoke: true } });
-  });
-
-  it("LOGIN_REQUIRED_INVOKE_RULE＝文档出处里的【仅已登录且非匿名】条件表达式（放宽首选）", () => {
+  it("收紧档位①（login-only）＝文档确证的【仅已登录且非匿名】条件表达式", () => {
     const parsed = JSON.parse(mod.LOGIN_REQUIRED_INVOKE_RULE) as Record<string, { invoke: string }>;
     expect(parsed["*"]).toBeTruthy();
     expect(parsed["*"].invoke).toContain("auth != null");
     expect(parsed["*"].invoke).toContain("ANONYMOUS");
-    // 它比放通全部更精确：不是布尔 true
-    expect(parsed["*"].invoke).not.toBe("true");
+    expect(parsed["*"].invoke).not.toBe("true"); // 比放通全部精确
+  });
+
+  it("收紧档位②（minimal）＝per-function 写法【待实测】，且不是默认", () => {
+    const parsed = JSON.parse(mod.MINIMAL_INVOKE_RULE) as Record<string, unknown>;
+    expect(Object.keys(parsed).sort()).toEqual([...mod.PUBLIC_FUNCTIONS].sort());
+    for (const name of mod.PUBLIC_FUNCTIONS) expect(parsed[name]).toEqual({ invoke: true });
+    expect(parsed["*"]).toBeUndefined(); // per-function：不含通配键
+    expect(Object.keys(parsed)).not.toContain("kbGetMyRole"); // 不混入"非登录链路"函数
+    expect(mod.rulesEqual(mod.MINIMAL_INVOKE_RULE, mod.DESIRED_FUNCTION_INVOKE_RULE)).toBe(false);
+  });
+
+  it("buildInvokeRule 由名单派生（空名单=空对象；可自定义；默认=三个登录前函数）", () => {
+    expect(mod.buildInvokeRule()).toBe(mod.MINIMAL_INVOKE_RULE);
+    expect(JSON.parse(mod.buildInvokeRule([]))).toEqual({});
+    expect(JSON.parse(mod.buildInvokeRule(["kbLogin"]))).toEqual({ kbLogin: { invoke: true } });
+  });
+
+  it("resolveInvokeRule：默认→wildcard；三档位可解析；未知档位 → SetupError(UNKNOWN_INVOKE_PRESET)", () => {
+    expect(mod.DEFAULT_INVOKE_PRESET).toBe("wildcard");
+    expect(mod.resolveInvokeRule()).toBe(mod.WILDCARD_INVOKE_RULE);
+    expect(mod.resolveInvokeRule("wildcard")).toBe(mod.WILDCARD_INVOKE_RULE);
+    expect(mod.resolveInvokeRule("login-only")).toBe(mod.LOGIN_REQUIRED_INVOKE_RULE);
+    expect(mod.resolveInvokeRule("minimal")).toBe(mod.MINIMAL_INVOKE_RULE);
+
+    let err: (Error & { code?: string }) | null = null;
+    try {
+      mod.resolveInvokeRule("nope");
+    } catch (e) {
+      err = e as Error & { code?: string };
+    }
+    expect(err!.code).toBe("UNKNOWN_INVOKE_PRESET");
+    expect(String(err!.message)).toContain("wildcard");
   });
 });

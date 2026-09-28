@@ -4,8 +4,8 @@
  *
  * 它做什么（把 `docs/CONSOLE-STEPS.md` 里能干的部分固化成可复跑的一步）：
  *   ① 驱动【版本化迁移】下发建表 + REVOKE/GRANT + RLS（DDL 一律走迁移，绝不走 execute）；
- *   ② 下发云函数的 invoke 规则（**最小放通**：只放通「登录前必须可调」的
- *      `kbInitAdmin` / `kbRegister` / `kbLogin`——**不放通全部**；其余函数不下发放通规则）；
+ *   ② 下发云函数的 invoke 规则（**默认＝官方文档确证的通配写法** `{"*":{"invoke":true}}`）；
+ *      如需收紧，用 `--invoke-rule login-only|minimal` 选择档位（详见 docs/CONSOLE-STEPS.md 附录 D.3）；
  *   ③ 配置【安全域名白名单】（至少 `localhost:5173`，浏览器跨域 origin 白名单）。
  * 它不做什么（**必须仍手工**，见 `docs/CONSOLE-STEPS.md` 附录 C）：
  *   · 开启「用户名密码登录」开关；· 生成并注入「自定义登录私钥」；
@@ -44,24 +44,31 @@ export const MIGRATIONS_DIR = "cloudbase/migrations";
 /** 至少必须放行的浏览器安全域名（本地 Vite dev server）。 */
 export const DEFAULT_SECURITY_DOMAINS = ["localhost:5173"];
 
+// --- 云函数 invoke 规则：默认用【官方文档确证】的通配写法；收紧是"可选硬化档位" ---
+
 /**
- * 「登录前（尚未认证）就必须能调用」的函数——本次下发的**最小放通名单**。
+ * 官方文档**确证**的「通配键」写法：对**所有**函数生效。此处＝放通全部（`{"*":{"invoke":true}}`）。
+ * 出处：CloudBase 官方 CLI 参考 `permission.md`（`tcb permission set function --rule '{"*":{"invoke":…}}'`）。
+ *
+ * **这是默认值**——理由（见 `docs/CONSOLE-STEPS.md` 附录 D.3）：默认必须是**已被官方文档证明**的写法。
+ * "以函数名为键"的 per-function 写法**文档未直接给出**，若平台判其非法，最可能"规则整体不生效 →
+ * 登录前三个函数也调不到 → 初始化/注册/登录整条链路断"，而这恰是最难事后排查的路径。故**不作默认**。
+ */
+export const WILDCARD_INVOKE_RULE = JSON.stringify({ "*": { invoke: true } }); // → {"*":{"invoke":true}}
+
+/**
+ * 「登录前（尚未认证）就必须能调用」的函数——**收紧档位②**的目标名单。
  * 这三个是登录/注册链路的前置：没有会话也得能调，否则用户永远进不来。
- * 其余函数（kbGetMyRole / kbSecretUpsert / kbSecretDelete / kbInviteCreate / kbInviteRevoke）
- * **不下发放通规则**（保持平台默认的严格策略），其可用性由「配置后必验」按实测结果决定。
  */
 export const PUBLIC_FUNCTIONS = ["kbInitAdmin", "kbRegister", "kbLogin"];
 
 /**
- * 由函数名列表派生 per-function invoke 规则（只列出的函数 `{"invoke":true}`）。
+ * 由函数名列表派生 **per-function** invoke 规则（只列出的函数 `{"invoke":true}`）。
  *
- * ⚠️ **待核实**：平台文档只演示了两种函数 invoke 规则写法——
- *   · 通配键 `{"*":{"invoke":<条件表达式>}}`（见 cloudbase-cli 参考 `permission.md`）；
- *   · 整段 `package authz.user` Rego（见 cloud-functions 参考 `http-functions.md`，PG 环境专用）。
- *   "以具体函数名为键"的 per-function map **在文档里未直接给出**，故标注【待核实】。
- *   本脚本按最小名单下发，并以 `docs/CONSOLE-STEPS.md` 附录 D.3「配置后必验」兜底：
- *   登录后调用 `kbGetMyRole` 必须成功；若被拒（权限错误），按实测结果放宽（首选下方条件表达式），
- *   并在文档中记录"为什么放宽"。**绝不为了"能跑"就放通全部。**
+ * ⚠️ **【待实测】**：官方文档演示的是通配键 `{"*":{…}}`（cloudbase-cli 参考 `permission.md`）
+ * 与整段 `package authz.user` Rego（cloud-functions 参考 `http-functions.md`，PG 环境专用）；
+ * "以具体函数名为键"的写法**文档未直接给出**。故它**只作收紧档位②**（**实测通过后**再用），
+ * **绝不作默认**。
  * @param {string[]} [functions]
  * @returns {string} JSON 文本
  */
@@ -71,20 +78,54 @@ export function buildInvokeRule(functions = PUBLIC_FUNCTIONS) {
   return JSON.stringify(rule);
 }
 
-/** 期望的云函数 invoke 规则：**只放通登录前必须可调的三个函数**（不放通全部）。 */
-export const DESIRED_FUNCTION_INVOKE_RULE = buildInvokeRule(PUBLIC_FUNCTIONS);
+/** 收紧档位②目标规则：per-function 最小名单（**【待实测】**，非默认）。 */
+export const MINIMAL_INVOKE_RULE = buildInvokeRule(PUBLIC_FUNCTIONS);
 
 /**
- * 更精确的「仅已登录（且非匿名）用户可调」条件——**放宽时的首选形式**（非默认）。
- * 出处：CloudBase 官方 CLI 参考 `permission.md`（cloudbase-cli）给出的官方示例：
+ * 收紧档位①规则：**仅已登录（且非匿名）用户可调**——官方示例**确证**的条件表达式。
+ * 出处：CloudBase 官方 CLI 参考 `permission.md`：
  *   tcb permission set function --level custom \
  *     --rule '{"*":{"invoke":"auth != null && auth.loginType != '\''ANONYMOUS'\''"}}'
  * 语义：`auth != null`＝存在登录会话；`loginType != 'ANONYMOUS'`＝排除匿名会话。
- * 若"配置后必验"发现登录后仍被拒，优先用它放宽（比 `{"invoke":true}` 精确），而非放通全部。
+ * ⚠️ 它会让"登录后可调"的**所有**函数可调（比通配放通精确、但比最小名单宽）——故只是**档位①**。
  */
 export const LOGIN_REQUIRED_INVOKE_RULE = JSON.stringify({
   "*": { invoke: "auth != null && auth.loginType != 'ANONYMOUS'" },
 });
+
+/**
+ * 可选的 invoke 规则档位（供 `--invoke-rule <preset>` 选择）：
+ *   · `wildcard`   —— **默认**：文档确证，放通全部 `{"*":{"invoke":true}}`
+ *   · `login-only` —— 收紧档位①：文档确证，仅登录（非匿名）用户可调
+ *   · `minimal`    —— 收紧档位②：per-function 写法 **【待实测】**
+ */
+export const INVOKE_PRESETS = {
+  wildcard: WILDCARD_INVOKE_RULE,
+  "login-only": LOGIN_REQUIRED_INVOKE_RULE,
+  minimal: MINIMAL_INVOKE_RULE,
+};
+
+/** 默认档位名。 */
+export const DEFAULT_INVOKE_PRESET = "wildcard";
+
+/** 期望的云函数 invoke 规则（默认＝文档确证的通配写法）。 */
+export const DESIRED_FUNCTION_INVOKE_RULE = WILDCARD_INVOKE_RULE;
+
+/**
+ * 解析 `--invoke-rule` 档位名为具体规则文本；未知档位 → SetupError。
+ * @param {string} [preset]
+ * @returns {string}
+ */
+export function resolveInvokeRule(preset = DEFAULT_INVOKE_PRESET) {
+  const key = String(preset || DEFAULT_INVOKE_PRESET).trim();
+  if (!Object.prototype.hasOwnProperty.call(INVOKE_PRESETS, key)) {
+    throw new SetupError(
+      "UNKNOWN_INVOKE_PRESET",
+      `未知的 --invoke-rule 档位「${key}」；可选：${Object.keys(INVOKE_PRESETS).join(" / ")}。`
+    );
+  }
+  return INVOKE_PRESETS[key];
+}
 
 /** 缺凭据时的指路文案（指向仓库文档）。 */
 export const DOCS_HINT = "获取方式见 docs/CONSOLE-STEPS.md 附录 A 与仓库根 .env.example。";
@@ -140,7 +181,7 @@ export class SetupError extends Error {
 /**
  * 极简参数解析。
  * @param {string[]} argv
- * @returns {{env:string,dryRun:boolean,yes:boolean,help:boolean,json:boolean,forceInvokeRule:boolean}}
+ * @returns {{env:string,dryRun:boolean,yes:boolean,help:boolean,json:boolean,forceInvokeRule:boolean,invokeRule:string}}
  */
 export function parseArgs(argv) {
   const out = {
@@ -150,6 +191,7 @@ export function parseArgs(argv) {
     help: false,
     json: false,
     forceInvokeRule: false,
+    invokeRule: DEFAULT_INVOKE_PRESET,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -163,6 +205,11 @@ export function parseArgs(argv) {
       i += 1;
     } else if (typeof a === "string" && a.startsWith("--env=")) {
       out.env = a.slice("--env=".length);
+    } else if (a === "--invoke-rule") {
+      out.invokeRule = String(argv[i + 1] || "");
+      i += 1;
+    } else if (typeof a === "string" && a.startsWith("--invoke-rule=")) {
+      out.invokeRule = a.slice("--invoke-rule=".length);
     }
   }
   return out;
@@ -548,7 +595,7 @@ export async function runSetup(client, options) {
   log(`· 已应用迁移：${appliedVersions.length} 条；待下发：${plan.pendingMigrations.length} 条`);
   for (const m of plan.pendingMigrations) log(`    → 迁移 ${m.version}_${m.name}`);
   log(`· 安全域名待添加：${plan.domainsToAdd.length ? plan.domainsToAdd.join(", ") : "（无）"}`);
-  log(`· 云函数 invoke 规则：${plan.invokeRuleAction}（目标：最小放通 ${PUBLIC_FUNCTIONS.join("/")}）`);
+  log(`· 云函数 invoke 规则：${plan.invokeRuleAction}（目标规则：${desiredInvokeRule}）`);
 
   if (dryRun) {
     log("[dry-run] 仅预览，未做任何改动。");
@@ -593,18 +640,21 @@ export async function runSetup(client, options) {
 const USAGE = [
   "KeyBox 云端一键下发（幂等）—— R27 开源可复现",
   "",
-  "  node scripts/setup-cloud.js [--env <envId>] [--dry-run] [--json] [--force-invoke-rule]",
+  "  node scripts/setup-cloud.js [--env <envId>] [--dry-run] [--json]",
+  "        [--force-invoke-rule] [--invoke-rule wildcard|login-only|minimal]",
   "",
   "做什么：① 版本化迁移下发建表+GRANT+RLS（DDL 走迁移，不走 execute）",
-  "        ② 下发云函数 invoke 规则（最小放通：仅 kbInitAdmin/kbRegister/kbLogin）",
+  "        ② 下发云函数 invoke 规则（默认 wildcard＝文档确证的通配写法，放通全部）",
   "        ③ 配置安全域名白名单（至少 localhost:5173）",
+  "档位：--invoke-rule 可选 wildcard(默认) / login-only(仅登录用户可调) /",
+  "      minimal(仅放通 kbInitAdmin/kbRegister/kbLogin，per-function 写法【待实测】)。",
   "幂等：重复运行不报错、不重复创建、不覆盖既有策略（先查后写）。",
   "凭据：环境 ID 取 --env / TCB_ENV / ENV_ID / VITE_CLOUDBASE_ENV_ID；",
   "      可选 CLOUDBASE_API_KEY 用于免账号登录；均只从 .env.local / 环境变量读，绝不回显。",
   `依赖官方 CLI：npm i -g @cloudbase/cli（需 ≥ ${MIN_TCB_VERSION}）并 tcb login。`,
   "仍须手工：开启用户名密码登录、注入自定义登录私钥、取 Publishable Key、首次管理员初始化。",
-  "配置后必验：登录后调用 kbGetMyRole 必须成功；若被拒，按附录 D.3 放宽并记录原因。",
-  "详见 docs/CONSOLE-STEPS.md。",
+  "配置后必验（两条）：① 登录前能调 kbInitAdmin/kbRegister/kbLogin；② 登录后能调 kbGetMyRole。",
+  "详见 docs/CONSOLE-STEPS.md 附录 D.3。",
 ].join("\n");
 
 /** 加载 `.env.local`（缺失/不可用不致命）。 */
@@ -651,10 +701,12 @@ async function main(argv = process.argv.slice(2)) {
     log: (m) => console.log(m),
   });
 
+  const desiredInvokeRule = resolveInvokeRule(flags.invokeRule);
+
   const result = await runSetup(client, {
     migrations,
     desiredDomains: DEFAULT_SECURITY_DOMAINS,
-    desiredInvokeRule: DESIRED_FUNCTION_INVOKE_RULE,
+    desiredInvokeRule,
     forceInvokeRule: flags.forceInvokeRule,
     dryRun: flags.dryRun,
     log: (m) => console.log(m),
