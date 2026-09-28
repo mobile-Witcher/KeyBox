@@ -27,6 +27,8 @@ name: build-android
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -47,7 +49,16 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        # ⚠️ npm 已知 bug #4828：lockfile 在 Windows 上生成时，npm ci 可能跳过
+        #    Linux 平台的可选依赖（rollup/esbuild 的原生二进制），导致构建报
+        #    Cannot find module '@rollup/rollup-linux-x64-gnu'。此处显式补装，
+        #    版本与 package-lock 中的 rollup 4.63.5 / esbuild 0.21.5 严格对应。
+        run: |
+          npm ci
+          npm i --no-save @rollup/rollup-linux-x64-gnu@4.63.5 @esbuild/linux-x64@0.21.5
+
+      - name: Test
+        run: npm test
 
       - name: Build web assets
         run: npm run build

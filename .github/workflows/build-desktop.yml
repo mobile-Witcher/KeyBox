@@ -20,6 +20,8 @@ name: build-desktop
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -48,7 +50,11 @@ jobs:
           workspaces: "src-tauri -> target"
 
       - name: Install dependencies
-        run: npm ci
+        # ⚠️ 同 build-android：npm 已知 bug #4828，lockfile 在 Windows 生成时
+        #    会漏装平台可选依赖（Windows runner 上同样会命中）。
+        run: |
+          npm ci
+          npm i --no-save @rollup/rollup-win32-x64-msvc@4.63.5 @esbuild/win32-x64@0.21.5
 
       - name: Build desktop bundle (Tauri)
         run: npx tauri build
