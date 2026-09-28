@@ -7,7 +7,7 @@
  *   - 主密码从不进入本文件：kdfSalt / kdfVerifier 是“盐 + 用主密钥加密的校验串”，
  *     都不是主密码本身（架构 §6.1 第 3 步）。
  */
-import { app, auth } from "./cloudbase";
+import { requireApp, requireAuth } from "./cloudbase";
 import { log } from "./log";
 
 /** 云函数统一返回体。 */
@@ -20,7 +20,7 @@ export interface ApiResult<T = unknown> {
 /** 归一化后的安全返回体（调用方必得一种形状，不会抛裸异常）。 */
 async function call<T>(name: string, data: Record<string, unknown>): Promise<ApiResult<T>> {
   try {
-    const res = await app.callFunction({ name, data });
+    const res = await requireApp().callFunction({ name, data });
     const result = (res && (res as { result?: unknown }).result) as ApiResult<T> | undefined;
     if (!result || typeof result !== "object" || typeof result.ok !== "boolean") {
       log.error(`云函数 ${name} 返回体形状非法`);
@@ -210,7 +210,7 @@ export const api = {
 export async function signInWithTicket(ticket: string): Promise<ApiResult<{ signedIn: boolean }>> {
   if (!ticket) return { ok: false, error: "EMPTY_TICKET" };
   try {
-    const res = (await auth.signInWithCustomTicket(async () => ticket)) as
+    const res = (await requireAuth().signInWithCustomTicket(async () => ticket)) as
       | { error?: { message?: string } }
       | undefined;
     if (res && res.error) {

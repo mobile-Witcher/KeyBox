@@ -57,6 +57,10 @@ jobs:
           npm i --no-save @rollup/rollup-win32-x64-msvc@4.63.5 @esbuild/win32-x64@0.21.5
 
       - name: Build desktop bundle (Tauri)
+        env:
+          VITE_CLOUDBASE_ENV_ID: ${{ secrets.VITE_CLOUDBASE_ENV_ID }}
+          VITE_PUBLISHABLE_KEY: ${{ secrets.VITE_PUBLISHABLE_KEY }}
+          VITE_CLOUDBASE_REGION: ${{ secrets.VITE_CLOUDBASE_REGION }}
         run: npx tauri build
 
       - name: Upload desktop bundle
