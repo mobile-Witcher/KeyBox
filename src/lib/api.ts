@@ -39,6 +39,10 @@ export interface InitAdminParams {
   loginPwd: string;
   kdfSalt: string;
   kdfVerifier: string;
+  /** R28：恢复码派生盐（base64；须独立于 kdfSalt）。与 recoveryBlob 必须【成对】给出或同时缺省。 */
+  recoverySalt?: string;
+  /** R28：`KBRC1:` 恢复码密文（用恢复码包裹主密钥所得）。绝不承载恢复码/主密钥明文。 */
+  recoveryBlob?: string;
 }
 
 /** kbInitAdmin 返回。 */
@@ -53,6 +57,10 @@ export interface RegisterParams {
   loginPwd: string;
   kdfSalt: string;
   kdfVerifier: string;
+  /** R28：恢复码派生盐（base64；须独立于 kdfSalt）。与 recoveryBlob 必须【成对】给出或同时缺省。 */
+  recoverySalt?: string;
+  /** R28：`KBRC1:` 恢复码密文（用恢复码包裹主密钥所得）。绝不承载恢复码/主密钥明文。 */
+  recoveryBlob?: string;
 }
 
 export interface RegisterData {
@@ -88,6 +96,12 @@ export interface MyRoleData {
   kdfSalt: string;
   kdfVerifier: string;
   keyEpoch: number;
+  /** R28：本人恢复码派生盐（仅回本人；管理员列表【不含】此列）。可能为 null（尚未设恢复码）。 */
+  recoverySalt: string | null;
+  /** R28：本人 `KBRC1:` 恢复码密文（仅回本人）。可能为 null。 */
+  recoveryBlob: string | null;
+  /** R28：用户确认“已抄下恢复码”的时间；为 null ⇒ 前端持续提醒。 */
+  recoveryAckAt: string | null;
   userCount: number;
 }
 

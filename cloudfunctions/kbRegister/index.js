@@ -4,7 +4,10 @@
  *
  * 为什么不能放前端：前端判“码能不能用”改代码即可复用；20 人上限在前端等于没有上限。
  *
- * 入参：{ code, username, loginPwd, kdfSalt, kdfVerifier }
+ * 入参：{ code, username, loginPwd, kdfSalt, kdfVerifier, recoverySalt?, recoveryBlob? }
+ *   - R28：recoverySalt / recoveryBlob 必须【成对】出现——要么都给（客户端已生成恢复码并包裹主密钥），
+ *     要么都缺（先开户，稍后由前端引导补设）。只给一半视为非法（fail-closed）。
+ *   - 此处只收“盐 + 包裹后的密文”，绝不收恢复码明文。
  * 返回：{ ok, data: { uid, role, ticket } } | { ok:false, error }
  *
  * 邀请码原子占用（架构 §7）：PG 下单语句条件更新即可，
@@ -33,11 +36,20 @@ exports.main = async (event) => {
     const loginPwd = String((event && event.loginPwd) || "");
     const kdfSalt = String((event && event.kdfSalt) || "");
     const kdfVerifier = String((event && event.kdfVerifier) || "");
+    // R28：恢复材料（可选，但必须【成对】）——客户端生成恢复码后，用其独立派生的恢复密钥把主密钥
+    //   包裹成 `KBRC1:` 密文；云函数只收 recoverySalt + recoveryBlob，绝不收恢复码明文本身。
+    const recoverySalt = String((event && event.recoverySalt) || "");
+    const recoveryBlob = String((event && event.recoveryBlob) || "");
 
     if (!code) return fail("INVALID_CODE");
     if (!USERNAME_PATTERN.test(username)) return fail("INVALID_USERNAME");
     if (loginPwd.length < MIN_LOGIN_PWD) return fail("WEAK_LOGIN_PWD");
     if (!kdfSalt || !kdfVerifier) return fail("MISSING_KDF_PARAMS");
+
+    // R28：recoverySalt 与 recoveryBlob 必须同时给出或同时缺省（只给一半＝非法，fail-closed）。
+    const hasRecoverySalt = recoverySalt.length > 0;
+    const hasRecoveryBlob = recoveryBlob.length > 0;
+    if (hasRecoverySalt !== hasRecoveryBlob) return fail("MISSING_RECOVERY_PARAMS");
 
     // ① 用户名查重（select 显式列）
     const duplicated = await pgRequest("GET", "kb_users", {
@@ -73,6 +85,13 @@ exports.main = async (event) => {
           kdf_salt: kdfSalt,
           kdf_verifier: kdfVerifier,
           key_epoch: 0,
+          // R28：显式写恢复材料（绝不为空时依赖 DB 默认；service_role 无用户 JWT，DEFAULT 亦不可靠）。
+          //   未提供恢复码时显式写 null（允许先开户、稍后补设）；recovery_ack_at 显式写 null 表示
+          //   “尚未确认”，待用户勾选“我已抄下并自行保管”后由 kbAckRecovery 写入时间戳。
+          recovery_salt: hasRecoverySalt ? recoverySalt : null,
+          recovery_blob: hasRecoveryBlob ? recoveryBlob : null,
+          recovery_created_at: hasRecoveryBlob ? new Date().toISOString() : null,
+          recovery_ack_at: null,
         },
       });
     } catch (insertError) {

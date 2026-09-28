@@ -380,11 +380,30 @@ describe("R22/R26 kbRegister：名额统计按 status<>'deleted'（软删释放�
     expect(body.role).toBe("user");
     expect(body.status).toBe("active");
     expect(body.username).toBe("newuser");
-    // 只有 login_hash（哈希），绝无主密码 / 明文
+    // 只有 login_hash（哈希），绝无主密码 / 明文。
+    // R28：恢复四列【始终显式出现】于 INSERT 体（未提供恢复码时为 null），绝不依赖 DB 默认值。
     const keys = Object.keys(body).sort();
     expect(keys).toEqual(
-      ["key_epoch", "kdf_salt", "kdf_verifier", "login_hash", "role", "status", "uid", "username"].sort()
+      [
+        "key_epoch",
+        "kdf_salt",
+        "kdf_verifier",
+        "login_hash",
+        "recovery_ack_at",
+        "recovery_blob",
+        "recovery_created_at",
+        "recovery_salt",
+        "role",
+        "status",
+        "uid",
+        "username",
+      ].sort()
     );
+    // 本用例未提供恢复码 → 恢复材料显式为 null，且注册【绝不】替用户确认（ack 恒 null）
+    expect(body.recovery_salt).toBeNull();
+    expect(body.recovery_blob).toBeNull();
+    expect(body.recovery_created_at).toBeNull();
+    expect(body.recovery_ack_at).toBeNull();
     expect(JSON.stringify(body).toLowerCase()).not.toContain("master");
     expect(JSON.stringify(body)).not.toContain("secret123");
   });
