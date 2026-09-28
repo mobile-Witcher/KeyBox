@@ -17,9 +17,38 @@ export interface ApiResult<T = unknown> {
   error?: string;
 }
 
+/**
+ * 确保调用者至少持有匿名会话（修复 403 EXCEED_AUTHORITY）。
+ *
+ * 根因（2026-09 实测定位）：kbInitAdmin / kbRegister / kbLogin 三个"登录前函数"
+ * 在用户尚无任何会话时被调用；若环境的匿名登录未开启或前端从未签发匿名会话，
+ * 网关在 OPA 策略评估之前就直接 403 EXCEED_AUTHORITY（rego 放行的是
+ * "带 anonymous/unauthenticated 身份的请求"，零会话请求连身份都没有）。
+ * 已在环境侧开启匿名登录；此处保证发起 callFunction 前会话存在：
+ *   - 已有会话（匿名或真实登录）→ 直接复用；
+ *   - 无会话 → signInAnonymously() 补一个匿名身份。
+ * 真实登录态不受影响：getActiveSession() 仍把 is_anonymous 视为未登录（业务口径不变）。
+ */
+async function ensureAnonSession(): Promise<void> {
+  const authClient = requireAuth();
+  try {
+    const { data } = await authClient.getSession();
+    if (data?.session) return;
+  } catch {
+    // getSession 失败按"无会话"处理，继续尝试匿名登录
+  }
+  try {
+    await authClient.signInAnonymously();
+  } catch (error) {
+    // 已有匿名会话时 SDK 可能报"已登录"类错误——视为成功；其余错误留给 call() 归一化
+    log.warn("signInAnonymously 未成功（可能已持有会话）", error);
+  }
+}
+
 /** 归一化后的安全返回体（调用方必得一种形状，不会抛裸异常）。 */
 async function call<T>(name: string, data: Record<string, unknown>): Promise<ApiResult<T>> {
   try {
+    await ensureAnonSession();
     const res = await requireApp().callFunction({ name, data });
     const result = (res && (res as { result?: unknown }).result) as ApiResult<T> | undefined;
     if (!result || typeof result !== "object" || typeof result.ok !== "boolean") {
