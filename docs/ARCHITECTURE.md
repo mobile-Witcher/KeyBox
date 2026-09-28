@@ -85,6 +85,16 @@ flowchart TB
 | `key_epoch` | integer | 密钥代数，改主密码 +1；用于识别"半新半旧" | 否 | 云函数 |
 | `created_at` | timestamptz | 注册时间 | 否 | 云函数 |
 
+> **✅ 已落地（迁移 `20260928034647_recovery_code_columns`，team-lead 已实库验证）**：R28 恢复码所需的 4 列已进库——列存在、**四列全部可空**（迁移注释三条理由：存量行 NOT NULL 会使 ALTER 直接失败、ack 语义本就是 NULL、恢复码是可后补项不阻断开户）、**`recovery_*` 对 `anon`/`authenticated` 零授权**（`information_schema.column_privileges` 实查 0 行；客户端永远读不到，读写一律经云函数 `service_role`）。
+> **列名更正**：第 4 列经 team-lead 裁决定为 **`recovery_ack_at`**（**不用**本文早先占位的 `recovery_used_at`）；语义＝用户勾选"我已抄下并自行保管"的时间，**为 NULL ⇒ 前端持续提醒**（持久提醒据此判定，无需额外布尔列）。
+
+| 字段名 | 类型 | 含义 | 是否密文 | 谁可读写 | 状态 |
+|--------|------|------|----------|----------|------|
+| `recovery_salt` | text | 恢复密钥派生盐（base64，16B 随机），**必须独立于 `kdf_salt`**（`wrapMasterKeyWithRecovery` 入口强校验拒绝两者相等，见 §6.4） | 否（盐本就可公开） | 云函数（service_role） | **✅ 已落地（迁移 20260928034647）** |
+| `recovery_blob` | text | `KBRC1:` + base64(IV‖AES-GCM(RK, 主密钥))，遗忘主密码时用恢复码解开主密钥；不含恢复码/主密钥明文 | **是** | 云函数（service_role） | **✅ 已落地（迁移 20260928034647）** |
+| `recovery_created_at` | timestamptz | 写入恢复材料的时间（NULL＝该账号尚无恢复码，可后补） | 否 | 云函数（service_role） | **✅ 已落地（迁移 20260928034647）** |
+| `recovery_ack_at` | timestamptz | 用户勾选"我已抄下并自行保管"的时间；**为 NULL ⇒ 前端持续提醒** | 否 | 云函数 `kbAckRecovery`（仅写本人行单列） | **✅ 已落地（迁移 20260928034647）** |
+
 ### 4.2 `kb_secrets`（密钥记录）
 
 | 字段名 | 类型 | 含义 | 是否密文 | 谁可读写 |
@@ -222,7 +232,7 @@ CREATE POLICY kb_users_update_status_by_admin ON public.kb_users
 **为什么 SELECT 策略保持"只看自己"**：R12 的跨用户列表改由 5.5 的 `kb_admin_user_list()` 承担。**若把 `is_admin()` 塞进 SELECT 策略，策略表达式里的子查询又会去读 `kb_users`，会触发策略递归**——所以 SELECT 保持自读、跨读走函数，两者分工。
 **为什么这里用列级 GRANT**：管理员要能改他人行（R13），就必须放宽行策略；此时**列级授权是唯一能挡住 `login_hash` 的手段**——行策略放宽、列权限收紧（`GRANT UPDATE (status)` 只放开一列）。
 
-### 5.2 `kb_secrets`——R09 与 R10 在这里被真正表达（5 条 Policy）
+### 5.2 `kb_secrets`——R09 与 R10 在这里被真正表达（初始 5 条 Policy → 最终 4 条）
 
 ```sql
 -- ⚠️ 先收回平台默认权限（见 §5.0.1）
@@ -255,8 +265,8 @@ CREATE POLICY kb_secrets_delete_own ON public.kb_secrets
 CREATE POLICY kb_secrets_delete_by_admin ON public.kb_secrets
   FOR DELETE TO authenticated
   USING ( (select public.is_admin()) );
--- ⚠️ 第 8 步口径：R14 改走"受 scope 的云函数"（见 §5.4），本策略改为在【第 8 步迁移中 DROP】。
---    该迁移下发前，本策略**仍在线上** → 管理员直连 FOR DELETE 对全表为真，**暂勿用直连删**。
+-- ⚠️ 第 8 步口径：R14 改走"受 scope 的云函数"（见 §5.4）。
+--    ✅ 本策略已由迁移 20260927201318_drop_kb_secrets_delete_by_admin 于第 8 步 DROP（kb_secrets 策略 5→4）。
 ```
 
 > **关键点（已核实：USING 按操作独立生效）**：PostgreSQL 的 `DELETE` 有**自己独立的 `FOR DELETE` 策略**，不需要先通过 `SELECT` 策略的可见性。多条 permissive 策略之间是 **OR** 关系。所以"能删但读不到"在 PG 里**可以直接用两条策略表达**，不需要绕过 RLS。这是 PG 相对文档型数据库的第二个红利（第一个是 `UPDATE ... RETURNING`）。
@@ -297,7 +307,7 @@ ALTER TABLE public.kb_invites ENABLE ROW LEVEL SECURITY;
 - **「不可读」= 数据库保证**：SELECT 策略无 `is_admin()`；云函数也**不读、不返回 `payload`**。
 - **「可删」= 云函数代码保证**：云函数持 `service_role` **会绕过 RLS**，故删除路径"绝不读取/返回 `payload`"退化为**代码保证**——须执行 §5.6（禁止 `RETURNING payload`、返回体仅 `{deletedCount}`）并列入第 8 步验收。PM 已明确要求"显式写死并列入验收"，本处落实。
 
-> **加固迁移（第 8 步下发，已定）**：`kb_secrets_delete_by_admin` 目前**仍在线上**（第 2 步按当时 §5.2 建的），它正是"直连无范围删除"的敞口源。第 8 步将下发迁移 `DROP POLICY kb_secrets_delete_by_admin ON public.kb_secrets;`（走 `applyMigration`，DDL **不用** `execute`）。**该迁移下发前，R14 一律走云函数，禁止直连删除。**
+> **加固迁移（已执行）**：`kb_secrets_delete_by_admin` 已由第 8 步迁移 `20260927201318_drop_kb_secrets_delete_by_admin` 执行 `DROP POLICY IF EXISTS ...`（走 `applyMigration`）。此后 `kb_secrets` 策略 **5 → 4**、全库策略 **7 → 6**；R14 删除**完全由云函数承担**，"直连无范围删除"敞口已关闭。
 
 ### 5.5 管理员判定函数与聚合函数（**只有 R12 依赖 SECURITY DEFINER**）
 
@@ -413,13 +423,41 @@ sequenceDiagram
 
 因为：改主密码是唯一会一次性动全部数据的操作，一旦中断没有云端可求助（云端解不开），所以**回滚数据必须留在用户自己手里**。
 
+### 6.4 关键函数签名（`src/lib/crypto.ts`）——照此接，勿凭记忆
+
+> **⚠️ 给未来实现者**：以下为**当前源码口径**，`wrapMasterKeyWithRecovery` 的签名**已变更过一次**。**请照本节接，不要按记忆里的旧签名接。**
+
+```ts
+// 恢复码包裹主密钥（A4 修复后：新增第 3 个必填位置参数 kdfSaltB64）
+export async function wrapMasterKeyWithRecovery(
+  recoveryCode: string,        // 恢复码原文（base32，32 位）
+  recoverySaltB64: string,     // 恢复码专用盐 recovery_salt（base64）
+  kdfSaltB64: string,          // ← 新增：账号主密码盐 kb_users.kdf_salt（base64）
+  masterKeyRaw: Uint8Array,    // 主密钥原始字节
+  iterations: number = PBKDF2_ITERATIONS,
+): Promise<string>             // 返回 `KBRC1:` 包裹串
+
+// 逆操作（本次未变）
+export async function unwrapMasterKeyWithRecovery(
+  recoveryCode: string,
+  recoverySaltB64: string,
+  recoveryBlob: string,
+  iterations: number = PBKDF2_ITERATIONS,
+): Promise<Uint8Array>
+```
+
+- **变更内容**：`wrapMasterKeyWithRecovery` **新增一个必填位置参数 `kdfSaltB64`（第 3 位）**，并在入口强校验：`if (recoverySaltB64 === kdfSaltB64) throw new Error("recovery_salt 必须独立于 kdf_salt（不得复用主密码派生盐）")`。
+- **为什么把 `kdfSaltB64` 传进来**：**不是**为了比较方便，而是把"**恢复盐与主密码盐必须相互独立、不得复用**"这条约束，从**注释里的口头契约**升级为**调用点就能被机器拦住的硬约束**。
+- **要防的"无症状缺陷"**：将来接 **R28（恢复码界面）** 时，一次**复制粘贴**把 `kdf_salt` 填进 `recovery_salt`——**不会报错、只会静默降低安全性**（两个盐复用＝两把钥匙共用一个锁芯）。这类不出声的降级必须在函数入口直接 throw 挡住。
+- **调用契约**：必须传**账号真实的 `kdf_salt`**；`recoverySalt` 必须与之不同，相等即抛错。
+
 ---
 
 ## 7. 云函数清单
 
 > 全部为 Event 云函数（`exports.main(event, context)`），由前端 SDK 调用。
 > **身份获取一律用 `auth.getUserInfo()`（云函数运行时注入，返回 `{openId, appId, uid, customUserId}`）**，**绝不相信 `event.uid` 之类前端传来的身份**【已核实：官方明确要求不相信 event 里的身份字段】。
-> **⚠️ 已按 PM 反馈修正 + 已实测（第 7 节）**：管理员的**读**（R12）走**浏览器直连 RPC** `app.rdb().rpc("kb_admin_user_list")`（DEFINER + 函数体内自检，**不套云函数**）；**停用/启用**（R13）走**浏览器直连 rdb** `update({status}).eq('uid', 目标)`（数据库列级 GRANT + `is_admin()` 策略放行，**不套云函数**）；**只有"删除用户全部数据"（R14）**因需**按 uid 收口、避免"直连无范围删除"误删全库**，保留**持 `service_role` 的云函数**（**不是**"RLS 删不了"——RLS 能删，但按构造无法限制范围）。因此原 `kbAdminListUsers` / `kbAdminSetUserStatus` 两个云函数**已删除**（少两个敞口），云函数总数 **12 → 10**（详见 §7.1）。
+> **⚠️ 已按 PM 反馈修正 + 已实测（第 7 节）**：管理员的**读**（R12）走**浏览器直连 RPC** `app.rdb().rpc("kb_admin_user_list")`（DEFINER + 函数体内自检，**不套云函数**）；**停用/启用**（R13）走**浏览器直连 rdb** `update({status}).eq('uid', 目标)`（数据库列级 GRANT + `is_admin()` 策略放行，**不套云函数**）；**只有"删除用户全部数据"（R14）**因需**按 uid 收口、避免"直连无范围删除"误删全库**，保留**持 `service_role` 的云函数**（**不是**"RLS 删不了"——RLS 能删，但按构造无法限制范围）。因此原 `kbAdminListUsers` / `kbAdminSetUserStatus` 两个云函数**已删除**（少两个敞口），云函数总数 **12 → 10**（详见 §7.1；**后因 R21/R28 后端落地新增 `kbRotateMaster` / `kbAckRecovery`，现共 11 个**）。
 > **⚠️ PG 模式的角色模型**：`anon`（未登录）/ `authenticated`（登录态）/ `service_role`（API Key，**绕过 RLS**）。管理员读/停用优先走 `authenticated` + RLS 策略，**不用** `service_role`。
 > 统一返回 `{ ok: boolean, data?, error? }`，**不抛裸异常**，便于前端判断【已核实：官方最佳实践】。
 > 每个函数末尾"为什么不能放前端"一栏是硬约束 2 的落地说明。
@@ -433,9 +471,12 @@ sequenceDiagram
 | `kbLogin` | 登录页 | `username, loginPwd` | `{ok, ticket?}` | ① 查用户 ② scrypt 比对哈希（恒定时间比较）③ `status!='active'` 直接拒绝 ④ 通过才签发自定义登录票据 | R05/R13 | 登录密码校验放前端＝把哈希交出去；停用状态放前端＝停用形同虚设 |
 | `kbGetMyRole` | App 启动 / 每次同步前 | 无 | `{role, status, kdfSalt, kdfVerifier, keyEpoch, userCount}` | ① 按会话 uid 查 ② 只返回本条 | R11/R26 | 前端本地写死 `isAdmin=true` 就能拿到管理员能力 |
 | `kbSecretUpsert` | 新增/编辑 | `id?, payload, keyEpoch` | `{id, updatedAt}` | ① 取 uid ② 更新时先查该条 `owner_id=uid`，不符即拒 ③ 写入时 **`owner_id` 用服务端 uid，忽略入参任何 owner_id** ④ `updated_at` 用服务端时间 | R08/R15 | 归属标记由前端传＝谁都能把记录挂到别人名下 |
-| `kbSecretDelete` | 列表删除 | `id` | `{ok}` | ① 取 uid ② `DELETE ... WHERE id=$1 AND owner_id=$2` | R15 | 同上 |
+| `kbSecretDelete` | 列表删除 | `id` | `{ok}` | ① 取 uid ② `DELETE ... WHERE id=$1 AND owner_id=$2`，**用 `return=minimal`**（不回读被删行）③ 判行数改为**先只读 `id` 列取行数**（`select('id',{count})`），**绝不把 `payload` 读回内存** | R15 | 同上 |
 | `kbAdminDeleteUserData` | 管理员后台 | `uid` | `{deletedCount}` | ① **持 `service_role` 绕过 RLS**（R14 唯一路径）② 函数内**先校验 `is_admin()`** ③ `DELETE FROM kb_secrets WHERE owner_id=$1`（**禁止 `RETURNING payload`**，只取 id/count）④ 用户记录**软删**：`kb_users.status='deleted'`（释放名额，R22/R26）⑤ **返回体仅 `{deletedCount}`** | R14（名额 R22/R26） | 最高危操作需**按 uid 收口**：直连 `DELETE` 的 `USING(is_admin())` 对**全表**为真，漏写 `.eq()` 会误删全库；云函数＝单 uid + 函数内自检 + 白名单返回 |
-| `kbRotateMaster` | 改主密码 | `kdfSalt, kdfSaltPrev, kdfVerifier, items[]` | `{ok, keyEpoch}` | ① 取 uid ② 逐条校验 `owner_id=uid` ③ 整批覆盖写 + `keyEpoch+1` | R21 | 跨记录一致性只有服务端能保证 |
+| `kbRotateMaster` | 改主密码 | `kdfSalt, kdfSaltPrev, kdfVerifier, recoveryBlob?, items[]` | `{ok, keyEpoch}` | ① 取 uid ② 入参校验后**整批交给 PG 函数 `kb_rotate_master`**（单次 `/rpc` 调用＝单事务，见迁移 `20260928041000`）：逐条校验归属 + 集合完全一致（漏＝半新半旧、多＝越权，均 fail-closed）③ 新盐/旧盐/新校验串/`key_epoch+1` 一并推进 ④ 可选 `recoveryBlob` 随轮换重包裹更新 | R21 | 改主密码一次性覆盖全部记录，跨记录一致性只有服务端能保证；`kdf_salt`/`kdf_verifier`/`key_epoch` 对客户端零授权 |
+| `kbAckRecovery` | 设置恢复码页（勾选"已抄下"） | 无（身份取运行时） | `{ackedAt}` | ① 取 uid ② 确认本人行存在 ③ **只写本人 `recovery_ack_at` 单列**（`return=minimal`，不回读敏感列）④ 幂等：重复确认覆盖为最新时间 | R28 | `recovery_ack_at` 对客户端**零授权**、前端改不了；"是否已确认"决定是否持续提醒，必须由服务端作真相来源 |
+
+> **现状注记（2026-09-28 更新）**：R21/R28 **后端已落地**——`kbRotateMaster` / `kbAckRecovery` 云函数**已在仓库**（实库 `cloudfunctions/` 共 11 个目录）；R21 的"整批重写"下沉为 PG 函数 `public.kb_rotate_master`（迁移 `20260928041000`，EXECUTE 仅授 `service_role`，函数体内自检、fail-closed）。**UI 接线进行中（engineer-2）**，状态见 §10.1；两处待实测项见 §12 第 20/21 项。
 
 **关于用户名密码登录（`kbRegister` / `kbLogin` 的平台前提，已核实口径）**
 
@@ -453,6 +494,8 @@ RETURNING id;
 ```
 
 `WHERE` 带 `status='unused'` 条件 + `RETURNING`：**返回 0 行即代表已被别人占用**（并发下只有一次能返回 1 行）。因为 PG 的 `UPDATE` 是单语句原子操作，不需要"更新后再回读确认"，第 12 节第 3 项（NoSQL 的 update 返回值字段不确定）在 PG 下**不再是问题**。
+
+> **⚠️ representation 是刻意的，勿"统一"**：`kbRegister` / `kbInviteCreate` 用的 **`return=representation`** 是**刻意的**——它是"邀请码本次是否真被占用"的**判据**（返回 0 行＝已被别人抢走）。而 `kbSecretDelete` 用的是 **`return=minimal`**（只判行数、不回读 payload）。**两者语义不同、默认值不同，禁止为了"风格一致"改成同一个。**
 
 **关于 R13「停用后立即失效已有会话」的实现说明（两个窗口必须分开看）**
 
@@ -488,7 +531,7 @@ RETURNING id;
   3. `DELETE FROM kb_secrets WHERE owner_id = $1`，**禁止 `RETURNING payload`**（只取行数）；
   4. 用户记录**软删**：`kb_users.status='deleted'`；
   5. **返回体仅 `{deletedCount}`**，绝不含任何字段内容。
-- **为什么不直连 RLS 删**：`DELETE` 策略 `USING(is_admin())` 对**全表**为真，直连即"无范围删除"，前端漏写 `.eq()` 会**误删全库密文**（不可恢复）；云函数按 uid 收口。→ 代价：删路径的"不读 payload"退为**代码保证**（§5.4 + §5.6 + 第 8 步验收）。加固：后续迁移 `DROP POLICY kb_secrets_delete_by_admin`。
+- **为什么不直连 RLS 删**：`DELETE` 策略 `USING(is_admin())` 对**全表**为真，直连即"无范围删除"，前端漏写 `.eq()` 会**误删全库密文**（不可恢复）；云函数按 uid 收口。→ 代价：删路径的"不读 payload"退为**代码保证**（§5.4 + §5.6 + 第 8 步验收）。加固**已落地**：迁移 `20260927201318_drop_kb_secrets_delete_by_admin` 已 DROP 该策略（`kb_secrets` 策略 5→4）。
 - **用户记录置 `status='deleted'`（软删），不硬删**：① **释放名额**——20 人上限统计 `status <> 'deleted'`（R22/R26）；② 保留审计痕迹；③ `kbLogin` 已在 `status!='active'` 时拒登，软删即无法登录。
 
 **会话时效（R13 双窗口，最终值）**
@@ -525,16 +568,19 @@ KeyBox/
 ├─ SECURITY.md                     ← 漏洞报告方式 + 明确"管理员也读不到明文"
 ├─ README.md                       ← 骨架：是什么/截图位/快速开始/打包/许可
 ├─ docs/PRD.md · docs/ARCHITECTURE.md
+├─ docs/CONSOLE-STEPS.md            ← 控制台/手工部署步骤（含"救援文档在哪"指路）
+├─ docs/RECOVERY.md                 ← 灾备恢复手册（管理员失联救援；见 §11 风险 15）
 ├─ package.json · vite.config.ts · tsconfig.json
 ├─ tailwind.config.ts · postcss.config.js · index.html
 ├─ capacitor.config.ts
 ├─ scripts/setup-cloud.js           ← 驱动版本化迁移（applyMigration）下发建表+GRANT+RLS，再配云函数 invoke 规则与安全域名（幂等；DDL 一律不走 execute）
 ├─ scripts/setup-cloud.manual.md    ← 脚本跑不通时的手工操作清单（与脚本逐步对应，README 兜底用）
+├─ scripts/rescue-admin.js          ← ⚠️ **仅救援时本地运行**的管理员救援脚本（不部署、不进 CI、不接自动调用；见 docs/RECOVERY.md）
 ├─ cloudbase/migrations/            ← ⚠️ **仓库权威副本**；全新部署必须**按序执行**才能复现正确终态
 │    ├─ 20260927193625_init_keybox.sql              ← 建表 DDL + RLS Policy（7 条，表达式与 §5 一致）
 │    ├─ 20260927193751_harden_keybox_grants.sql     ← 收回平台默认权限 + 精确 GRANT（§5.0.1）
 │    ├─ 20260927195508_tighten_function_execute.sql ← 收回函数 anon/PUBLIC 的 EXECUTE（§5.0.1）
-│    └─ <第8步时间戳>_drop_kb_secrets_delete_by_admin.sql ← 【第8步执行中】DROP POLICY kb_secrets_delete_by_admin（R14 收口）
+│    └─ 20260927201318_drop_kb_secrets_delete_by_admin.sql ← 【已执行】DROP POLICY kb_secrets_delete_by_admin（R14 收口；全库策略 7→6）
 ├─ .github/workflows/build-android.yml
 ├─ .github/workflows/build-desktop.yml
 ├─ src/
@@ -544,7 +590,7 @@ KeyBox/
 │  ├─ lib/db.ts                    ← IndexedDB 封装（main / staging 双区）
 │  ├─ lib/sync.ts                  ← 上下行 + 待上传队列重放
 │  ├─ lib/log.ts                   ← 脱敏日志（绝不出明文/密钥）
-│  ├─ lib/api.ts                   ← 10 个云函数 + 1 个直连 RPC（`kb_admin_user_list`）的调用封装
+│  ├─ lib/api.ts                   ← 11 个云函数 + 1 个直连 RPC（`kb_admin_user_list`）的调用封装
 │  ├─ store/session.ts · store/secrets.ts
 │  ├─ components/  TopBar · ThemeToggle · TagSidebar · SecretTable · SecretDialog · StatusBar
 │  └─ pages/       InitPage · LoginPage · RegisterPage · VaultPage · AdminPage
@@ -552,9 +598,11 @@ KeyBox/
 ├─ android/    （Capacitor 生成，进仓库以便 CI 复现）
 └─ cloudfunctions/  kbInitAdmin/ kbInviteCreate/ kbInviteRevoke/ kbRegister/ kbLogin/
                     kbGetMyRole/ kbSecretUpsert/ kbSecretDelete/ kbAdminDeleteUserData/
-                    kbRotateMaster/
-   （每个目录：index.js + package.json；**共 10 个**。管理员读/停用不经云函数：读走直连 RPC、停用走直连 rdb）
+                    kbRotateMaster/ kbAckRecovery/
+   （每个目录：index.js + package.json；**共 11 个**。管理员读/停用不经云函数：读走直连 RPC、停用走直连 rdb）
 ```
+
+**现状注记（与 §7 同步，2026-09-28 更新）**：上图为**当前事实**——实库 `cloudfunctions/` 有 **11 个目录**（新增 `kbRotateMaster` / `kbAckRecovery`，R21/R28 **后端已落地**）；R21 整批重写下沉为 PG 函数 `kb_rotate_master`（迁移 `20260928041000`）。**UI 接线进行中（engineer-2）**，状态见 §10.1。
 
 **敏感文件纪律（硬约束 4）**：CloudBase 环境 ID、publishable key、自定义登录私钥（`tcb_custom_login.json`）、keystore 口令**一律只放 `.env.local` / 云函数环境变量 / CI Secrets**；`.gitignore` 必须覆盖 `.env*`、`.env.local`、`*.json`（自定义登录私钥）、`*.keystore`、`*.jks`。`.env.example` 只写 `VITE_CLOUDBASE_ENV=` 这样的空壳。**仓库内任何文件都不得出现真实环境 ID**（文档中一律写 `<YOUR_ENV_ID>`）。
 
@@ -570,7 +618,7 @@ KeyBox/
 | 3.5 | `scripts/setup-cloud.js` | 3 | 把第 3 步固化成**驱动迁移（applyMigration）**的可复跑脚本，开源后部署者才能一键复现；DDL 不走 `execute` |
 | 4 | `lib/cloudbase.ts` `lib/log.ts` | 2、3 | 所有网络与日志都从这里走，脱敏规则必须最早统一 |
 | 5 | `lib/crypto.ts` | 2 | 加密是地基中的地基，先写先测，后面所有功能都站在这上面 |
-| 6 | `lib/api.ts` + 10 个云函数 + 直连 RPC | 3、4 | 服务端校验是权限的真相来源，早于界面 |
+| 6 | `lib/api.ts` + 11 个云函数 + 直连 RPC | 3、4 | 服务端校验是权限的真相来源，早于界面 |
 | 7 | `store/session.ts` + `pages/InitPage` `LoginPage` `RegisterPage` | 4、6 | 没有账号就没有归属，后面一切数据无主 |
 | 8 | `lib/db.ts` `lib/sync.ts` | 5、6 | 本地优先与断网队列，决定核心功能手感 |
 | 9 | `components/*` + `pages/VaultPage` | 7、8 | R15–R19 主界面 |
@@ -585,17 +633,73 @@ KeyBox/
 | 步 | 名称 | 产出物 | 可勾选验收标准 |
 |----|------|--------|----------------|
 | 1 | 环境准备（**已由负责人完成**） | `envId=<YOUR_ENV_ID>`，确认 `postgresql:true, nosql:false`；安全域名白名单；本机 Node 18 / Rust 工具链 | ☑ `queryEnv(action="info")` 已实测 ☑ `localhost:5173` 已在安全域名白名单 ☐ 本机 `rustc --version` 有输出 ☐ 自定义登录方式已开启、publishable key 已取到 |
-| 2 | 云端基建 | **按序跑迁移**（`20260927193625_init_keybox` → `20260927193751_harden_keybox_grants`）建三张表 + REVOKE ALL + 精确 GRANT + RLS Policy(7 条) + `is_admin()`(INVOKER) + `kb_admin_user_list()`(DEFINER) + 自定义登录私钥已注入 | ☐ **先跑 `scripts/setup-cloud.js`（驱动迁移，显式传完整 sql，非 execute）** ☐ 迁移**按序执行、文件名与 `migrationVersion` 一致**（不一致会 fail-closed）☐ **已跑 REVOKE ALL**（否则列级 GRANT 被平台默认权限静默覆盖，见 §5.0.1）☐ 建表前先查 `information_schema.columns` 确认无残留错列 ☐ 已确认 `auth.uid()` 为 text、`owner_id` 列为 text ☐ `queryAppAuth(getLoginConfig)` 确认 `usernamePassword === true` ☐ 再验自定义登录用户能读到自己的记录 ☐ 用 A 账号查 B 的 `kb_secrets` 返回**空** ☐ 客户端伪造 `owner_id` 插入被 `WITH CHECK` 拒绝 ☐ **`is_admin()` 对管理员返回 true、对普通用户返回 false**（INVOKER 版，已实测策略内可用）☐ **`kb_admin_user_list()` 管理员能调出列表、普通用户调出 0 行、属主与表同属主**（已实测通过，无需回退） |
+| 2 | 云端基建 | **按序跑迁移**（`20260927193625_init_keybox` → `20260927193751_harden_keybox_grants`）建三张表 + REVOKE ALL + 精确 GRANT + RLS Policy(7 条) + `is_admin()`(INVOKER) + `kb_admin_user_list()`(DEFINER) + 自定义登录私钥已注入 | ☐ **先跑 `scripts/setup-cloud.js`（驱动迁移，显式传完整 sql，非 execute）** ☐ 迁移**按序执行、文件名与 `migrationVersion` 一致**（不一致会 fail-closed）☐ **已跑 REVOKE ALL**（否则列级 GRANT 被平台默认权限静默覆盖，见 §5.0.1）☐ 建表前先查 `information_schema.columns` 确认无残留错列 ☐ 已确认 `auth.uid()` 为 text、`owner_id` 列为 text ☐ `queryAppAuth(getLoginConfig)` 确认 `usernamePassword === true` ☐ 再验自定义登录用户能读到自己的记录 ☐ 用 A 账号查 B 的 `kb_secrets` 返回**空** ☐ 客户端伪造 `owner_id` 插入被 `WITH CHECK` 拒绝 ☐ **`is_admin()` 对管理员返回 true、对普通用户返回 false**（INVOKER 版，已实测策略内可用）☐ **`kb_admin_user_list()` 管理员能调出列表、普通用户调出 0 行、属主与表同属主**（已实测通过，无需回退）☐ **数据库实际列名与 §4 字段清单逐列一致**（`information_schema.columns` 逐列比对，核对语句见本节末）☐ **登录前**能调用 `kbInitAdmin` / `kbRegister` / `kbLogin`（三条**登录前必须可调**；云函数放通规则写错会表现为"打不开/注册不了"，**极难排查**）☐ **登录后**能调用 `kbGetMyRole` |
 | 3 | **开源卫生先行** | `.gitignore` `LICENSE` `SECURITY.md` `README.md` 骨架 `.env.example` | ☐ `git status` 看不到任何 `.env` ☐ LICENSE 含「机动战士」 ☐ 全仓搜索无环境 ID 明文 |
 | 4 | 账号与权限 | `kbInitAdmin` `kbInviteCreate/Revoke` `kbRegister` `kbLogin` `kbGetMyRole` + 初始化/登录/注册三页 | ☐ 第二个账号只能靠邀请码开出 ☐ **同一码并发提交只成功一次**（用 `UPDATE ... RETURNING` 验证）☐ 第 21 人被拒 ☐ 停用后无法登录 |
 | 5 | 客户端加密 | `lib/crypto.ts` + 单元测试（用**随机生成**的测试密码，不写死） | ☐ 同密码不同盐派生结果不同 ☐ 正确主密码能解 `kdf_verifier`，错误的主密码失败 ☐ 全仓检索无主密码明文 |
 | 6 | 核心功能 | `kbSecretUpsert/Delete` + `VaultPage` + 遮掩/复制/编辑/删除 | ☐ 数据库后台打开 `kb_secrets` 全字段乱码 ☐ 密钥列默认是圆点 ☐ 抓包无明文字段 ☐ **用 `app.rdb()` 而非 `app.database()`**（全仓检索无 `.where(`/`.count()`） |
 | 7 | 同步冲突 | `lib/db.ts` `lib/sync.ts` + 标签 + 本地搜索 | ☐ 断网可继续增删改 ☐ 恢复后队列自动重放 ☐ 搜索输入时抓包无关键词上行 |
-| 8 | 管理后台 | `AdminPage` + 直连 RPC `kb_admin_user_list`（R12）+ 直连 rdb 改 `status`（R13）+ `kbAdminDeleteUserData` 云函数（R14） | ☐ 列表含 username/status/created_at/itemCount、**响应体不含任何密文字段** ☐ **管理员直连 `kb_secrets` 读他人密文返回空/被拒**（SELECT 策略无 `is_admin()`）☐ **删除后该用户 `item_count` 归零、`kb_users.status='deleted'`、云函数返回体仅 `{deletedCount}`** ☐ 管理员改他人 `status` 成功、改他人 `login_hash` 被 PG **列权限**拒绝 ☐ **界面无任何"查看密钥"入口** ☐ **全仓无 View、云函数无 `select *`**（静态检索）☐ `lib/sync.ts` 时间戳按 epoch 比较且有反例测试 |
+| 8 | 管理后台 | `AdminPage` + 直连 RPC `kb_admin_user_list`（R12）+ 直连 rdb 改 `status`（R13）+ `kbAdminDeleteUserData` 云函数（R14） | ☐ 列表含 username/status/created_at/itemCount、**响应体不含任何密文字段** ☐ **管理员直连 `kb_secrets` 读他人密文返回空/被拒**（SELECT 策略无 `is_admin()`）☐ **删除后该用户 `item_count` 归零、`kb_users.status='deleted'`、云函数返回体仅 `{deletedCount}`** ☐ 管理员改他人 `status` 成功、改他人 `login_hash` 被 PG **列权限**拒绝 ☐ **界面无任何"查看密钥"入口** ☐ **全仓无 View、云函数无 `select *`**（静态检索）☐ `lib/sync.ts` 时间戳按 epoch 比较且有反例测试 ☐ **真实删除后，界面显示的条数与数据库实际减少的条数一致**（验证 `Content-Range` 计数可用，见 §12 第 19 项） |
 | 9 | 外观与打包 | 夜间模式 + `src-tauri` + 两条 GitHub Actions | ☐ 右上角切换并刷新后仍记住 ☐ 本地产出可安装 exe ☐ 推送标签后能下载 apk 产物 |
 | 10 | 开源收尾 | README 补全、改主密码（R21）回归、仓库公开 | ☐ 改主密码中断后能回滚到一致状态 ☐ 全新克隆 + 填 `.env` 可跑通 ☐ 仓库为 public 且 LICENSE 正确 |
+| **11** | **需求覆盖核对（收尾最后一步，⚠️ 此步骤不得跳过）** | 一张「R01–R29 × 实现落点」对账矩阵（见下 §10.1），每条需求指向 DB 列／云函数／直连 RPC／页面文件 | ☐ 29 条需求**逐条**都指得出落点 ☐ 指不出落点者**已显式列为缺口** ☐ 缺口修复并复验后才勾 ☐ 缺口补齐后回收 §4.1 的「待迁移」标注 ☐ **此步骤不得跳过** |
 
 > **改主密码（R21）放在第 10 步做回归**：它依赖第 5 步（加密）与第 7 步（同步）都稳定，提前做会被反复返工。
+
+> **第 2 步「列名逐列一致」核对语句**（字段缺失是**静默的**，直到某功能真正用上才爆出来，故必须逐列对账）：迁移执行后取回实际列名与 §4 清单比对——
+> `managePgDatabase(action="execute", sql="select column_name, data_type from information_schema.columns where table_schema='public' and table_name='kb_users' order by ordinal_position")`，对 `kb_secrets` / `kb_invites` 同理各查一遍。**任何一列对不上（缺列、多列、列名大小写不符）即视为第 2 步未通过**，先补迁移再继续。（`information_schema` 查询走 `execute`，非 DDL、不需 `applyMigration`。）
+
+> **第 2 步「云函数放通规则」档位说明**：一键脚本落地的**默认档位**是**官方 CLI 参考里确证的通配写法**（可覆盖"登录前 + 登录后"全部调用场景）；若改用**收紧档位**（按函数名**逐一**设置 invoke 权限），属**待实测**——须实测确认 `kbInitAdmin` / `kbRegister` / `kbLogin` 在**未登录**状态下仍可调用。详见 `docs/CONSOLE-STEPS.md` **附录 D.3**。
+
+### 10.1 需求覆盖核对矩阵（第 11 步，**此步骤不得跳过**）
+
+> **为什么要有这一步**：本清单只问一个问题——**"PRD 里写了的，代码里到底有没有落点？"** 前面的步骤验收只查"**已写的**安不安全"，查不出"**该写的有没有写**"——R28/R29 就是这样漏的：`crypto.ts` 原语齐全、测试也过，但**从未进迁移、从未进云函数、从未进页面**。靠人自觉记不住，只有**逐条对账**才可靠。
+> **落点取值**：DB 列或 RLS 策略（`kb_users` / `kb_secrets` / `kb_invites`）／云函数（`cloudfunctions/<name>/`）／直连 RPC（`kb_admin_user_list`）／库文件或页面（`src/...`）／打包配置（`src-tauri/`、`.github/workflows/`、`android/`）。
+> **勾选规则**：只有"落点存在 **且** 对应步骤的验收项通过"才可勾；**指不出落点的，即为缺口，必须显式列出并在补齐后重勾**。
+
+> **⚠️ 已知缺口**（独立覆盖审计快照：已实现 14 / 部分 3 / 未实现 4 / 未验证 8；**快照后 R25 已于 `817e736` 补齐并复验**；**其后 R21/R28/R29 的后端亦已落地**——迁移 `20260928034647` / `20260928041000` 经 team-lead 实库验证，三条现仅余 **UI 接线（engineer-2）**）——接手前先看这里，别以为 29 条全绿：
+
+| 缺口 | 当前状态 | 缺口本体（实库 + 代码双向核验） | 修复责任 |
+|------|----------|--------------------------------|----------|
+| **R21 改主密码** | **后端已落地，UI 接线中** | ~~`cloudfunctions/` 无 `kbRotateMaster`~~ → **已落地**：云函数 `kbRotateMaster` + PG 函数 `kb_rotate_master`（迁移 `20260928041000`，EXECUTE 仅授 `service_role`）均在仓/库；编排层 `src/lib/rotate.ts` 在。**余：改主密码 UI 入口接线** | engineer-2 |
+| **R28 恢复码** | **后端已落地，UI 接线中** | ~~无 DB 列 / 无云函数~~ → **已落地**：recovery 四列（迁移 `20260928034647`，`recovery_*` 对 anon/authenticated 零授权）+ 云函数 `kbAckRecovery`（写 `recovery_ack_at`）/`kbRotateMaster`（`recoveryBlob` 随轮换重包裹）；编排层 `src/lib/recovery.ts` 在。**余：生成恢复码页 + 遗失自救场景页 UI 接线** | engineer-2 |
+| **R29 加密备份导出** | **编排层已落地，UI 接线中** | ~~无导出/导入入口~~ → **编排层 `src/lib/backup.ts` 已有**（`buildBackup`/`openBackup` 之上）。**余：导出/导入 UI 入口接线** | engineer-2 |
+
+> 这三条同属"**名词/文案先行、动作缺席**"一类（见 §11 风险 17；R25 亦属该类，已补齐）。**现三条后端均已落地、仅余 UI 接线（engineer-2）——UI 补齐并复验前，下表对应行不得勾。**
+
+| 勾 | 需求 | 实现落点 | 状态 |
+|----|------|----------|------|
+| ☐ | R01 首个管理员手输 | 云函数 `kbInitAdmin`；页 `src/pages/InitPage`；列 `kb_users.role='admin'` | |
+| ☐ | R02 管理员生成邀请码 | 云函数 `kbInviteCreate` / `kbInviteRevoke`；页 `src/pages/AdminPage`；表 `kb_invites` | |
+| ☐ | R03 邀请码原子占用 | 云函数 `kbRegister`（`UPDATE…WHERE status='unused' RETURNING id`）；列 `kb_invites.status/used_by/used_at` | |
+| ☐ | R04 自助注册 | 云函数 `kbRegister`；页 `src/pages/RegisterPage`；表 `kb_users` | |
+| ☐ | R05 登录（云端校验） | 云函数 `kbLogin`；页 `src/pages/LoginPage` | |
+| ☐ | R06 主密码 KDF | `src/lib/crypto.ts`（`deriveMasterKey`）；列 `kb_users.kdf_salt` | |
+| ☐ | R07 本机加密后才上传 | `src/lib/crypto.ts`（`encryptString`）+ `src/lib/sync.ts`；列 `kb_secrets.payload` | |
+| ☐ | R08 写入归属标记 | 列默认值 `kb_secrets.owner_id DEFAULT auth.uid()` + 云函数 `kbSecretUpsert` | |
+| ☐ | R09 只能读写自己的记录 | RLS 策略 `kb_secrets_select_own` 等（§5.2） | |
+| ☐ | R10 管理员可删不可读 | 策略（§5.2，SELECT 无 `is_admin()`）+ 云函数 `kbAdminDeleteUserData` | |
+| ☐ | R11 管理员标记由云函数判定 | 云函数 `kbGetMyRole` | |
+| ☐ | R12 管理员看用户列表 | 直连 RPC `kb_admin_user_list`；页 `src/pages/AdminPage` | |
+| ☐ | R13 停用/启用 | 直连 rdb `update({status}).eq('uid',…)`；列级 `GRANT UPDATE (status)` + 策略；页 `AdminPage`；`kbGetMyRole` 60s 轮询 | |
+| ☐ | R14 删除用户全部数据 | 云函数 `kbAdminDeleteUserData`；页 `src/pages/AdminPage` | |
+| ☐ | R15 密钥增删改查 | 云函数 `kbSecretUpsert` / `kbSecretDelete`；页 `src/pages/VaultPage`；组件 `SecretTable`/`SecretDialog` | |
+| ☐ | R16 默认遮掩/显示/复制 | 组件 `src/components/SecretTable`、`SecretDialog`；页 `src/pages/VaultPage` | |
+| ☐ | R17 明文永不出本机 | `src/lib/log.ts`（脱敏）+ `src/lib/crypto.ts`；全仓纪律（§9） | |
+| ☐ | R18 标签 | 组件 `src/components/TagSidebar`；页 `src/pages/VaultPage`；标签存于 `kb_secrets.payload` 内 JSON | |
+| ☐ | R19 本地搜索 | 页 `src/pages/VaultPage` + `src/lib/db.ts`（本机内存过滤，关键词不上云） | |
+| ☐ | R20 桌面 exe | `src-tauri/*`；`.github/workflows/build-desktop.yml` | |
+| ☐ | **R21 修改主密码** | **后端已落地**：云函数 `kbRotateMaster` + PG 函数 `kb_rotate_master`（迁移 `20260928041000`，EXECUTE 仅授 `service_role`、函数内归属+集合一致性自检、fail-closed）+ 编排层 `src/lib/rotate.ts`。**余：改主密码 UI 入口接线** → engineer-2 | **UI 接线中** |
+| ☐ | R22 人数上限 20 | 云函数 `kbRegister`（统计 `status<>'deleted'` ≥20 即拒） | |
+| ☐ | R23 安卓 apk | `capacitor.config.ts`、`android/`、`.github/workflows/build-android.yml` | |
+| ☐ | R24 夜间模式 | 组件 `src/components/ThemeToggle` + `src/index.css` | |
+| ☑ | R25 复制后清空剪贴板倒计时 | `src/components/SecretTable.tsx`（复制后**真正清空系统剪贴板** + 倒计时文案与清空动作同源） | **已实现并复验（`817e736`）** |
+| ☐ | R26 满员提示 | 页 `src/pages/AdminPage`（用 `kbGetMyRole` 返回的 `userCount`） | |
+| ☐ | R27 开源可复现 | `scripts/setup-cloud.js` + `scripts/setup-cloud.manual.md` + `README.md` 部署章节 | |
+| ☐ | **R28 恢复码（一次性自救码）** | **后端已落地**：recovery 四列（迁移 `20260928034647`，`recovery_*` 对 anon/authenticated **零授权**）+ 云函数 `kbAckRecovery`（写 `recovery_ack_at`）/`kbRotateMaster`（`recoveryBlob` 随轮换重包裹）+ 编排层 `src/lib/recovery.ts`。**余：生成恢复码页 + 遗失自救场景页 UI 接线** → engineer-2 | **UI 接线中** |
+| ☐ | **R29 加密备份导出** | **编排层已落地**：`src/lib/backup.ts`（`buildBackup`/`openBackup` 之上）。**余：导出/导入 UI 入口接线** → engineer-2 | **UI 接线中** |
+
+> **收尾动作**：R28/R29 的迁移 + 云函数 + 页面补齐并复验后，本表两行方可勾选；同时回收 §4.1 的「当前迁移尚未包含」标注，并复核 §11 / §12 中引用 R28/R29 的条目。
 
 ---
 
@@ -608,7 +712,7 @@ KeyBox/
 | 3 | **Tauri 首次打包必须装 Rust 工具链**（约 1–2 GB，首次编译 10 分钟以上），换机器要重装 | **中** |
 | 4 | **CloudBase 免费额度与实名限制**：需实名认证；超出免费额度（调用次数/存储）后会产生费用，20 人规模虽小但不能假设永远免费 | **中** |
 | 5 | **账号方案偏离原设想**：官方不允许"仅用户名+密码"注册（已核实），故走自建账号 + 自定义登录票据；若未来官方开放，可回退 | **中** |
-| 6 | **云函数绕过 RLS**：所有敏感校验集中在 10 个云函数里，任一处漏判即越权，必须逐个写测试。PG 下 `service_role` 更会**完全绕过 RLS**（已实测 `rolbypassrls = true`），凭据一旦进入前端即全盘失守 | **高** |
+| 6 | **云函数绕过 RLS**：所有敏感校验集中在 11 个云函数里，任一处漏判即越权，必须逐个写测试。PG 下 `service_role` 更会**完全绕过 RLS**（已实测 `rolbypassrls = true`），凭据一旦进入前端即全盘失守 | **高** |
 | 7 | **本环境无 NoSQL，只能用 PG**：已由负责人实测确认（`nosql:false`）并已按 PG + RLS 重写全文；**PG 模式仅新建环境支持，存量环境不能升级**，换环境必须重新确认 `RuntimeBackends` | **中**（已闭环） |
 | 8 | **自定义登录用户可能访问不了数据库**：已核实的既有坑是"自定义登录成功但调数据库报 UNAUTHORIZED，因新用户默认角色是外部用户"，须在实施第 2/4 步先验证角色与 GRANT，否则会卡住整个数据层 | **中** |
 | 9 | **账号类云函数必须持服务端凭据**（前提**已实测确认 → 降级**）：`kbInitAdmin` / `kbRegister` / `kbLogin` / `kbGetMyRole` / `kbRotateMaster` 要 INSERT 用户、读写 `login_hash` / `kdf_salt` / `kdf_verifier`，而这些列**刻意未授予 `authenticated`**（5.1 列级授权屏蔽）。**实测**：`service_role` 角色存在且 `rolbypassrls = true`，云函数持服务端凭据访问 PG、绕过 RLS 的路径**确实存在** → **R01/R04/R05/R11/R21 五个 P0 的前提成立**。剩余风险仅是**凭据本身绝不能进前端**（硬约束 4） | **中**（前提已闭环；第 12 节第 13 项已关闭） |
@@ -617,6 +721,10 @@ KeyBox/
 | 11 | **JWT 旧声明问题**：权限变更后旧 JWT 在过期前仍携带旧 claims。官方明确要求"关键权限变更应结合短有效期、重新登录或服务端校验"——这正是 R13 采用短票据 + 服务端校验的依据 | **中** |
 | 13 | **平台默认权限静默覆盖列级 GRANT**（新增，已实测）：平台对 `public` schema 设了默认权限，**新建表自动带 `anon=SELECT` / `authenticated=ALL`**，会**无报错地覆盖**按列级设计的授权。加固前 `authenticated` 对 `kb_users` 拿到表级 SELECT，能读自己那行的 `login_hash` / `kdf_salt` / `kdf_verifier`（直接违背 §5.1）；`kb_invites` 也非零授权；`anon` 还拿到新表权限与序列 USAGE | **高**（已由迁移 2 `20260927193751_harden_keybox_grants` 修复；缓解：**每次新增表都必须紧跟 `REVOKE ALL ON <表> FROM anon, authenticated`**，见 §5.0.1；**函数 EXECUTE 同样要收回 `anon`/`PUBLIC` 默认授权**，见 §5.0.1（已由迁移 `20260927195508_tighten_function_execute` 落地）） |
 | 14 | **`kbRegister` 20 人上限存在 TOCTOU（已知、已评估、已接受，不修）**：先 `count` 再 `INSERT` 非原子，并发提交多个邀请码时理论上可能突破 20。**依据**：① 每次注册都消耗一个**一次性邀请码**、而邀请码只由管理员手动生成发放，要撞上该竞态需**多个未使用邀请码被同时提交**，20 人自用场景实际不会发生；② 代价不划算——改单语句原子实现需在 PostgREST 层绕一大圈（自定义函数），为"有人数上限、超一点也不损坏数据"的场景引入复杂度不值。**若将来邀请码改为批量自动发放，需重新评估**。不改 §7 实现口径 | **低（已接受）** |
+| 15 | **单管理员失联不可自愈（新增）**：管理员由所有者初始化手输、之后**无找回通道**——① 忘登录密码（刻意不做平台侧找回）② `status` 被误设 `disabled`/`deleted`（`kbLogin` 直接拒登）③ `kbInitAdmin` 表非空即拒、无法重初始化。本项目**单管理员是常态**，"另一个管理员来救"的逃生口实际不存在 → 一次手滑即**云端密文还在、但没有账号能进去** | **中**（缓解＝**离线救援流程**：`docs/RECOVERY.md` + `scripts/rescue-admin.js`，**仅救援时本地运行**、不部署/不进 CI/不接自动调用） |
+| 16 | **删除计数"降级静默"（新增）**：`kbAdminDeleteUserData` / `kbSecretDelete` 用单次 `DELETE` + `Prefer: return=minimal, count=exact`，**从响应头 `Content-Range` 解析精确行数**；端点若不返回该头 → 解析失败 → **静默回落到 0**。**症状**：数据实际已删，界面却显示"已删除 0 条"，用户可能误判失败而反复操作。**特性就是"降级不报错"** | **低**（既定实现＝单次计数，所有者已批准；缓解＝§5.6 显式计数纪律 + §10 第 8 步验收"界面条数与库内实际减少数一致"；部署后核对见 §12 第 19 项） |
+| 17 | **"UI 承诺与行为不一致"（新增，覆盖审计暴露的一类风险）**：**界面/文案先声明了能力，实现还没做**——R25（复制按钮文案暗示会自动清空剪贴板，实际不清）、R28/R29（恢复码/备份的入口缺失，用户以为有自救手段其实是空的）同属一类。**危害**：用户**以为自己有自救/保护手段而实际没有**，直到关键时刻（忘主密码 / 丢设备 / 屏幕被旁人看到）才发现在劫难逃——比"功能缺失"更坏，因为它给了**虚假的安全感** | **中**（缓解＝① **独立覆盖审计**（实库 + 代码双向核验，逐条判"已实现/部分/未实现/未验证"）② **文档状态标注**（§10.1 矩阵逐条标"缺口/已派责任"，交付前任何人接手一眼可见未完成项）③ **交付前逐条核对**：凡界面/文档**声明**了行为，必须有其落点方可通过。**不新增需求编号**） |
+| 18 | **错误路径上的凭据回显（新增一类）**：把"命令行参数 / 请求参数"拼进**日志或错误信息**的地方，在**失败分支**会把凭据打印出来——本轮实例：一键脚本原先把命令行参数拼进错误串，而 `tcb login --cloudbase-api-key <key>` **一旦失败就会把 API Key 打印出来**（**已修**：加参数脱敏 + 变异自证）。**特性**：**正常路径永不触发、代码评审看不见**；凭据一旦进**终端输出 / CI 日志 / 工单截图**即视为泄漏 | **中**（缓解＝① 所有把"命令行参数 / 请求参数"拼进日志或错误信息处**必须走脱敏**；② 交付前对**错误分支做变异自证**（故意造一个失败，确认输出里不含凭据值）；③ **注意：这与"密钥不进仓库"是两回事——"不进仓库 ≠ 不进日志"**。**不新增需求编号**） |
 
 ---
 
@@ -642,6 +750,9 @@ KeyBox/
 | 16 | **已核实（关闭，实测）** | ~~DEFINER 聚合函数能否创建、属主是否满足前提；INVOKER `is_admin()` 能否在策略内生效~~ → **全部通过**：`is_admin` `prosecdef=false`；`kb_admin_user_list` `prosecdef=true`；两者 owner 与三表 owner **同为 `cloudbase_postgres_postgres_1xo6lkbo`**；role=authenticated 实调 `is_admin()` 返回 false 无报错、`kb_admin_user_list()` 可调 0 行不泄露；以 `(select public.is_admin())` 作 USING/WITH CHECK 的策略创建成功并可用。**R12 不需回退** | 核实动作：**工程师实施第 2 步（迁移 1 `20260927193625_init_keybox`）实测**：7 条策略全建成、表达式与 §5 一致 |
 | 17 | **否（`kbRegister` / `kbLogin` 前提）** | 平台上用户名密码登录是否已开启：`queryAppAuth(action="getLoginConfig")` 的 `loginMethods.usernamePassword === true`？另：Web 端原生登录用 `auth.signInWithPassword({username, password})`，**不要假设 `signUp()` 能建用户名密码用户**（官方已拒绝"仅用户名+密码"注册） | `queryAppAuth` 文档；`auth-web-cloudbase` 技能（用户名密码登录章节）；第 7 节"关于用户名密码登录" |
 | 18 | **已核实（关闭，实测）** | ~~`public` schema 是否有平台默认权限~~ → **有**：新建表自动带 `anon=SELECT` / `authenticated=ALL`（含 TRUNCATE/REFERENCES/TRIGGER），会**静默覆盖**列级 GRANT；`anon` 还拿到新表权限与序列 USAGE。**已由迁移 2 `20260927193751_harden_keybox_grants` 以 `REVOKE ALL → 精确 GRANT` 修复** | 核实动作：工程师实测 `pg_default_acl`；详见 §5.0.1、§11 风险 13 |
+| 19 | **否（部署后验证项）** | `kbAdminDeleteUserData` / `kbSecretDelete` 的**精确行数依赖 `DELETE` 响应头 `Content-Range`**；端点若**不返回**该头，解析失败会**静默回落到 0**（**数据已删，界面却显示"已删除 0 条"**）。**核对方法**：在一次**真实删除**时抓 `DELETE` 响应头，确认是否含形如 `Content-Range: */N` 的计数 | 需真实端点（控制台四项配置 + 服务端凭据注入完成后）。真实环境抓包；PostgREST 文档（`Prefer: count=exact` 对 `DELETE` 的行为）；`postgresql-development-cloudbase` |
+| 20 | **否（部署后验证项；R21 前提，engineer-1 迁移注释如实标注）** | **`POST {网关}/v1/rdb/rest/rpc/kb_rotate_master` 端点未实测**——R21 的"整批重写"走 PostgREST 的 `/rpc/{函数名}`；§5 已注明"所有角色都能调 /rpc、PostgREST 不强制校验 GRANT EXECUTE"（故函数体内自检才是真防线），但**本项目尚未实测该端点**。部署后用 `kbRotateMaster` 真实调用一次即可核验 | 迁移 `20260928041000_kb_rotate_master_fn.sql` 注释；部署后真实环境调用 |
+| 21 | **否（部署后验证项；R21 **可用性**前提，engineer-1 迁移注释如实标注）** | **`request.jwt.claims.role` 键名未实测**——`kb_rotate_master` 的身份护栏依赖这个 PostgREST 标准键名识别 `service_role`。**设计是 fail-closed 的**：若网关的 claim 键名不同，函数**拒绝**（R21 暂不可用）、**绝不会误放行** → **这是可用性风险，不是安全漏洞**。核验到正确键名后**改函数内一处即可**（`current_setting('request.jwt.claims', true)::jsonb ->> 'role'`） | 同迁移 `20260928041000` 注释；部署后造一次 `service_role` 调用，若报 `ROTATE_FORBIDDEN` 即键名不符 |
 
 ---
 

@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import SecretDialog from "../components/SecretDialog";
 import SecretTable from "../components/SecretTable";
+import SecurityPanel from "../components/SecurityPanel";
 import StatusBar from "../components/StatusBar";
 import TagSidebar from "../components/TagSidebar";
 import TopBar from "../components/TopBar";
@@ -63,6 +64,9 @@ export default function VaultPage({
   const [kdfSalt, setKdfSalt] = useState<string>("");
   const [kdfVerifier, setKdfVerifier] = useState<string>("");
   const [keyEpoch, setKeyEpoch] = useState<number>(0);
+  const [recoverySalt, setRecoverySalt] = useState<string | null>(null);
+  const [recoveryBlob, setRecoveryBlob] = useState<string | null>(null);
+  const [recoveryAckAt, setRecoveryAckAt] = useState<string | null>(null);
   const [masterKey, setMasterKey] = useState<MasterKey | null>(null);
 
   const [items, setItems] = useState<SecretItem[]>([]);
@@ -110,6 +114,9 @@ export default function VaultPage({
       setKdfSalt(res.data.kdfSalt);
       setKdfVerifier(res.data.kdfVerifier);
       setKeyEpoch(res.data.keyEpoch);
+      setRecoverySalt(res.data.recoverySalt);
+      setRecoveryBlob(res.data.recoveryBlob);
+      setRecoveryAckAt(res.data.recoveryAckAt);
       setLoading(false);
     })();
     return () => {
@@ -124,6 +131,19 @@ export default function VaultPage({
     const list = await decryptCached(rows, masterKey);
     setItems(list);
   }, [masterKey]);
+
+  // 重新拉取角色/密钥参数（改主密码或导入备份后调用）
+  const refreshRole = useCallback(async (): Promise<void> => {
+    const res = await api.getMyRole();
+    if (res.ok && res.data) {
+      setKdfSalt(res.data.kdfSalt);
+      setKdfVerifier(res.data.kdfVerifier);
+      setKeyEpoch(res.data.keyEpoch);
+      setRecoverySalt(res.data.recoverySalt);
+      setRecoveryBlob(res.data.recoveryBlob);
+      setRecoveryAckAt(res.data.recoveryAckAt);
+    }
+  }, []);
 
   // 会话时效（R13）：命中即清空内存主密钥 + 丢弃内存中的解密数据（锁定本地缓存）+ 登出
   const handleSessionExpired = useCallback((): void => {
@@ -290,6 +310,19 @@ export default function VaultPage({
     }
   }
 
+  // 改主密码成功后：旧主密钥作废（清空内存）→ 用新密码重新解锁；并刷新新盐/新校验串/新代数
+  const handleRotated = useCallback((): void => {
+    setMasterKey(null);
+    setItems([]);
+    void refreshRole();
+  }, [refreshRole]);
+
+  // 导入备份 / 确认恢复码后：刷新角色并重载本机解密列表
+  const handleDataChanged = useCallback((): void => {
+    void refreshRole();
+    void reload();
+  }, [refreshRole, reload]);
+
   const tags = useMemo(() => collectTags(items), [items]);
   const visible = useMemo(() => filterItems(items, activeTag, keyword), [items, activeTag, keyword]);
 
@@ -340,6 +373,7 @@ export default function VaultPage({
               unlocking={unlocking}
             />
           ) : (
+            <div className="space-y-6">
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">
@@ -368,6 +402,19 @@ export default function VaultPage({
               {busy ? <p className="text-sm text-slate-500">处理中…</p> : null}
               <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
             </section>
+            <SecurityPanel
+              uid={uid}
+              masterKey={masterKey}
+              kdfSalt={kdfSalt}
+              kdfVerifier={kdfVerifier}
+              keyEpoch={keyEpoch}
+              recoverySalt={recoverySalt}
+              recoveryBlob={recoveryBlob}
+              recoveryAckAt={recoveryAckAt}
+              onRotated={handleRotated}
+              onDataChanged={handleDataChanged}
+            />
+            </div>
           )}
         </main>
       </div>

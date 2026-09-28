@@ -12,6 +12,7 @@ import { AuthCard, ErrorBanner, Field, InfoBanner, PrimaryButton } from "../comp
 import { api } from "../lib/api";
 import { createKeyVerifier, deriveMasterKey, generateSaltB64, PBKDF2_ITERATIONS } from "../lib/crypto";
 import { log } from "../lib/log";
+import { createRecoveryMaterial } from "../lib/recovery";
 
 const MIN_LOGIN_PWD = 8;
 const MIN_MASTER_PWD = 8;
@@ -31,6 +32,11 @@ export default function InitPage({
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // R28：初始化成功后的一次性恢复码展示
+  const [step, setStep] = useState<"form" | "recovery">("form");
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const [ackChecked, setAckChecked] = useState(false);
 
   async function handleSubmit(event: React.FormEvent): Promise<void> {
     event.preventDefault();
@@ -61,8 +67,17 @@ export default function InitPage({
       const masterKey = await deriveMasterKey(masterPwd, kdfSalt, PBKDF2_ITERATIONS);
       // 2) 生成 kdf_verifier（用主密钥加密固定串，不含任何真实密钥）
       const kdfVerifier = await createKeyVerifier(masterKey);
-      // 3) 只把“盐 + 校验串”发往云端；主密码不上传
-      const res = await api.initAdmin({ username, loginPwd, kdfSalt, kdfVerifier });
+      // R28：生成一次性恢复码材料（客户端生成；请求只带 salt 与密文）
+      const material = await createRecoveryMaterial(masterKey, kdfSalt, PBKDF2_ITERATIONS);
+      // 3) 只把“盐 + 校验串 + 恢复材料”发往云端；主密码不上传
+      const res = await api.initAdmin({
+        username,
+        loginPwd,
+        kdfSalt,
+        kdfVerifier,
+        recoverySalt: material.recoverySaltB64,
+        recoveryBlob: material.recoveryBlob,
+      });
 
       if (!res.ok) {
         if (res.error === "ALREADY_INITIALIZED") {
@@ -74,17 +89,55 @@ export default function InitPage({
         return;
       }
 
-      // 4) 成功：清空内存中的密码，进入登录页
+      // 4) 成功：清空内存中的密码，先展示一次性恢复码（勾选确认后再进入登录页）
       setLoginPwd("");
       setMasterPwd("");
       setConfirmPwd("");
-      onInitialized();
+      setAckChecked(false);
+      setRecoveryCode(material.code);
+      setStep("recovery");
     } catch (err) {
       log.error("初始化失败", err);
       setError("初始化失败，请稍后重试。");
     } finally {
       setBusy(false);
     }
+  }
+
+  // R28：一次性恢复码展示——勾选“我已抄下”后方可继续；首次登录后应用内会再确认一次（写 recovery_ack_at）。
+  if (step === "recovery" && recoveryCode) {
+    return (
+      <AuthCard
+        title="请抄下你的恢复码（只显示一次）"
+        subtitle="主密码遗忘时，只能靠这串恢复码找回数据。我们不会再次显示它，任何人都无法替你找回。"
+      >
+        <div className="my-3 rounded-lg border border-slate-300 bg-slate-50 p-3 font-mono text-base tracking-widest break-all dark:border-slate-600 dark:bg-slate-900">
+          {recoveryCode}
+        </div>
+        <div className="my-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          ⚠️ 建议：把恢复码与登录密码分开保管（例如抄在纸上）。它一旦丢失，云端密文将永久无法解开。
+        </div>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={ackChecked}
+            onChange={(e) => setAckChecked(e.target.checked)}
+            className="mt-1"
+          />
+          <span>我已抄下并自行保管恢复码。</span>
+        </label>
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => onInitialized()}
+            disabled={!ackChecked}
+            className="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+          >
+            我已抄好，去登录
+          </button>
+        </div>
+      </AuthCard>
+    );
   }
 
   return (
