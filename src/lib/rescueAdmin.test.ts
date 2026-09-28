@@ -52,6 +52,7 @@ interface WriteResult {
   generated?: boolean;
 }
 interface RescueModule {
+  RESET_REQUIRED: string;
   hashLoginPwd: (password: string) => string;
   randomUid: () => string;
   resolveCreds: (env: Record<string, string | undefined>) => { envId: string; apiKey: string };
@@ -161,9 +162,19 @@ describe("rescueAdmin：登录密码哈希必须与真实云函数 lib.js 兼容
     expect(realLib.verifyLoginPwd("roundtrip-both-ways", hash)).toBe(true);
   });
 
-  it("空串 / NULL 存储位（recreate-admin 的空占位）→ verifyLoginPwd 返回 false，不会误判为登录成功", () => {
+  it("空串 / 畸形串 → verifyLoginPwd 返回 false，不会误判为登录成功", () => {
     expect(realLib.verifyLoginPwd("anything", "")).toBe(false);
     expect(realLib.verifyLoginPwd("anything", "not-a-hash")).toBe(false);
+  });
+
+  it("★哨兵占位（RESET-REQUIRED）不可能被当成合法登录哈希：任意密码【含空密码】必 false", () => {
+    // 这条守住"重建后到重设主密码前不能登录"的安全属性（空串若被当'无密码'放行就是静默绕过）。
+    const sentinel = rescue.RESET_REQUIRED;
+    expect(sentinel.length).toBeGreaterThan(0); // 绝不能退化成空串
+    expect(sentinel).not.toBe("");
+    for (const pwd of ["", " ", "anything", "admin123456", sentinel, "RESET-REQUIRED", "reset-required"]) {
+      expect(realLib.verifyLoginPwd(pwd, sentinel)).toBe(false);
+    }
   });
 });
 
@@ -277,10 +288,10 @@ describe("rescueAdmin：recreate-admin 的 uid 规则", () => {
     expect(body.username).toBe("管理员");
     expect(body.role).toBe("admin");
     expect(body.status).toBe("active");
-    // NOT NULL 占位列以空串占位（重建行的现实约束）；但绝不写 kdf_salt_prev/key_epoch/payload
-    expect(body.login_hash).toBe("");
-    expect(body.kdf_salt).toBe("");
-    expect(body.kdf_verifier).toBe("");
+    // NOT NULL 占位列以**哨兵值**占位（重建行的现实约束）；绝不写 kdf_salt_prev/key_epoch/payload
+    expect(body.login_hash).toBe(rescue.RESET_REQUIRED);
+    expect(body.kdf_salt).toBe(rescue.RESET_REQUIRED);
+    expect(body.kdf_verifier).toBe(rescue.RESET_REQUIRED);
     expect(Object.keys(body).sort()).toEqual(["kdf_salt", "kdf_verifier", "login_hash", "role", "status", "uid", "username"]);
     expect(body).not.toHaveProperty("kdf_salt_prev");
     expect(body).not.toHaveProperty("key_epoch");

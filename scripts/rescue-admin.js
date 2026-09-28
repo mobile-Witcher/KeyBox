@@ -7,8 +7,8 @@
  *      **云端永远解不开**。主密码 + 恢复码 + 备份三者全丢 = 永久救不回。
  *   2) **永不读、永不写 `payload`**；**永不触碰** `kdf_salt` / `kdf_salt_prev` / `kdf_verifier` / `key_epoch`
  *      ——覆盖这几个字段等于把用户全部密文变成永远打不开的砖头。
- *      （唯一例外：`recreate-admin` 在"整行已丢失"时新建一行，因列是 NOT NULL 必须以空占位写入，
- *        见该子命令注释与 docs/RECOVERY.md；它**永不修改既有行**的这些列。）
+ *      （唯一例外：`recreate-admin` 在"整行已丢失"时新建一行，因列是 NOT NULL 必须以**哨兵值**
+ *        占位写入，见该子命令注释与 docs/RECOVERY.md；它**永不修改既有行**的这些列。）
  *   3) 凭据只从本地 `.env.local` / 运行时环境变量读（环境 ID + 服务端 API Key），
  *      **绝不硬编码、绝不回显、退出不落盘**。
  *   4) 所有**写操作**先打印"将改什么"，再要求显式 `--yes`；缺 `--yes` 一律**不执行**。
@@ -36,6 +36,19 @@ import { pathToFileURL } from "node:url";
 const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 32, maxmem: 64 * 1024 * 1024 };
 const UID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const UID_LENGTH = 24;
+
+/**
+ * `recreate-admin` 新建行时，`login_hash` / `kdf_salt` / `kdf_verifier` 三列的**哨兵占位值**。
+ *
+ * 为什么必须有占位：这三列在库中均 **NOT NULL 且无默认值**（迁移 `20260927193625`），
+ *   新建行不写会被数据库直接拒绝，`recreate-admin`（SS7）就废了。
+ * 为什么**不能**用空串 `''`：万一登录校验对畸形哈希有异常分支（如把空串当"无密码"放行），
+ *   那就是一条**静默登录绕过**。故用**不可能被解析成合法哈希**的哨兵串：
+ *   `verifyLoginPwd` 对其**必返回 false（含空密码）** → 重建后到"重设主密码"前，**该账号完全登不进去**。
+ * 随后由 `reset-login`（设登录密码）+ App 内"重设主密码"（生成真实 kdf_salt / kdf_verifier）覆盖。
+ * （由 src/lib/rescueAdmin.test.ts 用真实 lib.js 的 verifyLoginPwd 校验这一点。）
+ */
+export const RESET_REQUIRED = "RESET-REQUIRED";
 
 /** 生成与 lib.js 完全一致的登录密码哈希。 */
 export function hashLoginPwd(password) {
@@ -197,9 +210,11 @@ export async function setStatus(ctx, { uid, status, yes } = {}) {
  * uid 规则（**不得默认生成新 uid**）：未传 `--uid` 时从 kb_secrets 自动探测归属最集中的 uid 并要求确认；
  * 仅显式 `--force-new-uid` 才生成全新 uid（会使既有密文对新 uid 不可读——数据仍在库中）。
  *
- * ⚠️ NOT NULL 现实：`login_hash` / `kdf_salt` / `kdf_verifier` 在库中均 NOT NULL（见迁移
- * 20260927193625），故**新建行**必须以**空占位**写入这三列；随后由 `reset-login` 与
- * App 内“重设主密码”补齐。本命令**永不修改既有行**的这些列（若行已存在则直接报错 USER_ALREADY_EXISTS）。
+ * ⚠️ NOT NULL 现实：`login_hash` / `kdf_salt` / `kdf_verifier` 在库中均 NOT NULL 且无默认值（见迁移
+ * 20260927193625），故**新建行**必须以**哨兵值 `RESET_REQUIRED`** 占位写入这三列；随后由
+ * `reset-login` 与 App 内“重设主密码”补齐。哨兵值**不可能**通过登录校验，因此
+ * **重建后到补齐前，该账号完全无法登录（有意设计，非故障）**。
+ * 本命令**永不修改既有行**的这些列（若行已存在则直接报错 USER_ALREADY_EXISTS）。
  */
 export async function recreateAdmin(ctx, { uid, username, forceNewUid, yes } = {}) {
   let targetUid = String(uid || "").trim();
@@ -239,8 +254,9 @@ export async function recreateAdmin(ctx, { uid, username, forceNewUid, yes } = {
     `  · uid=${targetUid}`,
     `  · username=${finalUsername}`,
     `  · role='admin'，status='active'`,
-    `  · login_hash / kdf_salt / kdf_verifier 以**空占位**写入（NOT NULL 约束要求）；`,
-    `    随后请执行 reset-login 设登录密码，并在 App 内“重设主密码”生成 kdf_salt / kdf_verifier。`
+    `  · login_hash / kdf_salt / kdf_verifier 以**哨兵值 ${RESET_REQUIRED}** 占位写入（NOT NULL 约束要求）；`,
+    `  · ⚠️ 因此**重建后该账号【无法登录】**（哨兵值不是合法哈希）——这是有意设计；`,
+    `    请紧接着执行 reset-login 设登录密码，并在 App 内“重设主密码”生成 kdf_salt / kdf_verifier。`
   );
   const preview = lines.join("\n");
   if (!yes) return { executed: false, reason: "NO_YES", preview, uid: targetUid, generated };
@@ -252,9 +268,9 @@ export async function recreateAdmin(ctx, { uid, username, forceNewUid, yes } = {
       username: finalUsername,
       role: "admin",
       status: "active",
-      login_hash: "",
-      kdf_salt: "",
-      kdf_verifier: "",
+      login_hash: RESET_REQUIRED,
+      kdf_salt: RESET_REQUIRED,
+      kdf_verifier: RESET_REQUIRED,
     },
   });
   return { executed: true, uid: targetUid, username: finalUsername, generated };
