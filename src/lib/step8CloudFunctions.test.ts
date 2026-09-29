@@ -266,7 +266,7 @@ interface RegUser {
   status: string;
 }
 
-function makeRegisterLib(cfg: { users?: RegUser[] }): {
+function makeRegisterLib(cfg: { users?: RegUser[]; callerUid?: string }): {
   lib: Dict;
   calls: { pgRequest: Array<{ method: string; table: string; opts: Dict }>; pgCount: Array<{ table: string; query: Dict }> };
 } {
@@ -276,20 +276,24 @@ function makeRegisterLib(cfg: { users?: RegUser[] }): {
     pgCount: [] as Array<{ table: string; query: Dict }>,
   };
   const lib: Dict = {
-    USERNAME_PATTERN: /^[A-Za-z0-9_.-]{3,32}$/,
-    MIN_LOGIN_PWD: 8,
     USER_LIMIT: 20,
-    TICKET_REFRESH_MS: 15 * 60 * 1000,
-    TICKET_EXPIRE_MS: 7 * 24 * 3600 * 1000,
+    // 2026-09-29：登录改为平台原生手机号验证码后，本函数身份取自平台会话（getCaller），
+    //   入参不再包含用户名 / 登录密码；login_hash 写哨兵值。
+    PASSWORD_LOGIN_DISABLED: "RESET-REQUIRED",
     ok: (data?: unknown) => ok(data),
     fail: (code: string) => fail(code),
-    getApp: () => ({ auth: () => ({ createTicket: () => "FAKE_TICKET" }) }),
+    normalizeEvent: (e: unknown) => (e && typeof e === "object" ? e : {}),
+    getCaller: () => ({ uid: cfg.callerUid ?? "test-uid", openId: "", customUserId: "" }),
+    resolveDisplayName: async () => "138****8000",
     pgRequest: async (method: string, table: string, opts: Dict = {}) => {
       calls.pgRequest.push({ method, table, opts });
       const query = (opts.query ?? {}) as Dict;
       if (method === "GET" && table === "kb_users") {
-        const want = String(query.username ?? "").replace(/^eq\./, "");
-        return users.filter((u) => u.username === want).map((u) => ({ uid: u.uid }));
+        // 新实现按 uid 查重（幂等判定），不再是按 username 查重
+        const wantUid = String(query.uid ?? "").replace(/^eq\./, "");
+        return users
+          .filter((u) => u.uid === wantUid)
+          .map((u) => ({ uid: u.uid, role: "user", status: u.status }));
       }
       if (method === "PATCH" && table === "kb_invites") return [{ id: 1 }];
       return null;
@@ -302,8 +306,6 @@ function makeRegisterLib(cfg: { users?: RegUser[] }): {
       if (s === "eq.active") return users.filter((u) => u.status === "active").length;
       return users.length;
     },
-    randomUid: () => "NEWUID24CHARS0000000000",
-    hashLoginPwd: (pwd: string) => `scrypt$fake$${String(pwd).length}`,
   };
   return { lib, calls };
 }
@@ -311,8 +313,6 @@ function makeRegisterLib(cfg: { users?: RegUser[] }): {
 function validEvent(overrides: Dict = {}): Dict {
   return {
     code: "KB-testcode",
-    username: "newuser",
-    loginPwd: "secret123",
     kdfSalt: "SALT",
     kdfVerifier: "VERIFIER",
     ...overrides,
@@ -370,8 +370,8 @@ describe("R22/R26 kbRegister：名额统计按 status<>'deleted'（软删释放�
     expect(res.error).toBe("LIMIT_REACHED");
   });
 
-  it("建用户体：role=user、status=active、owner 字段无关、且【不含任何主密码字段】", async () => {
-    const { lib, calls } = makeRegisterLib({ users: [] });
+  it("建用户体：role=user、status=active、uid 取自平台会话、且【不含任何主密码字段】", async () => {
+    const { lib, calls } = makeRegisterLib({ users: [], callerUid: "platform-uid-123" });
     const { main } = loadFunction("kbRegister", lib);
     await main(validEvent());
     const post = calls.pgRequest.find((c) => c.method === "POST" && c.table === "kb_users");
@@ -379,8 +379,12 @@ describe("R22/R26 kbRegister：名额统计按 status<>'deleted'（软删释放�
     const body = (post?.opts.body ?? {}) as Dict;
     expect(body.role).toBe("user");
     expect(body.status).toBe("active");
-    expect(body.username).toBe("newuser");
-    // 只有 login_hash（哈希），绝无主密码 / 明文。
+    // 身份来自平台会话（不再取自 event），用户名是脱敏手机号
+    expect(body.uid).toBe("platform-uid-123");
+    expect(body.username).toBe("138****8000");
+    // 不走密码登录：login_hash 是哨兵值（不可能通过任何密码校验）
+    expect(body.login_hash).toBe("RESET-REQUIRED");
+    // 只有 login_hash（哨兵），绝无主密码 / 明文。
     // R28：恢复四列【始终显式出现】于 INSERT 体（未提供恢复码时为 null），绝不依赖 DB 默认值。
     const keys = Object.keys(body).sort();
     expect(keys).toEqual(
@@ -399,23 +403,25 @@ describe("R22/R26 kbRegister：名额统计按 status<>'deleted'（软删释放�
         "username",
       ].sort()
     );
-    // 本用例未提供恢复码 → 恢复材料显式为 null，且注册【绝不】替用户确认（ack 恒 null）
+    // 本用例未提供恢复码 → 恢复材料显式为 null，且激活【绝不】替用户确认（ack 恒 null）
     expect(body.recovery_salt).toBeNull();
     expect(body.recovery_blob).toBeNull();
     expect(body.recovery_created_at).toBeNull();
     expect(body.recovery_ack_at).toBeNull();
     expect(JSON.stringify(body).toLowerCase()).not.toContain("master");
-    expect(JSON.stringify(body)).not.toContain("secret123");
   });
 
-  it("用户名已存在 → USERNAME_TAKEN（早于名额/建号）", async () => {
+  it("★该平台账号已激活 → 幂等返回成功（不重复建行、不消耗邀请码）", async () => {
     const { lib, calls } = makeRegisterLib({
-      users: [{ uid: "u1", username: "newuser", status: "active" }],
+      users: [{ uid: "test-uid", username: "138****8000", status: "active" }],
     });
     const { main } = loadFunction("kbRegister", lib);
     const res = await main(validEvent());
-    expect(res.error).toBe("USERNAME_TAKEN");
+    expect(res.ok).toBe(true);
+    expect(res.data?.alreadyActivated).toBe(true);
+    // 幂等路径绝不写入、也不占用邀请码
     expect(calls.pgRequest.some((c) => c.method === "POST" && c.table === "kb_users")).toBe(false);
+    expect(calls.pgRequest.some((c) => c.method === "PATCH" && c.table === "kb_invites")).toBe(false);
   });
 
   it("无效邀请码（占用返回空）→ INVALID_CODE", async () => {

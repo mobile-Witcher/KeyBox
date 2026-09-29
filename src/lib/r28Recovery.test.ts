@@ -64,14 +64,14 @@ interface RegCall {
 function makeRegisterLib(): { lib: Dict; calls: RegCall[] } {
   const calls: RegCall[] = [];
   const lib: Dict = {
-    USERNAME_PATTERN: /^[A-Za-z0-9_.-]{3,32}$/,
-    MIN_LOGIN_PWD: 8,
     USER_LIMIT: 20,
-    TICKET_REFRESH_MS: 15 * 60 * 1000,
-    TICKET_EXPIRE_MS: 7 * 24 * 3600 * 1000,
+    // 2026-09-29：身份取自平台会话（getCaller）；入参不再含用户名/登录密码。
+    PASSWORD_LOGIN_DISABLED: "RESET-REQUIRED",
     ok: (data?: unknown) => ok(data),
     fail: (code: string) => fail(code),
-    getApp: () => ({ auth: () => ({ createTicket: () => "FAKE_TICKET" }) }),
+    normalizeEvent: (e: unknown) => (e && typeof e === "object" ? e : {}),
+    getCaller: () => ({ uid: "PLATFORMUID000000000000", openId: "", customUserId: "" }),
+    resolveDisplayName: async () => "138****8000",
     pgRequest: async (method: string, table: string, opts: Dict = {}) => {
       calls.push({ method, table, opts });
       if (method === "GET" && table === "kb_users") return [];
@@ -79,8 +79,6 @@ function makeRegisterLib(): { lib: Dict; calls: RegCall[] } {
       return null;
     },
     pgCount: async () => 0,
-    randomUid: () => "NEWUID24CHARS0000000000",
-    hashLoginPwd: (pwd: string) => `scrypt$fake$${String(pwd).length}`,
   };
   return { lib, calls };
 }
@@ -88,8 +86,6 @@ function makeRegisterLib(): { lib: Dict; calls: RegCall[] } {
 function registerEvent(overrides: Dict = {}): Dict {
   return {
     code: "KB-testcode",
-    username: "newuser",
-    loginPwd: "secret123",
     kdfSalt: "KDFSALT",
     kdfVerifier: "VERIFIER",
     ...overrides,
@@ -164,26 +160,25 @@ describe("R28 kbRegister：恢复材料显式写入且成对", () => {
 function makeInitLib(existing: number): { lib: Dict; calls: RegCall[] } {
   const calls: RegCall[] = [];
   const lib: Dict = {
-    USERNAME_PATTERN: /^[A-Za-z0-9_.-]{3,32}$/,
-    MIN_LOGIN_PWD: 8,
+    // 2026-09-29：身份取自平台会话（getCaller）；入参不再含用户名/登录密码。
+    PASSWORD_LOGIN_DISABLED: "RESET-REQUIRED",
     ok: (data?: unknown) => ok(data),
     fail: (code: string) => fail(code),
+    normalizeEvent: (e: unknown) => (e && typeof e === "object" ? e : {}),
+    getCaller: () => ({ uid: "ADMINUID0000000000000000", openId: "", customUserId: "" }),
+    resolveDisplayName: async () => "138****8000",
     pgCount: async () => existing,
     pgRequest: async (method: string, table: string, opts: Dict = {}) => {
       calls.push({ method, table, opts });
       if (method === "GET" && table === "kb_users") return [{ uid: "ADMINUID0000000000000000" }];
       return null;
     },
-    randomUid: () => "ADMINUID0000000000000000",
-    hashLoginPwd: (pwd: string) => `scrypt$fake$${String(pwd).length}`,
   };
   return { lib, calls };
 }
 
 function initEvent(overrides: Dict = {}): Dict {
   return {
-    username: "owner",
-    loginPwd: "secret123",
     kdfSalt: "KDFSALT",
     kdfVerifier: "VERIFIER",
     ...overrides,

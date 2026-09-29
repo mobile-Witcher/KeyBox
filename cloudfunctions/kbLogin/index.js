@@ -41,19 +41,9 @@ exports.main = async (event) => {
         expire: TICKET_EXPIRE_MS,
       });
     } catch (ticketError) {
-      // 诊断日志：原始错误只进云端日志，绝不回传给前端（避免泄漏内部细节）。
-      console.error(
-        "[kbLogin] createTicket failed:",
-        (ticketError && ticketError.message) || String(ticketError),
-        "| code:",
-        (ticketError && ticketError.code) || "-",
-        "| refresh:",
-        TICKET_REFRESH_MS,
-        "| expire:",
-        TICKET_EXPIRE_MS,
-        "| uidLen:",
-        String(user.uid || "").length
-      );
+      // 注意：云函数内**不得**使用 console.*（见 src/lib/step8Security.test.ts，
+      // 防止敏感值经日志外泄）。此处保留静默失败；如需临时诊断，
+      // 请在放行该测试后短暂启用日志，用完立即回收。
       return fail("TICKET_UNAVAILABLE");
     }
     if (!ticket) return fail("TICKET_UNAVAILABLE");
