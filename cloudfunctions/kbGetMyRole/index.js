@@ -29,7 +29,19 @@ exports.main = async () => {
         uid: `eq.${uid}`,
       },
     });
-    if (!Array.isArray(rows) || rows.length === 0) return fail("USER_NOT_FOUND");
+    if (!Array.isArray(rows) || rows.length === 0) {
+      // 本账号尚未激活（手机号登录成功但还没有业务身份）。
+      // 附带 initialized 供前端分流：系统已有用户 → 去「邀请码激活」；还没有 → 去「首次初始化」。
+      // 注意：这里只暴露"是否存在用户"这一布尔事实，不泄露任何账号信息。
+      let initialized = false;
+      try {
+        const total = await pgCount("kb_users", { select: "uid" });
+        initialized = total > 0;
+      } catch (countError) {
+        initialized = true; // 查询失败时保守假设"已有用户"，避免误导用户去抢初始化
+      }
+      return { ok: false, error: "USER_NOT_FOUND", initialized };
+    }
 
     const row = rows[0];
     const userCount = await pgCount("kb_users", { select: "uid", status: "eq.active" });

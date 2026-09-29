@@ -52,6 +52,41 @@ const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 32, maxmem: 64 * 1024 * 1024 };
 const UID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const UID_LENGTH = 24;
 
+/**
+ * 不走密码登录的账号在 `login_hash` 里的哨兵占位值。
+ *
+ * 2026-09-29 起登录改为平台原生手机号验证码（见 kbInitAdmin / kbRegister 头注释）：
+ * 账号由平台创建与鉴权，云函数侧不再持有密码哈希。该哨兵与 rescue-admin.js 的
+ * `RESET-REQUIRED` 同口径——**不可能通过任何密码校验**（含空密码），因此残留的
+ * 密码登录路径对这类账号一律拒绝，不会出现"静默放行"。
+ */
+const PASSWORD_LOGIN_DISABLED = "RESET-REQUIRED";
+
+/** 手机号脱敏：+86 13800138000 → +86138****8000（仅用于管理端展示）。 */
+function maskPhone(phone) {
+  const raw = String(phone || "").replace(/\s+/g, "");
+  if (!raw) return "";
+  if (raw.length <= 7) return raw;
+  return raw.slice(0, raw.length - 8) + "****" + raw.slice(-4);
+}
+
+/**
+ * 解析用于管理端展示的账号名：优先「脱敏手机号」，失败则退化为 uid 片段。
+ * 手机号来自平台账号资料（getEndUserInfo）；任何异常都不阻断激活流程，
+ * 因为 username 仅用于管理端展示，不参与任何鉴权判定。
+ */
+async function resolveDisplayName(uid) {
+  try {
+    const res = await getApp().auth().getEndUserInfo(uid);
+    const info = (res && res.userInfo) || {};
+    const phone = String(info.phoneNumber || info.phone_number || info.phone || "");
+    if (phone) return maskPhone(phone);
+  } catch (error) {
+    // 查询失败：退化为 uid 片段
+  }
+  return "user_" + String(uid).slice(-6);
+}
+
 // ---------------------------------------------------------------------------
 // SDK 初始化
 // ---------------------------------------------------------------------------
@@ -304,6 +339,7 @@ module.exports = {
   USER_LIMIT,
   TICKET_REFRESH_MS,
   TICKET_EXPIRE_MS,
+  PASSWORD_LOGIN_DISABLED,
   ok,
   fail,
   getApp,
@@ -314,4 +350,6 @@ module.exports = {
   hashLoginPwd,
   verifyLoginPwd,
   normalizeEvent,
+  maskPhone,
+  resolveDisplayName,
 };

@@ -1,13 +1,20 @@
 /**
- * api.ts —— 云函数调用封装（架构 §9 第 6 行）。
+ * api.ts —— 云函数调用封装。
+ *
+ * 【身份模型 2026-09-29 变更】
+ *   登录改为 CloudBase 平台原生的「手机号验证码登录」（见 src/lib/phone-auth.ts）：
+ *   会话由平台签发，uid 即平台账号 uid。因此：
+ *     - 云函数一律在【已登录】状态下调用（走 SDK callFunction），不再需要 HTTP 网关通道；
+ *     - 不再有"登录前函数"，也不再由云函数签发自定义登录票据
+ *       （实测自定义登录在 PG 环境不可用：服务端恒返回"私钥已过期或私钥不存在"）。
+ *   调用者身份由云函数侧 getCaller() 从运行时注入读取，前端从不传 uid。
  *
  * 统一约定：
- *   - 所有云函数返回 { ok: boolean, data?, error? }（架构 §7），本文件把异常也归一成同一形状。
- *   - 本步骤（第 4 步）只封装 6 个账号类函数；其余函数待后续步骤再补。
+ *   - 所有云函数返回 { ok: boolean, data?, error?, initialized? }，本文件把异常也归一成同一形状。
  *   - 主密码从不进入本文件：kdfSalt / kdfVerifier 是“盐 + 用主密钥加密的校验串”，
  *     都不是主密码本身（架构 §6.1 第 3 步）。
  */
-import { requireApp, requireAuth } from "./cloudbase";
+import { requireApp } from "./cloudbase";
 import { log } from "./log";
 
 /** 云函数统一返回体。 */
@@ -15,78 +22,17 @@ export interface ApiResult<T = unknown> {
   ok: boolean;
   data?: T;
   error?: string;
-}
-
-/**
- * 确保调用者至少持有匿名会话（修复 403 EXCEED_AUTHORITY）。
- *
- * 根因（2026-09 实测定位）：kbInitAdmin / kbRegister / kbLogin 三个"登录前函数"
- * 在用户尚无任何会话时被调用；若环境的匿名登录未开启或前端从未签发匿名会话，
- * 网关在 OPA 策略评估之前就直接 403 EXCEED_AUTHORITY（rego 放行的是
- * "带 anonymous/unauthenticated 身份的请求"，零会话请求连身份都没有）。
- * 已在环境侧开启匿名登录；此处保证发起 callFunction 前会话存在：
- *   - 已有会话（匿名或真实登录）→ 直接复用；
- *   - 无会话 → signInAnonymously() 补一个匿名身份。
- * 真实登录态不受影响：getActiveSession() 仍把 is_anonymous 视为未登录（业务口径不变）。
- */
-async function ensureAnonSession(): Promise<void> {
-  const authClient = requireAuth();
-  try {
-    const { data } = await authClient.getSession();
-    if (data?.session) return;
-  } catch {
-    // getSession 失败按"无会话"处理，继续尝试匿名登录
-  }
-  try {
-    await authClient.signInAnonymously();
-  } catch (error) {
-    // 已有匿名会话时 SDK 可能报"已登录"类错误——视为成功；其余错误留给 call() 归一化
-    log.warn("signInAnonymously 未成功（可能已持有会话）", error);
-  }
-}
-
-/**
- * 登录前函数的 HTTP 网关基址（形如 https://<envId>-<appId>.<region>.app.tcloudbase.com）。
- *
- * 为什么需要它（2026-09 实测定位的根因）：
- *   云函数安全规则默认「仅登录用户可调用、拒绝匿名」，而 kbInitAdmin / kbRegister / kbLogin
- *   天然必须在登录前调用 → 走 SDK callFunction 必然 403 EXCEED_AUTHORITY。
- *   已实测：经 HTTP 网关（路由 /api/<函数名>，网关侧 auth=false）调用同一函数可正常执行
- *   （网关转发属服务端调用，不受客户端安全规则约束），且网关会自动回显 Origin 放行 CORS。
- *   因此这三个函数走网关通道，其余函数保持 SDK 调用（登录后调用，规则放行）。
- * 未配置该变量时自动回退到 SDK 调用，不会把功能改坏。
- */
-const gatewayBase = ((import.meta.env.VITE_GATEWAY_BASE_URL as string | undefined) || "").replace(/\/+$/, "");
-
-/** 经 HTTP 网关调用登录前函数（请求体即云函数 event；云函数侧用 normalizeEvent 兼容两种通道）。 */
-async function callViaGateway<T>(name: string, data: Record<string, unknown>): Promise<ApiResult<T>> {
-  if (!gatewayBase) return call<T>(name, data);
-  try {
-    const res = await fetch(`${gatewayBase}/api/${name}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data ?? {}),
-    });
-    if (!res.ok) {
-      log.error(`网关调用 ${name} 失败：HTTP ${res.status}`);
-      return { ok: false, error: `HTTP_${res.status}` };
-    }
-    const result = (await res.json()) as ApiResult<T>;
-    if (!result || typeof result !== "object" || typeof result.ok !== "boolean") {
-      log.error(`网关调用 ${name} 返回体形状非法`);
-      return { ok: false, error: "MALFORMED_RESPONSE" };
-    }
-    return result;
-  } catch (error) {
-    log.error(`网关调用 ${name} 异常`, error);
-    return { ok: false, error: error instanceof Error ? error.message : "NETWORK_ERROR" };
-  }
+  /**
+   * 仅 kbGetMyRole 在“本账号尚未激活”时附带：
+   *   true  = 系统已有用户 → 前端应引导去「邀请码激活」
+   *   false = 系统还没有任何用户 → 前端应引导去「首次初始化」
+   */
+  initialized?: boolean;
 }
 
 /** 归一化后的安全返回体（调用方必得一种形状，不会抛裸异常）。 */
 async function call<T>(name: string, data: Record<string, unknown>): Promise<ApiResult<T>> {
   try {
-    await ensureAnonSession();
     const res = await requireApp().callFunction({ name, data });
     const result = (res && (res as { result?: unknown }).result) as ApiResult<T> | undefined;
     if (!result || typeof result !== "object" || typeof result.ok !== "boolean") {
@@ -100,10 +46,12 @@ async function call<T>(name: string, data: Record<string, unknown>): Promise<Api
   }
 }
 
-/** kbInitAdmin 入参：登录密码 + 客户端算出的主密钥盐与校验串（不含主密码）。 */
+/**
+ * kbInitAdmin 入参。
+ * 身份取自平台会话（uid），因此不再需要用户名 / 登录密码。
+ */
 export interface InitAdminParams {
-  username: string;
-  loginPwd: string;
+  /** 客户端算出的主密钥盐与校验串（不含主密码）。 */
   kdfSalt: string;
   kdfVerifier: string;
   /** R28：恢复码派生盐（base64；须独立于 kdfSalt）。与 recoveryBlob 必须【成对】给出或同时缺省。 */
@@ -118,33 +66,22 @@ export interface InitAdminData {
   role: string;
 }
 
+/** kbRegister 入参：邀请码 + 主密钥材料（身份同样取自平台会话）。 */
 export interface RegisterParams {
   code: string;
-  username: string;
-  loginPwd: string;
   kdfSalt: string;
   kdfVerifier: string;
-  /** R28：恢复码派生盐（base64；须独立于 kdfSalt）。与 recoveryBlob 必须【成对】给出或同时缺省。 */
+  /** R28：恢复码派生盐（base64）。与 recoveryBlob 必须【成对】。 */
   recoverySalt?: string;
-  /** R28：`KBRC1:` 恢复码密文（用恢复码包裹主密钥所得）。绝不承载恢复码/主密钥明文。 */
+  /** R28：`KBRC1:` 恢复码密文。 */
   recoveryBlob?: string;
 }
 
 export interface RegisterData {
   uid: string;
-  ticket: string;
   role: string;
-}
-
-export interface LoginParams {
-  username: string;
-  loginPwd: string;
-}
-
-export interface LoginData {
-  ticket: string;
-  uid: string;
-  role: string;
+  /** 该平台账号本就已激活（重复提交的幂等返回）。 */
+  alreadyActivated?: boolean;
 }
 
 export interface InviteCreateData {
@@ -218,9 +155,9 @@ export interface AckRecoveryData {
 }
 
 export const api = {
-  /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。登录前调用 → 走网关通道。 */
+  /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。需已登录（手机号验证码）。 */
   initAdmin(params: InitAdminParams): Promise<ApiResult<InitAdminData>> {
-    return callViaGateway<InitAdminData>("kbInitAdmin", { ...params });
+    return call<InitAdminData>("kbInitAdmin", { ...params });
   },
   /** R02：管理员生成一次性邀请码。 */
   inviteCreate(): Promise<ApiResult<InviteCreateData>> {
@@ -230,13 +167,9 @@ export const api = {
   inviteRevoke(params: InviteRevokeParams): Promise<ApiResult<{ codeId: number }>> {
     return call<{ codeId: number }>("kbInviteRevoke", { ...params });
   },
-  /** R03/R04/R22：用邀请码自助注册，成功后云函数签发登录票据。登录前调用 → 走网关通道。 */
+  /** R03/R04/R22：用邀请码完成激活（需已登录；接口幂等，重复提交不报错）。 */
   register(params: RegisterParams): Promise<ApiResult<RegisterData>> {
-    return callViaGateway<RegisterData>("kbRegister", { ...params });
-  },
-  /** R05/R13：登录密码校验在云端，通过后签发登录票据。登录前调用 → 走网关通道。 */
-  login(params: LoginParams): Promise<ApiResult<LoginData>> {
-    return callViaGateway<LoginData>("kbLogin", { ...params });
+    return call<RegisterData>("kbRegister", { ...params });
   },
   /** R11/R26：取本人 role/status/密钥参数与用户数（只返回本人那一行）。 */
   getMyRole(): Promise<ApiResult<MyRoleData>> {
@@ -269,23 +202,3 @@ export const api = {
     return call<AckRecoveryData>("kbAckRecovery", {});
   },
 };
-
-/**
- * 用云函数签发的自定义登录票据换取 CloudBase 会话。
- * 已核实（auth-web-cloudbase）：auth.signInWithCustomTicket(cb) 接收一个返回票据的函数。
- */
-export async function signInWithTicket(ticket: string): Promise<ApiResult<{ signedIn: boolean }>> {
-  if (!ticket) return { ok: false, error: "EMPTY_TICKET" };
-  try {
-    const res = (await requireAuth().signInWithCustomTicket(async () => ticket)) as
-      | { error?: { message?: string } }
-      | undefined;
-    if (res && res.error) {
-      return { ok: false, error: res.error.message || "SIGN_IN_FAILED" };
-    }
-    return { ok: true, data: { signedIn: true } };
-  } catch (error) {
-    log.error("signInWithCustomTicket 失败", error);
-    return { ok: false, error: error instanceof Error ? error.message : "SIGN_IN_FAILED" };
-  }
-}

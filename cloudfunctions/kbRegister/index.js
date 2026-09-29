@@ -1,33 +1,35 @@
 "use strict";
 /**
- * kbRegister —— R03 / R04 / R22 / R26：邀请码自助注册。
+ * kbRegister —— R03 / R04 / R22 / R26：邀请码自助注册（手机号登录后的激活步骤）。
  *
  * 为什么不能放前端：前端判“码能不能用”改代码即可复用；20 人上限在前端等于没有上限。
  *
- * 入参：{ code, username, loginPwd, kdfSalt, kdfVerifier, recoverySalt?, recoveryBlob? }
+ * 【身份模型变更 2026-09-29】
+ *   原设计由本函数生成 uid 并签发自定义登录票据；实测该路径在当前环境不可用
+ *   （平台侧自定义登录密钥未登记）。现改为平台原生手机号验证码登录：
+ *   用户先登录拿到平台会话，再带邀请码调用本函数完成激活 —— 因此 **uid 取自平台会话**。
+ *   幂等：该 uid 已激活则直接返回成功（重复提交不报错，也绝不覆盖既有加密材料）。
+ *
+ * 入参：{ code, kdfSalt, kdfVerifier, recoverySalt?, recoveryBlob? }
  *   - R28：recoverySalt / recoveryBlob 必须【成对】出现——要么都给（客户端已生成恢复码并包裹主密钥），
  *     要么都缺（先开户，稍后由前端引导补设）。只给一半视为非法（fail-closed）。
  *   - 此处只收“盐 + 包裹后的密文”，绝不收恢复码明文。
- * 返回：{ ok, data: { uid, role, ticket } } | { ok:false, error }
+ * 返回：{ ok, data: { uid, role } } | { ok:false, error }
  *
  * 邀请码原子占用（架构 §7）：PG 下单语句条件更新即可，
  *   UPDATE ... WHERE code=$1 AND status='unused' RETURNING id; 返回 0 行＝已被别人占用。
  *   这里用 PostgREST 的 PATCH + status=eq.unused 等价实现。
  */
 const {
-  USERNAME_PATTERN,
-  MIN_LOGIN_PWD,
   USER_LIMIT,
-  TICKET_REFRESH_MS,
-  TICKET_EXPIRE_MS,
   ok,
   fail,
-  getApp,
+  getCaller,
   pgRequest,
   pgCount,
-  randomUid,
-  hashLoginPwd,
   normalizeEvent,
+  resolveDisplayName,
+  PASSWORD_LOGIN_DISABLED,
 } = require("./lib");
 
 exports.main = async (event) => {
@@ -35,8 +37,6 @@ exports.main = async (event) => {
     // 兼容两条调用通道（SDK 直调 / HTTP 网关包装）——见 lib.js 的 normalizeEvent。
     const params = normalizeEvent(event);
     const code = String(params.code || "").trim();
-    const username = String(params.username || "").trim();
-    const loginPwd = String(params.loginPwd || "");
     const kdfSalt = String(params.kdfSalt || "");
     const kdfVerifier = String(params.kdfVerifier || "");
     // R28：恢复材料（可选，但必须【成对】）——客户端生成恢复码后，用其独立派生的恢复密钥把主密钥
@@ -44,9 +44,12 @@ exports.main = async (event) => {
     const recoverySalt = String(params.recoverySalt || "");
     const recoveryBlob = String(params.recoveryBlob || "");
 
+    // ① 必须是已登录的平台账号（身份来自运行时注入，绝不信任 event 里的身份字段）
+    const caller = getCaller();
+    const uid = String(caller.uid || "").trim();
+    if (!uid) return fail("NOT_LOGGED_IN");
+
     if (!code) return fail("INVALID_CODE");
-    if (!USERNAME_PATTERN.test(username)) return fail("INVALID_USERNAME");
-    if (loginPwd.length < MIN_LOGIN_PWD) return fail("WEAK_LOGIN_PWD");
     if (!kdfSalt || !kdfVerifier) return fail("MISSING_KDF_PARAMS");
 
     // R28：recoverySalt 与 recoveryBlob 必须同时给出或同时缺省（只给一半＝非法，fail-closed）。
@@ -54,20 +57,20 @@ exports.main = async (event) => {
     const hasRecoveryBlob = recoveryBlob.length > 0;
     if (hasRecoverySalt !== hasRecoveryBlob) return fail("MISSING_RECOVERY_PARAMS");
 
-    // ① 用户名查重（select 显式列）
-    const duplicated = await pgRequest("GET", "kb_users", {
-      query: { select: "uid", username: `eq.${username}` },
+    // ② 幂等：该平台账号已激活则直接返回既有身份（重复提交不报错，也不覆盖加密材料）
+    const already = await pgRequest("GET", "kb_users", {
+      query: { select: "uid,role,status", uid: `eq.${uid}` },
     });
-    if (Array.isArray(duplicated) && duplicated.length > 0) return fail("USERNAME_TAKEN");
+    if (Array.isArray(already) && already.length > 0) {
+      return ok({ uid, role: already[0].role, alreadyActivated: true });
+    }
 
-    // ② 20 人上限（R22/R26）：统计 status <> 'deleted' 的用户数
+    // ③ 20 人上限（R22/R26）：统计 status <> 'deleted' 的用户数
     //    软删（status='deleted'）的用户【释放名额】，故用 neq.deleted 而非 eq.active
     const usedSeats = await pgCount("kb_users", { select: "uid", status: "neq.deleted" });
     if (usedSeats >= USER_LIMIT) return fail("LIMIT_REACHED");
 
-    const uid = randomUid();
-
-    // ③ 邀请码原子占用：条件更新，返回 0 行即代表已被别人占用（并发下只有一次成功）
+    // ④ 邀请码原子占用：条件更新，返回 0 行即代表已被别人占用（并发下只有一次成功）
     const occupied = await pgRequest("PATCH", "kb_invites", {
       query: { code: `eq.${code}`, status: "eq.unused" },
       prefer: "return=representation",
@@ -75,14 +78,16 @@ exports.main = async (event) => {
     });
     if (!Array.isArray(occupied) || occupied.length === 0) return fail("INVALID_CODE");
 
-    // ④ 建立用户记录（不含主密码任何字段；role 固定 user）
+    const username = await resolveDisplayName(uid);
+
+    // ⑤ 建立用户记录（不含主密码任何字段；role 固定 user；login_hash 为哨兵）
     try {
       await pgRequest("POST", "kb_users", {
         prefer: "return=minimal",
         body: {
           uid,
           username,
-          login_hash: hashLoginPwd(loginPwd),
+          login_hash: PASSWORD_LOGIN_DISABLED,
           role: "user",
           status: "active",
           kdf_salt: kdfSalt,
@@ -98,7 +103,7 @@ exports.main = async (event) => {
         },
       });
     } catch (insertError) {
-      // 插入失败（如并发同名）→ 尽力把邀请码还原，避免用户白消耗一个码
+      // 插入失败（如并发同 uid）→ 尽力把邀请码还原，避免用户白消耗一个码
       try {
         await pgRequest("PATCH", "kb_invites", {
           query: { code: `eq.${code}`, used_by: `eq.${uid}` },
@@ -110,24 +115,14 @@ exports.main = async (event) => {
       }
       const message = insertError && insertError.message ? insertError.message : "";
       if (message.indexOf("23505") >= 0 || message.toLowerCase().indexOf("duplicate") >= 0) {
-        return fail("USERNAME_TAKEN");
+        // 并发下已被同一账号抢先写入 → 视为已激活成功（幂等）
+        return ok({ uid, role: "user", alreadyActivated: true });
       }
       throw insertError;
     }
 
-    // ⑤ R04：校验邀请码后由云函数签发自定义登录票据
-    let ticket = "";
-    try {
-      ticket = getApp().auth().createTicket(uid, {
-        refresh: TICKET_REFRESH_MS,
-        expire: TICKET_EXPIRE_MS,
-      });
-    } catch (ticketError) {
-      // 私钥未注入时无法签票：注册仍算成功，前端回退到“手动登录”
-      ticket = "";
-    }
-
-    return ok({ uid, role: "user", ticket });
+    // ⑥ 平台登录态已存在（手机号验证码登录），无需再签发自定义票据
+    return ok({ uid, role: "user" });
   } catch (error) {
     return fail(error && error.message ? error.message : "INTERNAL_ERROR");
   }

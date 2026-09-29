@@ -1,14 +1,17 @@
 /**
- * App.tsx —— 应用外壳与最简页面流转（第 4 步：账号与权限）。
+ * App.tsx —— 应用外壳与页面流转。
  *
- * 流转规则：
- *   - 有会话 → 主界面（本步骤先给占位；VaultPage 在第 6 步实现）。
- *   - 无会话且本机标记“未初始化” → InitPage（R01：仅首次出现）。
- *   - 否则 → LoginPage（可跳 RegisterPage，R03/R04）。
+ * 【2026-09-29 变更】登录改为平台原生手机号验证码，页面流转规则随之简化：
+ *   - 无平台会话 → LoginPage（手机号 + 验证码）
+ *   - 有会话但尚未激活 → kbGetMyRole 返回 USER_NOT_FOUND，按其附带的 `initialized` 分流：
+ *       initialized=false（系统还没有任何用户）→ InitPage（首次初始化，建管理员）
+ *       initialized=true （系统已有用户）      → RegisterPage（输入邀请码激活）
+ *   - 有会话且已激活 → 主界面（VaultPage；管理员可进管理后台）
  *
- * 说明：本步骤未引入路由库，用受控状态在页面间切换，减少依赖面。
- *   “是否已初始化”的判断：以本机标记为主；若换设备误入初始化页，云函数会以
- *   ALREADY_INITIALIZED 拒绝（R01 的服务端兜底），届时引导去登录。
+ * 为什么去掉“本机已初始化标记”：该标记一旦与服务端不一致（清空服务端、换设备）就会把用户
+ * 卡在无账号可登的死角。现在**一切以服务端状态为权威**，不存在这类死锁。
+ *
+ * 说明：未引入路由库，用受控状态在页面间切换，减少依赖面。
  */
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./lib/api";
@@ -22,58 +25,70 @@ import VaultPage from "./pages/VaultPage";
 
 type Screen = "loading" | "init" | "login" | "register" | "home" | "admin" | "config-error";
 
-/** 本机“已完成初始化”标记；与服务端 kb_users 非空共同构成“不再出现初始化页”的判据。 */
-const INIT_FLAG_KEY = "keybox.initialized";
+interface Resolved {
+  screen: Screen;
+  role: string;
+  displayName: string;
+}
+
+/** 读取平台会话并决定该进哪一页（服务端状态为唯一权威）。 */
+async function resolveScreen(): Promise<Resolved> {
+  try {
+    const { data } = await auth.getSession();
+    const session = data?.session;
+    const hasSession = Boolean(session) && !session?.user?.is_anonymous;
+    if (!hasSession) return { screen: "login", role: "user", displayName: "" };
+
+    const user = session?.user;
+    const displayName = user?.user_metadata?.username || user?.id || "已登录用户";
+
+    const roleRes = await api.getMyRole();
+    if (roleRes.ok && roleRes.data) {
+      return { screen: "home", role: roleRes.data.role, displayName };
+    }
+    if (roleRes.error === "USER_NOT_FOUND") {
+      // 未激活：系统是否已有用户决定去「初始化」还是「邀请码激活」
+      return { screen: roleRes.initialized ? "register" : "init", role: "user", displayName };
+    }
+    // 其他错误（网络/会话失效等）→ 退回登录页
+    log.warn("解析页面失败", roleRes.error);
+    return { screen: "login", role: "user", displayName };
+  } catch (error) {
+    log.warn("读取会话失败", error);
+    return { screen: "login", role: "user", displayName: "" };
+  }
+}
 
 export default function App(): JSX.Element {
   const [screen, setScreen] = useState<Screen>("loading");
   const [displayName, setDisplayName] = useState<string>("");
   const [role, setRole] = useState<string>("user");
 
+  /** 重新解析并落到目标页面（登录成功 / 激活完成 / 启动时统一走这里）。 */
+  const refresh = useCallback(async (): Promise<void> => {
+    const next = await resolveScreen();
+    setDisplayName(next.displayName);
+    setRole(next.role);
+    setScreen(next.screen);
+  }, []);
+
   useEffect(() => {
     // 配置缺失时不触碰任何云端调用——渲染指引页（否则打包环境缺 VITE_ 变量会白屏）。
     if (initError) {
       setScreen("config-error");
-      return;
+      return undefined;
     }
     let alive = true;
-    (async () => {
-      try {
-        const { data } = await auth.getSession();
-        const session = data?.session;
-        const hasSession = Boolean(session) && !session?.user?.is_anonymous;
-        if (hasSession && alive) {
-          const user = session?.user;
-          setDisplayName(user?.user_metadata?.username || user?.id || "已登录用户");
-          setScreen("home");
-          // 取角色以决定是否显示“管理后台”入口（角色判定在云端，前端不写死）
-          const roleRes = await api.getMyRole();
-          if (alive && roleRes.ok && roleRes.data) setRole(roleRes.data.role);
-          return;
-        }
-      } catch (error) {
-        log.warn("读取会话失败", error);
-      }
+    void (async () => {
+      const next = await resolveScreen();
       if (!alive) return;
-      const initialized = localStorage.getItem(INIT_FLAG_KEY) === "1";
-      setScreen(initialized ? "login" : "init");
+      setDisplayName(next.displayName);
+      setRole(next.role);
+      setScreen(next.screen);
     })();
     return () => {
       alive = false;
     };
-  }, []);
-
-  const handleInitialized = useCallback(() => {
-    localStorage.setItem(INIT_FLAG_KEY, "1");
-    setScreen("login");
-  }, []);
-
-  const handleLoggedIn = useCallback(async (username: string) => {
-    setDisplayName(username);
-    setScreen("home");
-    // 登录后取角色（决定是否显示管理后台入口）
-    const roleRes = await api.getMyRole();
-    if (roleRes.ok && roleRes.data) setRole(roleRes.data.role);
   }, []);
 
   const handleSignOut = useCallback(async () => {
@@ -82,6 +97,8 @@ export default function App(): JSX.Element {
     } catch (error) {
       log.warn("登出失败", error);
     }
+    setDisplayName("");
+    setRole("user");
     setScreen("login");
   }, []);
 
@@ -99,27 +116,16 @@ export default function App(): JSX.Element {
     );
   }
 
-  if (screen === "init") {
-    return <InitPage onInitialized={handleInitialized} onGoLogin={() => setScreen("login")} />;
+  if (screen === "login") {
+    return <LoginPage onLoggedIn={() => void refresh()} />;
   }
 
-  if (screen === "login") {
-    return (
-      <LoginPage
-        onLoggedIn={handleLoggedIn}
-        onGoRegister={() => setScreen("register")}
-        onGoInit={() => setScreen("init")}
-      />
-    );
+  if (screen === "init") {
+    return <InitPage onInitialized={() => void refresh()} onSignOut={() => void handleSignOut()} />;
   }
 
   if (screen === "register") {
-    return (
-      <RegisterPage
-        onRegistered={handleLoggedIn}
-        onGoLogin={() => setScreen("login")}
-      />
-    );
+    return <RegisterPage onRegistered={() => void refresh()} onSignOut={() => void handleSignOut()} />;
   }
 
   // home：主界面（密钥库；管理员额外显示“管理后台”入口）
@@ -127,18 +133,18 @@ export default function App(): JSX.Element {
     return (
       <VaultPage
         username={displayName}
-        onSignOut={handleSignOut}
+        onSignOut={() => void handleSignOut()}
         onOpenAdmin={role === "admin" ? () => setScreen("admin") : undefined}
       />
     );
   }
 
-  // admin：管理后台（第 8 步，仅管理员可达）
+  // admin：管理后台（仅管理员可达）
   if (screen === "admin") {
     return (
       <AdminPage
         username={displayName}
-        onSignOut={handleSignOut}
+        onSignOut={() => void handleSignOut()}
         onBack={() => setScreen("home")}
       />
     );
@@ -148,7 +154,7 @@ export default function App(): JSX.Element {
   return (
     <CenteredMessage
       text="状态异常，请刷新页面。"
-      action={{ label: "退出登录", onClick: handleSignOut }}
+      action={{ label: "退出登录", onClick: () => void handleSignOut() }}
     />
   );
 }
