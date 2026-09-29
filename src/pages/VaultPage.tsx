@@ -28,9 +28,15 @@ import { getActiveSession } from "../lib/cloudbase";
 import {
   PBKDF2_ITERATIONS,
   deriveMasterKey,
+  masterKeyFromRaw,
   verifyMasterPassword,
   type MasterKey,
 } from "../lib/crypto";
+import {
+  clearUnlockCredential,
+  loadUnlockCredential,
+  saveUnlockCredential,
+} from "../lib/remember";
 import { getAllCached } from "../lib/db";
 import { useSessionGuard } from "../hooks/useSessionGuard";
 import { log } from "../lib/log";
@@ -83,6 +89,10 @@ export default function VaultPage({
 
   const [unlockPwd, setUnlockPwd] = useState<string>("");
   const [unlocking, setUnlocking] = useState<boolean>(false);
+  /** "在这台设备上记住"勾选（默认关闭——共享设备下必须由用户主动开启）。 */
+  const [remember, setRemember] = useState<boolean>(false);
+  /** 本机已保存的解锁凭据时间（非空表示"已记住"，供界面显示与清除）。 */
+  const [rememberedAt, setRememberedAt] = useState<string | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<SecretItem | null>(null);
@@ -117,7 +127,29 @@ export default function VaultPage({
       setRecoverySalt(res.data.recoverySalt);
       setRecoveryBlob(res.data.recoveryBlob);
       setRecoveryAckAt(res.data.recoveryAckAt);
-      setLoading(false);
+
+      // 尝试用本机记住的解锁凭据【自动解锁】（仅当用户此前主动勾选过"记住"）
+      const saved = await loadUnlockCredential(session.uid);
+      if (!alive) return;
+      if (saved) {
+        if (saved.keyEpoch === res.data.keyEpoch) {
+          try {
+            const mk = await masterKeyFromRaw(saved.raw);
+            if (!alive) return;
+            setMasterKey(mk);
+            setRememberedAt(saved.savedAt);
+          } catch (err) {
+            log.warn("自动解锁失败，回退为手动输入主密码", err);
+          }
+        } else {
+          // 主密码变更过 → 旧凭据必然解不开新一代密文，直接清除并提示
+          await clearUnlockCredential();
+          if (alive) {
+            setNotice("检测到主密码已变更，本机记住的解锁凭据已失效，请重新输入主密码。");
+          }
+        }
+      }
+      if (alive) setLoading(false);
     })();
     return () => {
       alive = false;
@@ -198,12 +230,30 @@ export default function VaultPage({
       const mk = await deriveMasterKey(unlockPwd, kdfSalt, PBKDF2_ITERATIONS);
       setMasterKey(mk); // 只在内存；下一步由 runSync effect 触发同步与本地解密
       setUnlockPwd(""); // 明文密码用完即弃
+
+      // 用户勾选"在这台设备上记住"→ 写入本机解锁凭据（失败不影响本次解锁）
+      if (remember) {
+        try {
+          await saveUnlockCredential(uid, keyEpoch, mk.raw);
+          setRememberedAt(new Date().toISOString());
+        } catch (err) {
+          log.warn("保存解锁凭据失败（不影响本次解锁）", err);
+        }
+      }
     } catch (err) {
       log.error("解锁失败", err);
       setError("解锁失败，请重试。");
     } finally {
       setUnlocking(false);
     }
+  }
+
+  /** 清除本机已记住的解锁凭据（用户主动操作）。 */
+  async function handleClearRemembered(): Promise<void> {
+    await clearUnlockCredential();
+    setRememberedAt(null);
+    setRemember(false);
+    setNotice("已清除本机记住的解锁凭据，下次需要重新输入主密码。");
   }
 
   function handleAdd(): void {
@@ -371,6 +421,10 @@ export default function VaultPage({
               onChange={setUnlockPwd}
               onSubmit={handleUnlock}
               unlocking={unlocking}
+              remember={remember}
+              onRememberChange={setRemember}
+              rememberedAt={rememberedAt}
+              onClearRemembered={() => void handleClearRemembered()}
             />
           ) : (
             <div className="space-y-6">
@@ -479,17 +533,26 @@ function formatTime(iso: string): string {
   return new Date(t).toLocaleString();
 }
 
-/** 解锁面板：输入主密码 → 本机校验 kdf_verifier。 */
+/** 解锁面板：输入主密码 → 本机校验 kdf_verifier；可勾选"在这台设备上记住"以支持下次自动解锁。 */
 function UnlockPanel({
   value,
   onChange,
   onSubmit,
   unlocking,
+  remember,
+  onRememberChange,
+  rememberedAt,
+  onClearRemembered,
 }: {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
   unlocking: boolean;
+  remember: boolean;
+  onRememberChange: (value: boolean) => void;
+  /** 非空表示本机已保存解锁凭据（可一键清除）。 */
+  rememberedAt: string | null;
+  onClearRemembered: () => void;
 }): JSX.Element {
   return (
     <div className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -506,6 +569,23 @@ function UnlockPanel({
           placeholder="主密码"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
+
+        <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => onRememberChange(e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            在这台设备上记住主密码
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+              下次打开自动解锁。<strong className="font-medium">共享或公用电脑请勿勾选</strong>
+              ——勾选后，能打开这台设备的人就能查看你已保存的密钥。
+            </span>
+          </span>
+        </label>
+
         <button
           type="submit"
           disabled={unlocking}
@@ -514,6 +594,19 @@ function UnlockPanel({
           {unlocking ? "校验中…" : "解锁"}
         </button>
       </form>
+
+      {rememberedAt ? (
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <span>本机已保存解锁凭据（{new Date(rememberedAt).toLocaleString()}）</span>
+          <button
+            type="button"
+            onClick={onClearRemembered}
+            className="shrink-0 underline hover:no-underline"
+          >
+            清除
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
