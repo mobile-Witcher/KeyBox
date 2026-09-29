@@ -376,3 +376,31 @@ node scripts/setup-cloud.js --invoke-rule minimal           # 可选收紧②：
 **③ 若怀疑是 CLI 版本问题：** `setup-cloud.js` 在**子命令失败**时会提示"可能是 CLI 版本差异"。
 先 `tcb --version`（官方要求 **≥ 3.0.0**），再核对 `tcb permission set function --help`
 （不同版本参数名可能不同；例如 `-e` 与 `--env-id` 是**等价**写法，见 CLI 参考 `core.md`）。
+
+---
+
+## 附：403 EXCEED_AUTHORITY 的最终结论与通道（2026-09-29 实测）
+
+**根因**：云函数安全规则（CloudBase 环境级、函数级 invoke 权限）默认口径是「仅登录用户可调用，**拒绝匿名**」。
+kbInitAdmin / kbRegister / kbLogin 三个"登录前函数"必须在未登录状态下调用 → 走 SDK `callFunction` 必然 403。
+该规则**不经过 OPA rego**（实测把 `authz.user.rego` 设为 `allow := true` 仍 403），且：
+- 平台 API `ModifyResourcePermission` / `DescribeResourcePermission` 对 **PostgreSQL 类型环境直接拒绝**
+- CLI `tcb permission set function` 已 [Retired]；`tcb fn` 无相关子命令
+- MCP `manageFunctions` / `queryFunctions` 无安全规则 action
+- 官方文档给的入口是控制台「云函数 → 权限控制」（PG 环境可能不下发该入口）
+
+**采用方案（全自动、无需控制台）**：经 **HTTP 网关路由**调用这三个函数。
+网关转发属服务端调用，不受客户端安全规则约束（curl 与真实浏览器双验证 HTTP 200）。
+
+- 已创建路由（`auth=false`，允许匿名公网访问）：
+  - `POST https://<envId>-<appId>.<region>.app.tcloudbase.com/api/kbInitAdmin`
+  - `POST https://<envId>-<appId>.<region>.app.tcloudbase.com/api/kbRegister`
+  - `POST https://<envId>-<appId>.<region>.app.tcloudbase.com/api/kbLogin`
+  创建方式：`manageGateway(action="createRoute", upstreamResourceType="SCF", targetName="<函数名>", path="/api/<函数名>", auth=false)`
+- 网关响应自动回显 Origin 并允许凭据（`access-control-allow-*`），**跨域无需额外配置**
+- 云函数侧 `lib.js` 的 `normalizeEvent()` 兼容两条通道：SDK 直调（参数平铺）与网关包装（参数在 `event.body`）
+- 前端 `src/lib/api.ts` 的 `callViaGateway()` 走该通道；配置项 `VITE_GATEWAY_BASE_URL`
+  （未配置时回退 SDK 调用）。CI 两个 workflow 已注入该 Secrets。
+- 其余函数（登录后调用）继续走 SDK `callFunction`：已实测**非匿名登录用户可正常调用**（规则放行）。
+
+**结论**：控制台「权限控制」入口在 PG 环境找不到也无妨——这条网关通道已经绕开该规则，且完全可脚本化。
