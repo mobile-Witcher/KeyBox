@@ -14,9 +14,12 @@ import { log } from "../lib/log";
 export default function LoginPage({
   onLoggedIn,
   onGoRegister,
+  onGoInit,
 }: {
   onLoggedIn: (username: string) => void;
   onGoRegister: () => void;
+  /** 回到初始化页（服务端已有用户时会被 ALREADY_INITIALIZED 兜底拒绝，误点无风险）。 */
+  onGoInit: () => void;
 }): JSX.Element {
   const [username, setUsername] = useState("");
   const [loginPwd, setLoginPwd] = useState("");
@@ -61,9 +64,15 @@ export default function LoginPage({
       title="登录"
       subtitle="登录成功后，还需在本机输入主密码才能解锁你的密钥内容。"
       footer={
-        <button type="button" onClick={onGoRegister} className="underline hover:no-underline">
-          有邀请码？去注册
-        </button>
+        <>
+          <button type="button" onClick={onGoRegister} className="underline hover:no-underline">
+            有邀请码？去注册
+          </button>
+          <span className="mx-2 opacity-50">·</span>
+          <button type="button" onClick={onGoInit} className="underline hover:no-underline">
+            首次使用 / 重新初始化
+          </button>
+        </>
       }
     >
       <ErrorBanner message={error} />

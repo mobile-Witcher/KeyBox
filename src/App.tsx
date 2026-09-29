@@ -108,6 +108,7 @@ export default function App(): JSX.Element {
       <LoginPage
         onLoggedIn={handleLoggedIn}
         onGoRegister={() => setScreen("register")}
+        onGoInit={() => setScreen("init")}
       />
     );
   }
