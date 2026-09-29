@@ -1,39 +1,68 @@
 /**
- * index.css —— 全局样式入口（Tailwind 三层指令 + 主题变量 + 少量基础样式）。
+ * index.css —— 全局样式入口（Tailwind 三层指令 + 主题变量 + 组件工具类）。
  *
  * 主题（R24）：浅色/深色两套语义色**只在这里集中定义**；组件通过 Tailwind 令牌
  *   `bg-kb-bg` / `bg-kb-surface` / `text-kb-text` / `text-kb-muted` / `border-kb-border`
  *   / `text-kb-primary` 等消费（令牌映射见 tailwind.config.ts）。
  * 夜间模式由 <html class="dark"> 驱动（Tailwind darkMode:"class"）。
  *
- * ⚠️ 深色底 `#0b1120` 与浅色底 `#f8fafc` 必须与 index.html 的 <head> 内联脚本、
- *    src/lib/theme.ts 的 THEME_BG 三处保持一致，否则首屏会闪一下（FOUC）。
+ * 2026-09-29 视觉精修（"精致克制"方向）：
+ *   - 扩充语义令牌：次级表面、强边框、primary 交互态、danger/success/warning、焦点环、两级阴影
+ *   - 新增组件工具类（.kb-card / .kb-input / .kb-btn* / .kb-badge / .kb-field-hint），
+ *     让各页面用同一套"手感"，而不是各自拼 class
+ *   - 补齐中文字体栈、细滚动条、选中文本色、focus-visible 可见性、等宽数字
+ *
+ * ⚠️ 深色底 `#0b1120` 与浅色底 `#f8fafc` **刻意保持不变**，必须与 index.html 的 <head> 内联脚本、
+ *    src/lib/theme.ts 的 THEME_BG 三处一致，否则首屏会闪一下（FOUC）。改这两个值要三处同改。
  */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* 浅色 */
+  /* ── 浅色 ── */
   --kb-bg: #f8fafc;
   --kb-surface: #ffffff;
+  /* 次级表面：表头、hover 行、内嵌区块 */
+  --kb-surface-2: #f1f5f9;
   --kb-text: #0f172a;
-  --kb-muted: #64748b;
-  --kb-border: #e2e8f0;
+  /* 比原先略深一档，提升长文本可读性 */
+  --kb-muted: #5b6779;
+  --kb-border: #e5e8ee;
+  /* 强边框：需要明确分隔时（如表头下沿、对话框外框） */
+  --kb-border-strong: #cbd5e1;
   --kb-primary: #4f46e5;
+  --kb-primary-hover: #4338ca;
   --kb-primary-contrast: #ffffff;
+  --kb-danger: #dc2626;
+  --kb-success: #059669;
+  --kb-warning: #b45309;
+  /* 焦点环 / 选区 */
+  --kb-ring: rgba(79, 70, 229, 0.28);
+  --kb-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --kb-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.05);
   color-scheme: light;
 }
 
 .dark {
-  /* 深色 */
+  /* ── 深色 ── */
   --kb-bg: #0b1120;
   --kb-surface: #0f172a;
+  --kb-surface-2: #16203a;
   --kb-text: #e2e8f0;
   --kb-muted: #94a3b8;
   --kb-border: #1e293b;
+  --kb-border-strong: #334155;
   --kb-primary: #818cf8;
+  --kb-primary-hover: #a5b4fc;
   --kb-primary-contrast: #0b1120;
+  --kb-danger: #f87171;
+  --kb-success: #34d399;
+  --kb-warning: #fbbf24;
+  --kb-ring: rgba(129, 140, 248, 0.35);
+  /* 深色下阴影几乎不可见，主要靠边框分层；保留极浅阴影增加"离地感" */
+  --kb-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --kb-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 
@@ -46,6 +75,10 @@ body,
 body {
   background-color: var(--kb-bg);
   color: var(--kb-text);
+  /* 中文字体栈（原先只配了等宽栈，中文走系统默认，观感不稳） */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
+    sans-serif;
   @apply antialiased;
   /* 主题切换时仅对颜色做过渡，避免布局抖动 */
   transition: background-color 200ms ease, color 200ms ease;
@@ -55,5 +88,123 @@ body {
 @media (prefers-reduced-motion: reduce) {
   body {
     transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 键盘可达性：只在键盘导航时显示焦点环（鼠标点击不显示） */
+:focus-visible {
+  outline: 2px solid var(--kb-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 选中文本 */
+::selection {
+  background: var(--kb-ring);
+  color: var(--kb-text);
+}
+
+/* 细滚动条（深色下默认滚动条很突兀） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kb-border-strong) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--kb-border-strong);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--kb-muted);
+  background-clip: content-box;
+}
+
+/* ---------------------------------------------------------------------------
+   组件工具类：统一"手感"。页面用这些类，而不是各自拼 slate-* 硬编码。
+   --------------------------------------------------------------------------- */
+@layer components {
+  /** 卡片 / 面板容器 */
+  .kb-card {
+    @apply rounded-xl border border-kb-border bg-kb-surface;
+    box-shadow: var(--kb-shadow);
+  }
+
+  /** 强调卡片（对话框、主操作区）：更大的圆角与阴影 */
+  .kb-card-lg {
+    @apply rounded-2xl border border-kb-border bg-kb-surface;
+    box-shadow: var(--kb-shadow-lg);
+  }
+
+  /** 输入框（含 placeholder、focus、disabled 三态） */
+  .kb-input {
+    @apply w-full rounded-lg border border-kb-border bg-kb-surface px-3 py-2 text-sm text-kb-text transition placeholder:text-kb-muted disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .kb-input:focus {
+    border-color: var(--kb-primary);
+    box-shadow: 0 0 0 3px var(--kb-ring);
+    outline: none;
+  }
+
+  /** 按钮基座：所有按钮共享（注意 Tailwind 的 @apply 不能引用自定义类，故用并列选择器） */
+  .kb-btn,
+  .kb-btn-primary,
+  .kb-btn-ghost,
+  .kb-btn-danger {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
+  }
+
+  /** 主按钮（品牌色） */
+  .kb-btn-primary {
+    @apply text-kb-primary-contrast;
+    background-color: var(--kb-primary);
+  }
+  .kb-btn-primary:hover:not(:disabled) {
+    background-color: var(--kb-primary-hover);
+  }
+
+  /** 次按钮（描边） */
+  .kb-btn-ghost {
+    @apply border border-kb-border bg-kb-surface text-kb-text;
+  }
+  .kb-btn-ghost:hover:not(:disabled) {
+    background-color: var(--kb-surface-2);
+  }
+
+  /** 危险操作按钮（删除等） */
+  .kb-btn-danger {
+    @apply text-white;
+    background-color: var(--kb-danger);
+  }
+  .kb-btn-danger:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  /** 小标签 / 徽标 */
+  .kb-badge {
+    @apply inline-flex items-center gap-1 rounded-full border border-kb-border bg-kb-surface-2 px-2 py-0.5 text-xs text-kb-muted;
+  }
+
+  /** 表单字段下的辅助说明 */
+  .kb-hint {
+    @apply text-xs leading-relaxed text-kb-muted;
+  }
+
+  /** 等宽数字（密钥条目数、时间等对齐更整齐） */
+  .kb-nums {
+    font-variant-numeric: tabular-nums;
   }
 }

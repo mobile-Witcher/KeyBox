@@ -25,11 +25,19 @@ const config: Config = {
         kb: {
           bg: "var(--kb-bg)",
           surface: "var(--kb-surface)",
+          /** 次级表面：表头、hover 行、内嵌区块 */
+          "surface-2": "var(--kb-surface-2)",
           text: "var(--kb-text)",
           muted: "var(--kb-muted)",
           border: "var(--kb-border)",
+          /** 强边框：需要明确分隔时 */
+          "border-strong": "var(--kb-border-strong)",
           primary: "var(--kb-primary)",
+          "primary-hover": "var(--kb-primary-hover)",
           "primary-contrast": "var(--kb-primary-contrast)",
+          danger: "var(--kb-danger)",
+          success: "var(--kb-success)",
+          warning: "var(--kb-warning)",
         },
       },
     },
