@@ -10,10 +10,21 @@ import { decryptString, encryptString, type MasterKey } from "./crypto";
 import type { CachedSecret } from "./db";
 import { log } from "./log";
 
-/** 一条密钥的明文字段（payload 解密后的 JSON 结构）。 */
+/** 一条密钥的明文字段（payload 解密后的 JSON 结构）。
+ *
+ * 2026-09-29 扩展：新增 website（官网网址）与 model（模型名）。
+ * **向后兼容**：两个字段对旧密文而言是「缺失 → 规整为空串」（见 normalizePlain），
+ * 因此旧记录解密后照常显示，无需任何数据迁移；用户下次编辑保存时自然补上。
+ */
 export interface SecretPlain {
+  /** 站点名（自定义标识，如 "OpenAI"）。 */
   site: string;
+  /** API 接口地址（endpoint，如 https://api.openai.com/v1）。 */
   url: string;
+  /** 官网 / 控制台网址（如 https://platform.openai.com）。 */
+  website: string;
+  /** 模型名（如 gpt-4o、deepseek-chat）。 */
+  model: string;
   key: string;
   note: string;
   tags: string[];
@@ -31,15 +42,18 @@ export interface SecretItem {
 
 /** 空明文模板，保证字段齐全。 */
 export function emptyPlain(): SecretPlain {
-  return { site: "", url: "", key: "", note: "", tags: [] };
+  return { site: "", url: "", website: "", model: "", key: "", note: "", tags: [] };
 }
 
-/** 把任意解析结果规整成 SecretPlain（容错：缺字段补空、类型不符强转）。 */
+/** 把任意解析结果规整成 SecretPlain（容错：缺字段补空、类型不符强转）。
+ *  旧密文没有 website / model → 补空串，保证向后兼容。 */
 export function normalizePlain(input: Partial<SecretPlain> | null | undefined): SecretPlain {
   const src = input || {};
   return {
     site: typeof src.site === "string" ? src.site : "",
     url: typeof src.url === "string" ? src.url : "",
+    website: typeof src.website === "string" ? src.website : "",
+    model: typeof src.model === "string" ? src.model : "",
     key: typeof src.key === "string" ? src.key : "",
     note: typeof src.note === "string" ? src.note : "",
     tags: Array.isArray(src.tags) ? src.tags.filter((t) => typeof t === "string") : [],
@@ -129,7 +143,13 @@ export function filterItems(
     }
     if (tag !== null && !item.plain.tags.includes(tag)) return false;
     if (kw === "") return true;
-    const haystack = [item.plain.site, item.plain.url, ...item.plain.tags]
+    const haystack = [
+      item.plain.site,
+      item.plain.url,
+      item.plain.website,
+      item.plain.model,
+      ...item.plain.tags,
+    ]
       .join(" ")
       .toLowerCase();
     return haystack.includes(kw);

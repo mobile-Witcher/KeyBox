@@ -16,7 +16,15 @@ function item(id: number, key: string): SecretItem {
     keyEpoch: 0,
     updatedAt: "2026-01-01T00:00:00.000Z",
     pending: false,
-    plain: { site: "站点", url: "https://example.com", key, note: "备注", tags: ["工作"] },
+    plain: {
+      site: "站点",
+      url: "https://example.com",
+      website: "https://example.com",
+      model: "gpt-4o",
+      key,
+      note: "备注",
+      tags: ["工作"],
+    },
     decryptError: false,
   };
 }
@@ -32,11 +40,12 @@ describe("SecretTable 渲染（R15/R16 + R25 初始态）", () => {
     expect(render([])).toContain("还没有密钥");
   });
 
-  it("默认遮掩明文 key；复制按钮初始显示『复制』；不显示倒计时提示", () => {
+  it("默认遮掩明文 key；复制按钮为图标（data-testid 标识）；不显示倒计时提示", () => {
     const html = render([item(1, "PLAINTEXT-LEAK-CANARY")]);
     expect(html).toContain("••••••••"); // 默认遮掩
     expect(html).not.toContain("PLAINTEXT-LEAK-CANARY"); // 初始不出明文
-    expect(html).toContain(">复制<"); // R25 初始文案
+    expect(html).toContain('data-testid="copy-1-key"'); // 密钥列有一键复制（图标按钮）
+    expect(html).toContain('data-testid="copy-1-model"'); // 模型名列同样可复制
     expect(html).not.toContain("秒后自动清空"); // 未复制时不出现倒计时提示
   });
 

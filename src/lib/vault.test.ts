@@ -32,7 +32,7 @@ function item(
     keyEpoch: 0,
     updatedAt: "2026-01-01T00:00:00.000Z",
     pending: false,
-    plain: { site, url, key, note: "", tags },
+    plain: { site, url, website: "", model: "", key, note: "", tags },
     decryptError: false,
   };
 }
@@ -50,13 +50,29 @@ function brokenItem(id: number): SecretItem {
 }
 
 describe("normalizePlain / emptyPlain", () => {
-  it("emptyPlain 字段齐全且为空", () => {
-    expect(emptyPlain()).toEqual({ site: "", url: "", key: "", note: "", tags: [] });
+  it("emptyPlain 字段齐全且为空（含 2026-09-29 新增的 website / model）", () => {
+    expect(emptyPlain()).toEqual({
+      site: "",
+      url: "",
+      website: "",
+      model: "",
+      key: "",
+      note: "",
+      tags: [],
+    });
   });
 
-  it("normalizePlain 补全缺失字段并过滤非字符串标签", () => {
+  it("normalizePlain 补全缺失字段（含旧密文缺失的 website / model）并过滤非字符串标签", () => {
     const out = normalizePlain({ site: "X", tags: ["a", 1 as unknown as string, "b"] });
-    expect(out).toEqual({ site: "X", url: "", key: "", note: "", tags: ["a", "b"] });
+    expect(out).toEqual({
+      site: "X",
+      url: "",
+      website: "",
+      model: "",
+      key: "",
+      note: "",
+      tags: ["a", "b"],
+    });
   });
 
   it("normalizePlain 对 null/undefined 容错", () => {

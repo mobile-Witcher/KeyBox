@@ -1,6 +1,9 @@
 /**
  * SecretDialog.tsx —— 新增 / 编辑密钥的弹窗（第 6 步，R15）。
  *
+ * 2026-09-29 字段扩展：新增「官网 / 控制台」（website）与「模型名」（model）。
+ * 旧记录缺这两个字段时解密后为空串，编辑保存后自然补齐（向后兼容，无需迁移）。
+ *
  * 关键约束：弹窗只收集明文，提交时交给上层（VaultPage）在本地加密；
  *   本组件不发任何网络请求，提交后由上层清空，明文不落盘、不进日志。
  */
@@ -26,6 +29,8 @@ export default function SecretDialog({
 }: SecretDialogProps): JSX.Element | null {
   const [site, setSite] = useState("");
   const [url, setUrl] = useState("");
+  const [website, setWebsite] = useState("");
+  const [model, setModel] = useState("");
   const [key, setKey] = useState("");
   const [note, setNote] = useState("");
   const [tagsText, setTagsText] = useState("");
@@ -37,6 +42,8 @@ export default function SecretDialog({
     const base: SecretPlain = initial?.plain ?? emptyPlain();
     setSite(base.site);
     setUrl(base.url);
+    setWebsite(base.website);
+    setModel(base.model);
     setKey(base.key);
     setNote(base.note);
     setTagsText(base.tags.join(", "));
@@ -61,7 +68,15 @@ export default function SecretDialog({
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
     onSubmit(
-      { site: site.trim(), url: url.trim(), key, note: note.trim(), tags },
+      {
+        site: site.trim(),
+        url: url.trim(),
+        website: website.trim(),
+        model: model.trim(),
+        key,
+        note: note.trim(),
+        tags,
+      },
       initial ? initial.id : undefined
     );
   }
@@ -72,7 +87,24 @@ export default function SecretDialog({
         <h3 className="text-base font-semibold">{initial ? "编辑密钥" : "新增密钥"}</h3>
         <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
           <DialogField label="站点名" value={site} onChange={setSite} placeholder="例如 OpenAI" />
-          <DialogField label="网址" value={url} onChange={setUrl} placeholder="例如 https://api.openai.com" />
+          <DialogField
+            label="接口地址（API URL）"
+            value={url}
+            onChange={setUrl}
+            placeholder="例如 https://api.openai.com/v1"
+          />
+          <DialogField
+            label="官网 / 控制台"
+            value={website}
+            onChange={setWebsite}
+            placeholder="例如 https://platform.openai.com"
+          />
+          <DialogField
+            label="模型名"
+            value={model}
+            onChange={setModel}
+            placeholder="例如 gpt-4o、deepseek-chat（可多个）"
+          />
           <DialogField label="密钥" value={key} onChange={setKey} placeholder="要保存的 API 密钥" />
           <DialogField label="备注" value={note} onChange={setNote} placeholder="可选" />
           <DialogField
