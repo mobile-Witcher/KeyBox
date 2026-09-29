@@ -76,23 +76,21 @@ function withEnvId(credentials) {
 
 /**
  * 读取自定义登录私钥（多来源，缺失时返回 null，不抛异常）。
- *  优先级：① TCB_CUSTOM_LOGIN_CREDENTIALS(JSON 串) → ② TCB_CUSTOM_LOGIN_KEY_FILE(路径)
- *          → ③ 与本文件同目录的 tcb_custom_login.json。
- *  任一步解析失败都静默跳过，交由调用方以 TICKET_UNAVAILABLE 反馈。
+ *
+ * 优先级（2026-09-29 调整）：
+ *   ① 与本文件同目录的 `tcb_custom_login.json`（随函数代码一起部署 → **密钥轮换后以此为准**）
+ *   ② 环境变量 TCB_CUSTOM_LOGIN_KEY_FILE 指定的文件路径
+ *   ③ 环境变量 TCB_CUSTOM_LOGIN_CREDENTIALS 里的 JSON 串（兜底；云端存量值可能是旧密钥）
+ *
+ * 为什么把同目录文件提到最前：控制台重新签发密钥对后，新私钥只需随代码部署即可生效，
+ * 无需再去改环境变量（CLI/MCP 回写环境变量时对"貌似 JSON 的长字符串"容易出错）。
+ * 该文件被 .gitignore 的 `*_custom_login*.json` 规则挡住，绝不进仓库。
+ * 任一步解析失败都静默跳过，交由调用方以 TICKET_UNAVAILABLE 反馈。
  */
 function loadCustomLoginCredentials() {
-  // ① 直接放在环境变量里的 JSON 串（owner 无需处理文件路径）
-  if (CUSTOM_LOGIN_CREDENTIALS) {
-    try {
-      return withEnvId(JSON.parse(CUSTOM_LOGIN_CREDENTIALS));
-    } catch (error) {
-      // 解析失败则继续尝试其他来源
-    }
-  }
-  // ② 显式指定的文件路径；③ 与本文件同目录（随函数目录一起打包）
-  const candidates = [];
+  // ① 同目录密钥文件；② 显式指定的文件路径
+  const candidates = [path.join(__dirname, "tcb_custom_login.json")];
   if (CUSTOM_LOGIN_KEY_FILE) candidates.push(CUSTOM_LOGIN_KEY_FILE);
-  candidates.push(path.join(__dirname, "tcb_custom_login.json"));
   for (let i = 0; i < candidates.length; i += 1) {
     const file = candidates[i];
     try {
@@ -101,6 +99,14 @@ function loadCustomLoginCredentials() {
       }
     } catch (error) {
       // 继续尝试下一个来源
+    }
+  }
+  // ③ 环境变量里的 JSON 串（兜底）
+  if (CUSTOM_LOGIN_CREDENTIALS) {
+    try {
+      return withEnvId(JSON.parse(CUSTOM_LOGIN_CREDENTIALS));
+    } catch (error) {
+      // 解析失败则返回 null
     }
   }
   return null;
