@@ -5,6 +5,21 @@
 > 标注约定：**【已核实】**= 有官方文档出处；**【已核实 + 实测】/【实测】**= 已在本环境（`envId=<YOUR_ENV_ID>`）实际探测确认，**不再列为待核实**；**【待核实】**= 见第 12 节。
 >
 > **⚠️ 本环境已实测为 PG（PostgreSQL）模式，全文按 PG 重写**：`queryEnv(action="info", envId="<YOUR_ENV_ID>")` 返回 `RuntimeMode="postgresql"`、`RuntimeBackends={postgresql:true, nosql:false, mysql:false}`（由团队负责人实测，第 12 节第 1 项已关闭）。因此**不使用**文档型数据库（NoSQL）与集合安全规则，改用 **PG 表 + 表级 GRANT + 行级 RLS Policy**。PG 模式仅新建环境支持，存量环境不能升级。
+>
+> **⚠️⚠️ 架构变更（2026-09-29）：登录方式由「用户名密码 + 自定义登录票据」改为「手机号验证码登录」**
+> **原因**：本环境实测自定义登录不可用——云函数 `auth().createTicket()` 签出的票据，服务端恒返回
+> `私钥已过期或私钥不存在，请重新生成`（`invalid_argument` / code 3）；官方 `CreateCustomLoginKeys`
+> 重新签发的密钥同样未被平台登记，而该配置只能由控制台生成。改用平台原生手机号验证码登录后**零密钥依赖**。
+>
+> **变更要点（本文档其余章节凡与此冲突，以本节为准）**：
+> - **登录**：`auth.signInWithOtp({ phone })` + `data.verifyOtp({ token })`，封装在 `src/lib/phone-auth.ts`
+> - **身份**：`uid` = **平台账号 uid**（不再由云函数生成 24 位 uid）；`kb_users.uid` 即平台会话 uid
+> - **`kbInitAdmin` / `kbRegister`**：身份取自 `getCaller()`；入参不再含用户名 / 登录密码；
+>   `login_hash` 写哨兵值 `RESET-REQUIRED`（该账号不走密码登录）；`kbRegister` 为**幂等**接口
+> - **`kbLogin` 已停用**（代码保留但前端不再调用）；自定义登录密钥（`tcb_custom_login.json`）相关配置全部作废
+> - **调用通道**：云函数一律在**已登录**状态下经 SDK `callFunction` 调用；HTTP 网关的 `/api/*` 路由已删除
+> - **未变**：本地加密模型（主密码 / KDF / AES-GCM）、RLS 列级与行级隔离、邀请码一次性开户、
+>   20 人上限、恢复码（R28）四项设计全部保持原样
 
 ---
 
@@ -26,7 +41,7 @@
 | 数据库 | CloudBase **PostgreSQL**（本环境实测 `postgresql:true, nosql:false`） | PG 提供**表级 GRANT + 行级 RLS** 双层门禁，改前端也穿不过；且归属可由列默认值 `DEFAULT auth.uid()` 写入 | 平台服务 |
 | 客户端数据访问 | `app.rdb()`（SDK v3 的 PG 接口） | PG 模式下**必须**用它；NoSQL 的 `app.database()` 在本环境不可依赖 | 平台 SDK |
 | 归属与门禁 | 列默认值 `owner_id DEFAULT auth.uid()` + RLS Policy | 归属由**数据库自己**写入，比"云函数写"更靠前一层（R08） | SQL，可随迁移脚本开源 |
-| 账号登录 | CloudBase Auth 自定义登录票据 | 【已核实】官方 `/auth/v1/signup` 明确拒绝"仅用户名+密码注册"，故自建账号表、由云函数签发登录票据 | 平台服务 |
+| 账号登录 | **CloudBase Auth 手机号验证码登录**（2026-09-29 变更；原方案为自定义登录票据） | 原"用户名密码 + 由云函数签发自定义票据"在本环境**实测不可用**（服务端恒拒自签票据，且密钥只能由控制台生成）；手机号验证码是平台原生能力，**零密钥依赖**、开箱可用 | 平台服务 |
 | 本机加密 | WebCrypto（浏览器自带加密库） | 平台标准库，硬约束 3 要求禁止自研算法 | 浏览器内置 |
 | 本机存储 | IndexedDB（浏览器自带小数据库） | 桌面/安卓/浏览器三端同一套 API，断网可读 | 浏览器内置 |
 | 许可证 | MIT，持有人「机动战士」 | 全量开源含打包配置与 CI | 是 |
@@ -468,7 +483,7 @@ export async function unwrapMasterKeyWithRecovery(
 | `kbInviteCreate` | 管理员后台 | 无 | `{code, createdAt}` | ① 取 uid ② 查 `role=='admin'` ③ `crypto.randomBytes` 生成码 ④ 写 `status='unused'` | R02 | 前端生成码＝任何人都能自己造码开户 |
 | `kbInviteRevoke` | 管理员后台 | `codeId` | `{ok}` | ① 管理员校验 ② 仅 `unused` 码可作废 | R02 | 同上 |
 | `kbRegister` | 注册页 | `code, username, loginPwd` | `{ok}` | ① 校验码存在且 `status='unused'` ② **原子占用（PG 下单语句即可，见下）** ③ 统计 `status <> 'deleted'` 的用户数，**≥20 拒绝**（R22；软删用户不占名额，R26）④ 用户名查重 ⑤ 建用户记录（不含主密码任何字段） | R03/R04/R22/R26 | 前端判"码能不能用"改代码即可复用；20 人上限在前端等于没有上限 |
-| `kbLogin` | 登录页 | `username, loginPwd` | `{ok, ticket?}` | ① 查用户 ② scrypt 比对哈希（恒定时间比较）③ `status!='active'` 直接拒绝 ④ 通过才签发自定义登录票据 | R05/R13 | 登录密码校验放前端＝把哈希交出去；停用状态放前端＝停用形同虚设 |
+| `kbLogin` | ~~登录页~~ **【已停用 2026-09-29】** | ~~`username, loginPwd`~~ | ~~`{ok, ticket?}`~~ | 原设计：① 查用户 ② scrypt 比对哈希 ③ `status!='active'` 拒绝 ④ 签发自定义票据。**现登录改由平台原生手机号验证码完成，本函数前端不再调用**（代码保留，勿重新接入） | ~~R05/R13~~ | 停用原因：自定义登录票据在本环境不可用（见文档开头变更声明） |
 | `kbGetMyRole` | App 启动 / 每次同步前 | 无 | `{role, status, kdfSalt, kdfVerifier, keyEpoch, userCount}` | ① 按会话 uid 查 ② 只返回本条 | R11/R26 | 前端本地写死 `isAdmin=true` 就能拿到管理员能力 |
 | `kbSecretUpsert` | 新增/编辑 | `id?, payload, keyEpoch` | `{id, updatedAt}` | ① 取 uid ② 更新时先查该条 `owner_id=uid`，不符即拒 ③ 写入时 **`owner_id` 用服务端 uid，忽略入参任何 owner_id** ④ `updated_at` 用服务端时间 | R08/R15 | 归属标记由前端传＝谁都能把记录挂到别人名下 |
 | `kbSecretDelete` | 列表删除 | `id` | `{ok}` | ① 取 uid ② `DELETE ... WHERE id=$1 AND owner_id=$2`，**用 `return=minimal`**（不回读被删行）③ 判行数改为**先只读 `id` 列取行数**（`select('id',{count})`），**绝不把 `payload` 读回内存** | R15 | 同上 |
