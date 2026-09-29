@@ -41,6 +41,19 @@ exports.main = async (event) => {
         expire: TICKET_EXPIRE_MS,
       });
     } catch (ticketError) {
+      // 诊断日志：原始错误只进云端日志，绝不回传给前端（避免泄漏内部细节）。
+      console.error(
+        "[kbLogin] createTicket failed:",
+        (ticketError && ticketError.message) || String(ticketError),
+        "| code:",
+        (ticketError && ticketError.code) || "-",
+        "| refresh:",
+        TICKET_REFRESH_MS,
+        "| expire:",
+        TICKET_EXPIRE_MS,
+        "| uidLen:",
+        String(user.uid || "").length
+      );
       return fail("TICKET_UNAVAILABLE");
     }
     if (!ticket) return fail("TICKET_UNAVAILABLE");

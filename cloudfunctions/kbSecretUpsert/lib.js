@@ -58,6 +58,23 @@ const UID_LENGTH = 24;
 let cachedApp = null;
 
 /**
+ * 补齐私钥缺失的 `env_id` 字段。
+ *
+ * 背景（2026-09-29 实测定位）：旧格式的自定义登录私钥只含 `private_key_id` / `private_key`，
+ * 而 node-sdk 在签发票据时要求凭据包含 `env_id`，缺失即抛
+ *   `当前私钥未包含env_id 信息，请前往腾讯云云开发控制台，获取自定义登录最新私钥`（INVALID_PARAM）
+ * → createTicket 失败 → 登录恒返回 TICKET_UNAVAILABLE。
+ * 私钥与环境一一对应，`env_id` 就是本函数所在环境的 ENV_ID，故在此就地补齐：
+ * 无需重新下载私钥，也不改动环境变量里的原值。
+ */
+function withEnvId(credentials) {
+  if (credentials && typeof credentials === "object" && !credentials.env_id && ENV_ID) {
+    return Object.assign({}, credentials, { env_id: ENV_ID });
+  }
+  return credentials;
+}
+
+/**
  * 读取自定义登录私钥（多来源，缺失时返回 null，不抛异常）。
  *  优先级：① TCB_CUSTOM_LOGIN_CREDENTIALS(JSON 串) → ② TCB_CUSTOM_LOGIN_KEY_FILE(路径)
  *          → ③ 与本文件同目录的 tcb_custom_login.json。
@@ -67,7 +84,7 @@ function loadCustomLoginCredentials() {
   // ① 直接放在环境变量里的 JSON 串（owner 无需处理文件路径）
   if (CUSTOM_LOGIN_CREDENTIALS) {
     try {
-      return JSON.parse(CUSTOM_LOGIN_CREDENTIALS);
+      return withEnvId(JSON.parse(CUSTOM_LOGIN_CREDENTIALS));
     } catch (error) {
       // 解析失败则继续尝试其他来源
     }
@@ -80,7 +97,7 @@ function loadCustomLoginCredentials() {
     const file = candidates[i];
     try {
       if (file && fs.existsSync(file)) {
-        return JSON.parse(fs.readFileSync(file, "utf8"));
+        return withEnvId(JSON.parse(fs.readFileSync(file, "utf8")));
       }
     } catch (error) {
       // 继续尝试下一个来源
