@@ -61,6 +61,7 @@ jobs:
           VITE_CLOUDBASE_ENV_ID: ${{ secrets.VITE_CLOUDBASE_ENV_ID }}
           VITE_PUBLISHABLE_KEY: ${{ secrets.VITE_PUBLISHABLE_KEY }}
           VITE_CLOUDBASE_REGION: ${{ secrets.VITE_CLOUDBASE_REGION }}
+          VITE_GATEWAY_BASE_URL: ${{ secrets.VITE_GATEWAY_BASE_URL }}
         run: npx tauri build
 
       - name: Upload desktop bundle

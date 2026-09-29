@@ -11,17 +11,19 @@
  *   - R28：recoverySalt / recoveryBlob 必须【成对】出现或同时缺省（同 kbRegister），只收盐与包裹后的密文。
  * 返回：{ ok, data: { uid, role } } | { ok:false, error }
  */
-const { USERNAME_PATTERN, MIN_LOGIN_PWD, ok, fail, pgRequest, pgCount, randomUid, hashLoginPwd } = require("./lib");
+const { USERNAME_PATTERN, MIN_LOGIN_PWD, ok, fail, pgRequest, pgCount, randomUid, hashLoginPwd, normalizeEvent } = require("./lib");
 
 exports.main = async (event) => {
   try {
-    const username = String((event && event.username) || "").trim();
-    const loginPwd = String((event && event.loginPwd) || "");
-    const kdfSalt = String((event && event.kdfSalt) || "");
-    const kdfVerifier = String((event && event.kdfVerifier) || "");
+    // 兼容两条调用通道（SDK 直调 / HTTP 网关包装）——见 lib.js 的 normalizeEvent。
+    const params = normalizeEvent(event);
+    const username = String(params.username || "").trim();
+    const loginPwd = String(params.loginPwd || "");
+    const kdfSalt = String(params.kdfSalt || "");
+    const kdfVerifier = String(params.kdfVerifier || "");
     // R28：恢复材料（可选，但必须【成对】）——与 kbRegister 同口径，只收 recoverySalt + recoveryBlob。
-    const recoverySalt = String((event && event.recoverySalt) || "");
-    const recoveryBlob = String((event && event.recoveryBlob) || "");
+    const recoverySalt = String(params.recoverySalt || "");
+    const recoveryBlob = String(params.recoveryBlob || "");
 
     if (!USERNAME_PATTERN.test(username)) return fail("INVALID_USERNAME");
     if (loginPwd.length < MIN_LOGIN_PWD) return fail("WEAK_LOGIN_PWD");

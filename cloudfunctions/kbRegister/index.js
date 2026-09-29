@@ -27,19 +27,22 @@ const {
   pgCount,
   randomUid,
   hashLoginPwd,
+  normalizeEvent,
 } = require("./lib");
 
 exports.main = async (event) => {
   try {
-    const code = String((event && event.code) || "").trim();
-    const username = String((event && event.username) || "").trim();
-    const loginPwd = String((event && event.loginPwd) || "");
-    const kdfSalt = String((event && event.kdfSalt) || "");
-    const kdfVerifier = String((event && event.kdfVerifier) || "");
+    // 兼容两条调用通道（SDK 直调 / HTTP 网关包装）——见 lib.js 的 normalizeEvent。
+    const params = normalizeEvent(event);
+    const code = String(params.code || "").trim();
+    const username = String(params.username || "").trim();
+    const loginPwd = String(params.loginPwd || "");
+    const kdfSalt = String(params.kdfSalt || "");
+    const kdfVerifier = String(params.kdfVerifier || "");
     // R28：恢复材料（可选，但必须【成对】）——客户端生成恢复码后，用其独立派生的恢复密钥把主密钥
     //   包裹成 `KBRC1:` 密文；云函数只收 recoverySalt + recoveryBlob，绝不收恢复码明文本身。
-    const recoverySalt = String((event && event.recoverySalt) || "");
-    const recoveryBlob = String((event && event.recoveryBlob) || "");
+    const recoverySalt = String(params.recoverySalt || "");
+    const recoveryBlob = String(params.recoveryBlob || "");
 
     if (!code) return fail("INVALID_CODE");
     if (!USERNAME_PATTERN.test(username)) return fail("INVALID_USERNAME");

@@ -243,6 +243,37 @@ function verifyLoginPwd(password, stored) {
   }
 }
 
+/**
+ * 归一化调用入参（兼容两种调用通道）。
+ *
+ * 背景：初始化 / 注册 / 登录这三个"登录前函数"必须能被未登录用户调用，而云函数安全规则
+ * 默认拒绝匿名 SDK 调用（EXCEED_AUTHORITY）。现改经 HTTP 网关（/api/<函数名>，auth=false）
+ * 调用——网关转发属服务端调用，不受客户端安全规则约束（已实测）。
+ *
+ * 两条通道交给函数的 event 形态不同，本函数统一成"参数对象"：
+ *   - SDK 直调：参数平铺在 event 上                 → { username, loginPwd, ... }
+ *   - HTTP 网关：参数在 event.body（JSON 字符串）    → { body: "{\"username\":...}", ... }
+ * 返回空对象或参数对象，调用方无需关心走的是哪条通道。
+ */
+function normalizeEvent(event) {
+  if (!event || typeof event !== "object") return {};
+  // 形态 A：SDK 直调 —— 无 body/data 包装，参数已平铺
+  if (event.body === undefined && event.data === undefined) return event;
+  // 形态 B：HTTP 网关包装 —— 参数在 body（可能是 JSON 字符串）
+  let body = event.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch (error) {
+      body = null;
+    }
+  }
+  if (body && typeof body === "object") return body;
+  // 形态 C：参数在 data
+  if (event.data && typeof event.data === "object") return event.data;
+  return event;
+}
+
 module.exports = {
   ENV_ID,
   USERNAME_PATTERN,
@@ -259,4 +290,5 @@ module.exports = {
   randomUid,
   hashLoginPwd,
   verifyLoginPwd,
+  normalizeEvent,
 };

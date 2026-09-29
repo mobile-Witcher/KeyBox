@@ -9,12 +9,14 @@
  *
  * 校验顺序：查用户 → scrypt 恒定时间比对 → status!=='active' 拒绝 → 签票。
  */
-const { TICKET_REFRESH_MS, TICKET_EXPIRE_MS, ok, fail, getApp, pgRequest, verifyLoginPwd } = require("./lib");
+const { TICKET_REFRESH_MS, TICKET_EXPIRE_MS, ok, fail, getApp, pgRequest, verifyLoginPwd, normalizeEvent } = require("./lib");
 
 exports.main = async (event) => {
   try {
-    const username = String((event && event.username) || "").trim();
-    const loginPwd = String((event && event.loginPwd) || "");
+    // 兼容两条调用通道（SDK 直调 / HTTP 网关包装）——见 lib.js 的 normalizeEvent。
+    const params = normalizeEvent(event);
+    const username = String(params.username || "").trim();
+    const loginPwd = String(params.loginPwd || "");
     if (!username || !loginPwd) return fail("MISSING_FIELDS");
 
     // ① 查用户（显式列：只取校验必需字段）

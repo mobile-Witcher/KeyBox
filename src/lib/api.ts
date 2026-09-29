@@ -45,6 +45,44 @@ async function ensureAnonSession(): Promise<void> {
   }
 }
 
+/**
+ * 登录前函数的 HTTP 网关基址（形如 https://<envId>-<appId>.<region>.app.tcloudbase.com）。
+ *
+ * 为什么需要它（2026-09 实测定位的根因）：
+ *   云函数安全规则默认「仅登录用户可调用、拒绝匿名」，而 kbInitAdmin / kbRegister / kbLogin
+ *   天然必须在登录前调用 → 走 SDK callFunction 必然 403 EXCEED_AUTHORITY。
+ *   已实测：经 HTTP 网关（路由 /api/<函数名>，网关侧 auth=false）调用同一函数可正常执行
+ *   （网关转发属服务端调用，不受客户端安全规则约束），且网关会自动回显 Origin 放行 CORS。
+ *   因此这三个函数走网关通道，其余函数保持 SDK 调用（登录后调用，规则放行）。
+ * 未配置该变量时自动回退到 SDK 调用，不会把功能改坏。
+ */
+const gatewayBase = ((import.meta.env.VITE_GATEWAY_BASE_URL as string | undefined) || "").replace(/\/+$/, "");
+
+/** 经 HTTP 网关调用登录前函数（请求体即云函数 event；云函数侧用 normalizeEvent 兼容两种通道）。 */
+async function callViaGateway<T>(name: string, data: Record<string, unknown>): Promise<ApiResult<T>> {
+  if (!gatewayBase) return call<T>(name, data);
+  try {
+    const res = await fetch(`${gatewayBase}/api/${name}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data ?? {}),
+    });
+    if (!res.ok) {
+      log.error(`网关调用 ${name} 失败：HTTP ${res.status}`);
+      return { ok: false, error: `HTTP_${res.status}` };
+    }
+    const result = (await res.json()) as ApiResult<T>;
+    if (!result || typeof result !== "object" || typeof result.ok !== "boolean") {
+      log.error(`网关调用 ${name} 返回体形状非法`);
+      return { ok: false, error: "MALFORMED_RESPONSE" };
+    }
+    return result;
+  } catch (error) {
+    log.error(`网关调用 ${name} 异常`, error);
+    return { ok: false, error: error instanceof Error ? error.message : "NETWORK_ERROR" };
+  }
+}
+
 /** 归一化后的安全返回体（调用方必得一种形状，不会抛裸异常）。 */
 async function call<T>(name: string, data: Record<string, unknown>): Promise<ApiResult<T>> {
   try {
@@ -180,9 +218,9 @@ export interface AckRecoveryData {
 }
 
 export const api = {
-  /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。 */
+  /** R01：首个管理员初始化（表中已有用户会被云函数拒绝）。登录前调用 → 走网关通道。 */
   initAdmin(params: InitAdminParams): Promise<ApiResult<InitAdminData>> {
-    return call<InitAdminData>("kbInitAdmin", { ...params });
+    return callViaGateway<InitAdminData>("kbInitAdmin", { ...params });
   },
   /** R02：管理员生成一次性邀请码。 */
   inviteCreate(): Promise<ApiResult<InviteCreateData>> {
@@ -192,13 +230,13 @@ export const api = {
   inviteRevoke(params: InviteRevokeParams): Promise<ApiResult<{ codeId: number }>> {
     return call<{ codeId: number }>("kbInviteRevoke", { ...params });
   },
-  /** R03/R04/R22：用邀请码自助注册，成功后云函数签发登录票据。 */
+  /** R03/R04/R22：用邀请码自助注册，成功后云函数签发登录票据。登录前调用 → 走网关通道。 */
   register(params: RegisterParams): Promise<ApiResult<RegisterData>> {
-    return call<RegisterData>("kbRegister", { ...params });
+    return callViaGateway<RegisterData>("kbRegister", { ...params });
   },
-  /** R05/R13：登录密码校验在云端，通过后签发登录票据。 */
+  /** R05/R13：登录密码校验在云端，通过后签发登录票据。登录前调用 → 走网关通道。 */
   login(params: LoginParams): Promise<ApiResult<LoginData>> {
-    return call<LoginData>("kbLogin", { ...params });
+    return callViaGateway<LoginData>("kbLogin", { ...params });
   },
   /** R11/R26：取本人 role/status/密钥参数与用户数（只返回本人那一行）。 */
   getMyRole(): Promise<ApiResult<MyRoleData>> {
