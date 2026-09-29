@@ -169,7 +169,7 @@ interface CenteredMessageProps {
 function CenteredMessage({ text, hint, action }: CenteredMessageProps): JSX.Element {
   return (
     <div className="flex min-h-full items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-kb-border bg-white p-8 text-center shadow-sm dark:border-kb-border dark:bg-kb-surface">
+      <div className="w-full max-w-md rounded-xl border border-kb-border bg-kb-surface p-8 text-center shadow-sm dark:border-kb-border dark:bg-kb-surface">
         <h1 className="text-xl font-semibold">KeyBox</h1>
         <p className="mt-3 text-kb-text">{text}</p>
         {hint ? <p className="mt-2 text-sm text-kb-muted">{hint}</p> : null}

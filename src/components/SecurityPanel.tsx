@@ -228,7 +228,7 @@ export default function SecurityPanel({
   const showRecoveryReminder = Boolean(recoveryBlob) && !recoveryAckAt;
 
   return (
-    <section className="space-y-4 rounded-xl border border-kb-border bg-white p-5 shadow-sm dark:border-kb-border dark:bg-kb-surface">
+    <section className="space-y-4 rounded-xl border border-kb-border bg-kb-surface p-5 shadow-sm dark:border-kb-border dark:bg-kb-surface">
       <h2 className="text-base font-semibold">安全</h2>
 
       {error ? (
@@ -291,7 +291,7 @@ export default function SecurityPanel({
           onChange={(e) => setOldPwd(e.target.value)}
           placeholder="原主密码"
           autoComplete="current-password"
-          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:kb-btn-primary"
+          className="w-full rounded-lg border border-kb-border-strong bg-kb-surface px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:bg-kb-surface"
         />
         <input
           type="password"
@@ -299,7 +299,7 @@ export default function SecurityPanel({
           onChange={(e) => setNewPwd(e.target.value)}
           placeholder="新主密码（至少 8 位）"
           autoComplete="new-password"
-          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:kb-btn-primary"
+          className="w-full rounded-lg border border-kb-border-strong bg-kb-surface px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:bg-kb-surface"
         />
         <input
           type="password"
@@ -307,7 +307,7 @@ export default function SecurityPanel({
           onChange={(e) => setConfirmPwd(e.target.value)}
           placeholder="确认新主密码"
           autoComplete="new-password"
-          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:kb-btn-primary"
+          className="w-full rounded-lg border border-kb-border-strong bg-kb-surface px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:bg-kb-surface"
         />
         {needRecoveryCode ? (
           <input
@@ -315,7 +315,7 @@ export default function SecurityPanel({
             value={recoveryCode}
             onChange={(e) => setRecoveryCode(e.target.value)}
             placeholder="恢复码（用于重包裹，保持其可用）"
-            className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:kb-btn-primary"
+            className="w-full rounded-lg border border-kb-border-strong bg-kb-surface px-3 py-2 text-sm outline-none focus:border-kb-border-strong dark:border-kb-border-strong dark:bg-kb-surface"
           />
         ) : null}
         <button

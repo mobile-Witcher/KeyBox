@@ -131,7 +131,8 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
           {copyNoticeText(remaining)}
         </div>
       ) : null}
-      <div className="overflow-x-auto rounded-xl border border-kb-border">
+      {/* 桌面（≥768px）：表格形态 */}
+      <div className="hidden overflow-x-auto rounded-xl border border-kb-border md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-kb-surface-2 text-kb-muted dark:bg-kb-surface dark:text-kb-muted">
             <tr>
@@ -218,6 +219,91 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* 移动端（<768px）：卡片形态 —— 表格在窄屏会横向溢出，卡片更符合触屏习惯。
+          与表格共用同一份 revealed / copiedId 状态，所以两边的「显示」「复制」是同步的。 */}
+      <div className="space-y-3 md:hidden">
+        {items.map((item) => {
+          const isRevealed = revealed.has(item.id);
+          const plain = item.plain;
+          return (
+            <div key={item.id} className="kb-card p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">
+                    {plain ? plain.site || "（未命名）" : "—"}
+                  </div>
+                  {plain && plain.tags.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {plain.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded bg-kb-surface-2 px-1.5 py-0.5 text-xs text-kb-muted"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  disabled={item.decryptError}
+                  onClick={() => toggleReveal(item.id)}
+                  className="shrink-0 rounded-md border border-kb-border px-3 py-2 text-xs text-kb-text disabled:opacity-40"
+                >
+                  {isRevealed ? "隐藏" : "显示"}
+                </button>
+              </div>
+
+              {plain ? (
+                <div className="mt-2 truncate text-xs text-kb-muted">{plain.url}</div>
+              ) : null}
+
+              <div className="mt-2.5 flex items-center gap-2">
+                <code className="min-w-0 flex-1 break-all font-mono text-xs">
+                  {item.decryptError ? (
+                    <span className="text-amber-600">无法解密（主密码可能已更换）</span>
+                  ) : isRevealed ? (
+                    plain?.key
+                  ) : (
+                    <span className="tracking-widest">••••••••</span>
+                  )}
+                </code>
+                <button
+                  type="button"
+                  disabled={item.decryptError}
+                  onClick={() => void copy(item)}
+                  className="shrink-0 rounded-md border border-kb-border px-3 py-2 text-xs text-kb-text disabled:opacity-40"
+                >
+                  {copyButtonLabel(copiedId, item.id, remaining)}
+                </button>
+              </div>
+
+              {plain && plain.note ? (
+                <div className="mt-2 text-xs text-kb-muted">{plain.note}</div>
+              ) : null}
+
+              <div className="mt-3 flex gap-2 border-t border-kb-border pt-2.5">
+                <button
+                  type="button"
+                  onClick={() => onEdit(item)}
+                  className="flex-1 rounded-md border border-kb-border py-2 text-xs text-kb-text"
+                >
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(item)}
+                  className="flex-1 rounded-md border border-red-200 py-2 text-xs text-red-600 dark:border-red-900 dark:text-red-400"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

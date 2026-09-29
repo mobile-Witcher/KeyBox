@@ -386,7 +386,8 @@ export default function VaultPage({
         onOpenAdmin={onOpenAdmin}
       />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1">
+      {/* 桌面：侧栏与主区左右并排；移动端：纵向堆叠（侧栏变成横向标签条，见 TagSidebar） */}
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col md:flex-row">
         {masterKey ? (
           <TagSidebar
             totalCount={items.length}
@@ -398,7 +399,7 @@ export default function VaultPage({
           />
         ) : null}
 
-        <main className="flex-1 p-6">
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
           {error ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
               {error}
@@ -555,7 +556,7 @@ function UnlockPanel({
   onClearRemembered: () => void;
 }): JSX.Element {
   return (
-    <div className="mx-auto max-w-md rounded-xl border border-kb-border bg-white p-6 shadow-sm dark:border-kb-border dark:bg-kb-surface">
+    <div className="mx-auto max-w-md rounded-xl border border-kb-border bg-kb-surface p-6 shadow-sm dark:border-kb-border dark:bg-kb-surface">
       <h2 className="text-base font-semibold">输入主密码解锁</h2>
       <p className="mt-1 text-sm text-kb-muted">
         主密码只在本机校验，云端没有任何副本。
@@ -567,7 +568,7 @@ function UnlockPanel({
           autoComplete="current-password"
           onChange={(e) => onChange(e.target.value)}
           placeholder="主密码"
-          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-kb-border-strong focus:ring-2 focus:ring-kb-border dark:border-kb-border-strong dark:kb-btn-primary"
+          className="w-full rounded-lg border border-kb-border-strong bg-kb-surface px-3 py-2 text-sm outline-none focus:border-kb-border-strong focus:ring-2 focus:ring-kb-border dark:border-kb-border-strong dark:bg-kb-surface"
         />
 
         <label className="flex items-start gap-2 text-sm text-kb-muted">
