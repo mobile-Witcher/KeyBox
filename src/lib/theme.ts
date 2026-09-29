@@ -3,21 +3,31 @@
  *
  * 两个正交维度：
  *   - 明暗：`light` | `dark`          → 落到 `<html class="dark">`（Tailwind darkMode:"class"）
- *   - 皮肤：`default` | `tech` | `minimal` | `paper` → 落到 `<html data-skin="...">`
- * 组合示例：科技风·深色 = `<html data-skin="tech" class="dark">`。
+ *   - 皮肤：9 种                        → 落到 `<html data-skin="...">`
+ * 组合示例：赛博朋克·深色 = `<html data-skin="cyber" class="dark">`。
  * 皮肤只改 index.css 里的语义变量，因此**新增皮肤不需要改任何组件**。
  *
  * 三个目标：① 手动切换 ② 记住选择（localStorage）③ 首屏不闪。
  *
- * ⚠️ 一致性约束：下面 `SKIN_BG` 的 8 个色值必须与
+ * ⚠️ 一致性约束：下面 `SKIN_BG` 的色值必须与
  *   - index.css 各皮肤块里的 `--kb-bg`
  *   - index.html `<head>` 内联脚本里的 BG 表
  *   三处完全一致，否则切换皮肤时会闪一下底色（FOUC）。
  */
 export type Theme = "light" | "dark";
-export type Skin = "default" | "tech" | "minimal" | "paper";
 
-/** localStorage 键（`keybox.skin` 与 index.html 内联脚本一致）。 */
+export type Skin =
+  | "default" // 精致克制
+  | "tech" // 现代科技感
+  | "minimal" // 极简商务
+  | "paper" // 纸质档案感
+  | "cyber" // 赛博朋克
+  | "kawaii" // 可爱风
+  | "hacker" // 极客终端
+  | "solar" // 护眼自然
+  | "sunset"; // 暖阳
+
+/** localStorage 键（与 index.html 内联脚本一致）。 */
 export const THEME_STORAGE_KEY = "keybox.theme";
 export const SKIN_STORAGE_KEY = "keybox.skin";
 
@@ -27,6 +37,11 @@ export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
   tech: { light: "#eef2fb", dark: "#070b16" },
   minimal: { light: "#ffffff", dark: "#0a0a0a" },
   paper: { light: "#f4efe4", dark: "#1c1710" },
+  cyber: { light: "#f7f0fb", dark: "#07020f" },
+  kawaii: { light: "#fff5f9", dark: "#2a1a24" },
+  hacker: { light: "#f2f5f0", dark: "#000000" },
+  solar: { light: "#f4f0e6", dark: "#1e2318" },
+  sunset: { light: "#fff4ec", dark: "#1d1119" },
 };
 
 /** 可选皮肤清单（供外观选择器渲染；顺序即展示顺序）。 */
@@ -35,6 +50,11 @@ export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
   { id: "tech", label: "现代科技感", hint: "深邃底色 + 发光层次，突出保险箱的科技感" },
   { id: "minimal", label: "极简商务", hint: "无圆角无阴影，靠留白与字距分层" },
   { id: "paper", label: "纸质档案感", hint: "米黄纸底 + 衬线字 + 红色套色，像纸质密钥簿" },
+  { id: "cyber", label: "赛博朋克", hint: "霓虹品红 + 电光青，暗底发光，最张扬" },
+  { id: "kawaii", label: "可爱风", hint: "粉白底 + 超大圆角 + 柔光，圆润讨喜" },
+  { id: "hacker", label: "极客终端", hint: "荧光绿字黑屏 + 等宽字体，终端味十足" },
+  { id: "solar", label: "护眼自然", hint: "低饱和莫兰迪，长时间看最不累眼" },
+  { id: "sunset", label: "暖阳", hint: "暖橙渐层，明快温暖有活力" },
 ];
 
 const SKIN_IDS: Skin[] = SKINS.map((s) => s.id);
@@ -140,7 +160,7 @@ export function subscribeSkin(fn: (skin: Skin) => void): () => void {
 }
 
 /**
- * 兼容旧调用：仅按明暗取底色。
+ * 兼容旧调用：仅按明暗取默认皮肤的底色。
  * 新代码请用 `SKIN_BG[skin][theme]`。
  */
 export const THEME_BG: Record<Theme, string> = {

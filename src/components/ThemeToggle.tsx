@@ -49,7 +49,7 @@ export default function ThemeToggle(): JSX.Element {
       {open ? (
         <div className="kb-card-lg absolute right-0 z-30 mt-2 w-72 p-3">
           <p className="kb-heading text-xs font-medium uppercase text-kb-muted">皮肤</p>
-          <div className="mt-2 space-y-1">
+          <div className="mt-2 max-h-[52vh] space-y-1 overflow-y-auto pr-1">
             {SKINS.map((s) => (
               <SkinOption
                 key={s.id}
@@ -151,7 +151,12 @@ const SWATCH: Record<Skin, string> = {
   default: "#4f46e5",
   tech: "linear-gradient(135deg,#7dd3fc,#818cf8 60%,#c084fc)",
   minimal: "#111111",
-  paper: "#8c2a22",
+  paper: "#8c2b22",
+  cyber: "linear-gradient(135deg,#ff2fb0,#00e5ff)",
+  kawaii: "#ff7ab6",
+  hacker: "linear-gradient(135deg,#20ff5f,#0a3d1a)",
+  solar: "#2f6f5e",
+  sunset: "linear-gradient(135deg,#ffb347,#e2622a)",
 };
 
 function PaletteIcon(): JSX.Element {
