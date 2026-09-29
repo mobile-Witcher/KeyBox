@@ -18,7 +18,7 @@ export default function StatusBar({ unlocked, online, pending }: StatusBarProps)
       : `离线 · ${pending} 条待上传（恢复后自动重放）`;
 
   return (
-    <footer className="flex items-center justify-center gap-3 border-t border-slate-200 px-6 py-2 text-xs text-slate-500 dark:border-slate-700">
+    <footer className="flex items-center justify-center gap-3 border-t border-kb-border px-6 py-2 text-xs text-kb-muted dark:border-slate-700">
       <span>{unlocked ? "已解锁 · 本机解密 · 密钥不出本机" : "未解锁 · 输入主密码后才能查看密钥"}</span>
       <span aria-hidden>·</span>
       <span>{syncText}</span>

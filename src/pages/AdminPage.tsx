@@ -182,23 +182,23 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
   return (
     <div className="flex min-h-full flex-col">
       {/* 顶栏 */}
-      <header className="flex items-center justify-between border-b border-slate-200 px-6 py-3 dark:border-slate-700">
+      <header className="flex items-center justify-between border-b border-kb-border px-6 py-3 dark:border-slate-700">
         <div className="flex items-center gap-3">
           <span className="font-semibold">KeyBox · 管理后台</span>
           <button
             type="button"
             onClick={onBack}
-            className="rounded px-2 py-1 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="rounded px-2 py-1 text-sm text-kb-muted hover:bg-slate-100 dark:text-slate-300 dark:hover:brightness-110"
           >
             ← 返回密钥库
           </button>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-slate-600 dark:text-slate-300">{username}</span>
+          <span className="text-kb-muted">{username}</span>
           <button
             type="button"
             onClick={onSignOut}
-            className="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="rounded px-2 py-1 text-kb-muted hover:bg-slate-100 dark:text-slate-300 dark:hover:brightness-110"
           >
             退出登录
           </button>
@@ -220,10 +220,10 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
         ) : null}
 
         {/* 邀请码区（R02） */}
-        <section className="rounded-xl border border-slate-200 p-5 dark:border-slate-700">
+        <section className="rounded-xl border border-kb-border p-5 dark:border-slate-700">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold">邀请码</h2>
-            <div className="text-sm text-slate-600 dark:text-slate-300">
+            <div className="text-sm text-kb-muted">
               已开户 {seatCount} / 上限 {USER_LIMIT}
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
               type="button"
               onClick={() => void handleCreateInvite()}
               disabled={busy || full}
-              className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+              className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
             >
               生成邀请码
             </button>
@@ -249,7 +249,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
                 <button
                   type="button"
                   onClick={() => void handleCopyInvite()}
-                  className="rounded px-2 py-1 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="rounded px-2 py-1 text-sm text-kb-text hover:bg-slate-100 dark:text-slate-200 dark:hover:brightness-110"
                 >
                   {copied ? "已复制" : "复制"}
                 </button>
@@ -263,7 +263,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
                 </button>
               </>
             ) : (
-              <span className="text-sm text-slate-500">尚未生成邀请码。</span>
+              <span className="text-sm text-kb-muted">尚未生成邀请码。</span>
             )}
           </div>
         </section>
@@ -276,13 +276,13 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
               type="button"
               onClick={() => void reload()}
               disabled={busy}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="rounded-lg border border-kb-border-strong px-3 py-1.5 text-sm text-kb-text hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:brightness-110"
             >
               刷新
             </button>
           </div>
           {loading ? (
-            <p className="text-sm text-slate-500">正在读取用户列表…</p>
+            <p className="text-sm text-kb-muted">正在读取用户列表…</p>
           ) : (
             <UserTable
               users={users}
@@ -295,7 +295,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 px-6 py-2 text-center text-xs text-slate-500 dark:border-slate-700">
+      <footer className="border-t border-kb-border px-6 py-2 text-center text-xs text-kb-muted dark:border-slate-700">
         管理员看不到任何人的密钥内容，仅可停用与删除。
       </footer>
     </div>
@@ -319,15 +319,15 @@ export function UserTable({
 }): JSX.Element {
   if (users.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-600">
+      <div className="rounded-xl border border-dashed border-kb-border-strong p-8 text-center text-sm text-kb-muted dark:border-slate-600">
         暂无用户。
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+    <div className="overflow-x-auto rounded-xl border border-kb-border">
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        <thead className="bg-slate-100 text-kb-muted dark:bg-slate-800 dark:text-slate-300">
           <tr>
             <th className="px-3 py-2 font-medium">用户名</th>
             <th className="px-3 py-2 font-medium">状态</th>
@@ -341,10 +341,10 @@ export function UserTable({
             const isSelf = row.uid === myUid && myUid !== "";
             const active = row.status === "active";
             return (
-              <tr key={row.uid} className="border-t border-slate-200 dark:border-slate-700">
+              <tr key={row.uid} className="border-t border-kb-border">
                 <td className="px-3 py-2">
                   <div className="font-medium">{row.username || "（未命名）"}</div>
-                  <div className="font-mono text-xs text-slate-400">{row.uid}</div>
+                  <div className="font-mono text-xs text-kb-muted">{row.uid}</div>
                 </td>
                 <td className="px-3 py-2">
                   {active ? (
@@ -352,25 +352,25 @@ export function UserTable({
                       正常
                     </span>
                   ) : (
-                    <span className="rounded bg-slate-200 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    <span className="rounded bg-slate-200 px-2 py-0.5 text-xs text-kb-muted dark:bg-slate-700 dark:text-slate-300">
                       已停用
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                <td className="px-3 py-2 text-kb-muted">
                   {formatTime(row.created_at)}
                 </td>
-                <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{row.item_count}</td>
+                <td className="px-3 py-2 text-kb-muted">{row.item_count}</td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {isSelf ? (
                     // 自己那一行：停用与删除数据都【不渲染】，复用“停用”那套防呆文案风格。
                     // 删除自己的数据会把唯一管理员锁死（无界面可救），故这里只是防呆的一层；
                     // 服务端另有 CANNOT_DELETE_SELF 自检兜底（前端防呆不算安全）。
                     <div className="space-y-0.5">
-                      <span className="block text-xs text-slate-400">
+                      <span className="block text-xs text-kb-muted">
                         （不能停用自己，请用另一个管理员操作）
                       </span>
-                      <span className="block text-xs text-slate-400">
+                      <span className="block text-xs text-kb-muted">
                         （不能删除自己的数据，请联系另一位管理员）
                       </span>
                     </div>
@@ -380,7 +380,7 @@ export function UserTable({
                         type="button"
                         disabled={busy}
                         onClick={() => onToggle(row)}
-                        className="mr-1 rounded px-2 py-1 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-700"
+                        className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:brightness-110"
                       >
                         {active ? "停用" : "启用"}
                       </button>

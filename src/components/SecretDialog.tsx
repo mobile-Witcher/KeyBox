@@ -86,14 +86,14 @@ export default function SecretDialog({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="rounded-lg px-4 py-2 text-sm text-kb-muted hover:bg-slate-100 dark:text-slate-200 dark:hover:brightness-110"
             >
               取消
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
             >
               {busy ? "保存中…" : "保存"}
             </button>
@@ -117,7 +117,7 @@ function DialogField({
 }): JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+      <span className="mb-1 block text-sm font-medium text-kb-text">
         {label}
       </span>
       <input
@@ -125,7 +125,7 @@ function DialogField({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
     </label>
   );

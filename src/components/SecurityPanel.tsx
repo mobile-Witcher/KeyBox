@@ -228,7 +228,7 @@ export default function SecurityPanel({
   const showRecoveryReminder = Boolean(recoveryBlob) && !recoveryAckAt;
 
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <section className="space-y-4 rounded-xl border border-kb-border bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <h2 className="text-base font-semibold">安全</h2>
 
       {error ? (
@@ -262,17 +262,17 @@ export default function SecurityPanel({
       {/* R29 备份 */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium">加密备份（R29）</h3>
-        <p className="text-xs text-slate-500">备份文件同样是密文；导入用主密码解密，不依赖云端在线。</p>
+        <p className="text-xs text-kb-muted">备份文件同样是密文；导入用主密码解密，不依赖云端在线。</p>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => void handleExport()}
             disabled={busy}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="rounded-lg border border-kb-border-strong px-3 py-1.5 text-sm text-kb-text hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:brightness-110"
           >
             导出备份
           </button>
-          <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
+          <label className="cursor-pointer rounded-lg border border-kb-border-strong px-3 py-1.5 text-sm text-kb-text hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:brightness-110">
             导入备份
             <input type="file" accept=".kbbk,text/plain" className="hidden" onChange={(e) => void handleImportFile(e)} disabled={busy} />
           </label>
@@ -280,9 +280,9 @@ export default function SecurityPanel({
       </div>
 
       {/* R21 改主密码 */}
-      <form className="space-y-2 border-t border-slate-200 pt-4 dark:border-slate-700" onSubmit={handleChangeMaster}>
+      <form className="space-y-2 border-t border-kb-border pt-4 dark:border-slate-700" onSubmit={handleChangeMaster}>
         <h3 className="text-sm font-medium">修改主密码（R21）</h3>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-kb-muted">
           本机会用原主密码逐条解密、用新主密码重加密后再整批提交；任何一条失败都会整体中止，不会产生“半新半旧”。
         </p>
         <input
@@ -291,7 +291,7 @@ export default function SecurityPanel({
           onChange={(e) => setOldPwd(e.target.value)}
           placeholder="原主密码"
           autoComplete="current-password"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
         <input
           type="password"
@@ -299,7 +299,7 @@ export default function SecurityPanel({
           onChange={(e) => setNewPwd(e.target.value)}
           placeholder="新主密码（至少 8 位）"
           autoComplete="new-password"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
         <input
           type="password"
@@ -307,7 +307,7 @@ export default function SecurityPanel({
           onChange={(e) => setConfirmPwd(e.target.value)}
           placeholder="确认新主密码"
           autoComplete="new-password"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
         {needRecoveryCode ? (
           <input
@@ -315,13 +315,13 @@ export default function SecurityPanel({
             value={recoveryCode}
             onChange={(e) => setRecoveryCode(e.target.value)}
             placeholder="恢复码（用于重包裹，保持其可用）"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         ) : null}
         <button
           type="submit"
           disabled={busy}
-          className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+          className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
         >
           {busy ? "处理中…" : "修改主密码"}
         </button>

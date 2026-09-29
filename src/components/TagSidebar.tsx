@@ -24,8 +24,8 @@ export default function TagSidebar({
   onRequestDelete,
 }: TagSidebarProps): JSX.Element {
   return (
-    <aside className="w-56 shrink-0 border-r border-slate-200 p-4 dark:border-slate-700">
-      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">标签</div>
+    <aside className="w-56 shrink-0 border-r border-kb-border p-4 dark:border-slate-700">
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-kb-muted">标签</div>
       <ul className="space-y-1 text-sm">
         <li>
           <button
@@ -34,7 +34,7 @@ export default function TagSidebar({
             className={`w-full rounded px-2 py-1 text-left ${
               activeTag === null
                 ? "bg-slate-200 font-medium dark:bg-slate-700"
-                : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "hover:bg-kb-surface-2"
             }`}
           >
             全部 ({totalCount})
@@ -48,7 +48,7 @@ export default function TagSidebar({
               className={`flex-1 truncate rounded px-2 py-1 text-left ${
                 activeTag === tag.name
                   ? "bg-slate-200 font-medium dark:bg-slate-700"
-                  : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                  : "hover:bg-kb-surface-2"
               }`}
               title={tag.name}
             >
@@ -58,7 +58,7 @@ export default function TagSidebar({
               <button
                 type="button"
                 onClick={() => onRequestRename(tag.name)}
-                className="rounded px-1 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="rounded px-1 text-xs text-kb-muted hover:bg-kb-surface-2"
                 title="重命名标签"
               >
                 改名
@@ -76,7 +76,7 @@ export default function TagSidebar({
         ))}
       </ul>
       {tags.length === 0 ? (
-        <p className="mt-3 text-xs text-slate-400">还没有标签，在“新增/编辑密钥”里填写即可。</p>
+        <p className="mt-3 text-xs text-kb-muted">还没有标签，在“新增/编辑密钥”里填写即可。</p>
       ) : null}
     </aside>
   );

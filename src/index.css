@@ -1,35 +1,31 @@
 /**
- * index.css —— 全局样式入口（Tailwind 三层指令 + 主题变量 + 组件工具类）。
+ * index.css —— 全局样式入口（Tailwind 三层指令 + 主题令牌 + 组件工具类）。
  *
- * 主题（R24）：浅色/深色两套语义色**只在这里集中定义**；组件通过 Tailwind 令牌
- *   `bg-kb-bg` / `bg-kb-surface` / `text-kb-text` / `text-kb-muted` / `border-kb-border`
- *   / `text-kb-primary` 等消费（令牌映射见 tailwind.config.ts）。
- * 夜间模式由 <html class="dark"> 驱动（Tailwind darkMode:"class"）。
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 主题系统（2026-09-29 升级为「皮肤 × 明暗」双维度）
+ *   - 明暗：<html class="dark">（Tailwind darkMode:"class"）
+ *   - 皮肤：<html data-skin="default|tech|minimal|paper">
+ *   - 组合：`<html data-skin="tech" class="dark">` 即"科技风·深色"
+ *   变量只在下面集中定义，组件一律消费语义令牌（bg-kb-surface / text-kb-muted / …），
+ *   因此新增皮肤**不需要改任何组件**。
+ * ═══════════════════════════════════════════════════════════════════════════
  *
- * 2026-09-29 视觉精修（"精致克制"方向）：
- *   - 扩充语义令牌：次级表面、强边框、primary 交互态、danger/success/warning、焦点环、两级阴影
- *   - 新增组件工具类（.kb-card / .kb-input / .kb-btn* / .kb-badge / .kb-field-hint），
- *     让各页面用同一套"手感"，而不是各自拼 class
- *   - 补齐中文字体栈、细滚动条、选中文本色、focus-visible 可见性、等宽数字
- *
- * ⚠️ 深色底 `#0b1120` 与浅色底 `#f8fafc` **刻意保持不变**，必须与 index.html 的 <head> 内联脚本、
- *    src/lib/theme.ts 的 THEME_BG 三处一致，否则首屏会闪一下（FOUC）。改这两个值要三处同改。
+ * ⚠️ 首屏防闪（FOUC）：内联脚本要能算出首屏底色，因此 index.html 的内联脚本与
+ *   src/lib/theme.ts 的 SKIN_BG 必须与本文件的 --kb-bg **三处保持一致**。
+ *   只改这里会造成切换皮肤时闪一下。
  */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ══════════════ 皮肤 ①：default（精致克制） ══════════════ */
 :root {
-  /* ── 浅色 ── */
   --kb-bg: #f8fafc;
   --kb-surface: #ffffff;
-  /* 次级表面：表头、hover 行、内嵌区块 */
   --kb-surface-2: #f1f5f9;
   --kb-text: #0f172a;
-  /* 比原先略深一档，提升长文本可读性 */
   --kb-muted: #5b6779;
   --kb-border: #e5e8ee;
-  /* 强边框：需要明确分隔时（如表头下沿、对话框外框） */
   --kb-border-strong: #cbd5e1;
   --kb-primary: #4f46e5;
   --kb-primary-hover: #4338ca;
@@ -37,15 +33,18 @@
   --kb-danger: #dc2626;
   --kb-success: #059669;
   --kb-warning: #b45309;
-  /* 焦点环 / 选区 */
   --kb-ring: rgba(79, 70, 229, 0.28);
   --kb-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --kb-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.05);
+  --kb-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.05);
+  /* 外观令牌：皮肤之间真正拉开差距的地方 */
+  --kb-radius: 10px;
+  --kb-radius-card: 16px;
+  --kb-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --kb-heading-tracking: -0.01em;
   color-scheme: light;
 }
-
 .dark {
-  /* ── 深色 ── */
   --kb-bg: #0b1120;
   --kb-surface: #0f172a;
   --kb-surface-2: #16203a;
@@ -60,12 +59,145 @@
   --kb-success: #34d399;
   --kb-warning: #fbbf24;
   --kb-ring: rgba(129, 140, 248, 0.35);
-  /* 深色下阴影几乎不可见，主要靠边框分层；保留极浅阴影增加"离地感" */
   --kb-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   --kb-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 
+/* ══════════════ 皮肤 ②：tech（现代科技感） ══════════════ */
+[data-skin="tech"] {
+  --kb-bg: #eef2fb;
+  --kb-surface: #ffffff;
+  --kb-surface-2: #e8edfa;
+  --kb-text: #0d1424;
+  --kb-muted: #566178;
+  --kb-border: #d8e0f5;
+  --kb-border-strong: #b9c6ea;
+  --kb-primary: #5b53e8;
+  --kb-primary-hover: #4b43d8;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #e11d48;
+  --kb-success: #059669;
+  --kb-warning: #b45309;
+  --kb-ring: rgba(91, 83, 232, 0.35);
+  --kb-shadow: 0 2px 8px rgba(60, 80, 180, 0.1);
+  --kb-shadow-lg: 0 20px 44px rgba(60, 80, 180, 0.2);
+  --kb-radius: 12px;
+  --kb-radius-card: 18px;
+  --kb-heading-tracking: 0.01em;
+  color-scheme: light;
+}
+[data-skin="tech"].dark {
+  --kb-bg: #070b16;
+  --kb-surface: #0e1526;
+  --kb-surface-2: #131d33;
+  --kb-text: #e6ecff;
+  --kb-muted: #97a6c9;
+  --kb-border: #1e2b47;
+  --kb-border-strong: #2e3f63;
+  --kb-primary: #818cf8;
+  --kb-primary-hover: #a5b4fc;
+  --kb-primary-contrast: #06101f;
+  --kb-danger: #fb7185;
+  --kb-success: #34d399;
+  --kb-warning: #fbbf24;
+  --kb-ring: rgba(129, 140, 248, 0.45);
+  --kb-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  --kb-shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.68);
+  color-scheme: dark;
+}
+
+/* ══════════════ 皮肤 ③：minimal（极简商务） ══════════════ */
+[data-skin="minimal"] {
+  --kb-bg: #ffffff;
+  --kb-surface: #ffffff;
+  --kb-surface-2: #fafafa;
+  --kb-text: #111111;
+  --kb-muted: #8a8a8a;
+  --kb-border: #ececec;
+  --kb-border-strong: #d4d4d4;
+  /* 无彩色：主色即黑，强调靠字重与字距而非颜色 */
+  --kb-primary: #111111;
+  --kb-primary-hover: #2b2b2b;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #b91c1c;
+  --kb-success: #15803d;
+  --kb-warning: #a16207;
+  --kb-ring: rgba(0, 0, 0, 0.14);
+  --kb-shadow: none;
+  --kb-shadow-lg: none;
+  --kb-radius: 0px;
+  --kb-radius-card: 0px;
+  --kb-heading-tracking: 0.14em;
+  color-scheme: light;
+}
+[data-skin="minimal"].dark {
+  --kb-bg: #0a0a0a;
+  --kb-surface: #111111;
+  --kb-surface-2: #171717;
+  --kb-text: #f2f2f2;
+  --kb-muted: #8f8f8f;
+  --kb-border: #242424;
+  --kb-border-strong: #3a3a3a;
+  --kb-primary: #f2f2f2;
+  --kb-primary-hover: #ffffff;
+  --kb-primary-contrast: #0a0a0a;
+  --kb-danger: #f87171;
+  --kb-success: #4ade80;
+  --kb-warning: #fbbf24;
+  --kb-ring: rgba(255, 255, 255, 0.18);
+  color-scheme: dark;
+}
+
+/* ══════════════ 皮肤 ④：paper（纸质档案感） ══════════════ */
+[data-skin="paper"] {
+  --kb-bg: #f4efe4;
+  --kb-surface: #fbf8f1;
+  --kb-surface-2: #f7f2e8;
+  --kb-text: #241f16;
+  --kb-muted: #7a6f5b;
+  --kb-border: #ddd4c0;
+  --kb-border-strong: #b9ad95;
+  /* 套色＝档案红 */
+  --kb-primary: #8c2b22;
+  --kb-primary-hover: #7a251d;
+  --kb-primary-contrast: #f8f3e9;
+  --kb-danger: #9b2c1f;
+  --kb-success: #4f6b3a;
+  --kb-warning: #8a6a1f;
+  --kb-ring: rgba(140, 43, 34, 0.25);
+  /* 硬阴影（错位实心），像盖章的档案卡 */
+  --kb-shadow: 2px 2px 0 rgba(185, 173, 149, 0.5);
+  --kb-shadow-lg: 3px 3px 0 rgba(185, 173, 149, 0.55);
+  --kb-radius: 2px;
+  --kb-radius-card: 3px;
+  --kb-font-sans: Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC",
+    serif;
+  --kb-heading-tracking: 0.06em;
+  color-scheme: light;
+}
+[data-skin="paper"].dark {
+  /* 暗色档案：深褐纸 + 米黄字 + 更亮一点的红套色 */
+  --kb-bg: #1c1710;
+  --kb-surface: #241e15;
+  --kb-surface-2: #2b241a;
+  --kb-text: #ecd9b8;
+  --kb-muted: #b09a76;
+  --kb-border: #3d3324;
+  --kb-border-strong: #5a4a33;
+  --kb-primary: #c9603f;
+  --kb-primary-hover: #d9764f;
+  --kb-primary-contrast: #1c1710;
+  --kb-danger: #e0704f;
+  --kb-success: #8aa86a;
+  --kb-warning: #d9a441;
+  --kb-ring: rgba(201, 96, 63, 0.35);
+  --kb-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  --kb-shadow-lg: 3px 3px 0 rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+/* ══════════════ 基础 ══════════════ */
 html,
 body,
 #root {
@@ -75,16 +207,11 @@ body,
 body {
   background-color: var(--kb-bg);
   color: var(--kb-text);
-  /* 中文字体栈（原先只配了等宽栈，中文走系统默认，观感不稳） */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
-    sans-serif;
+  font-family: var(--kb-font-sans);
   @apply antialiased;
-  /* 主题切换时仅对颜色做过渡，避免布局抖动 */
   transition: background-color 200ms ease, color 200ms ease;
 }
 
-/* 尊重“减少动态效果”偏好 */
 @media (prefers-reduced-motion: reduce) {
   body {
     transition: none;
@@ -97,20 +224,18 @@ body {
   }
 }
 
-/* 键盘可达性：只在键盘导航时显示焦点环（鼠标点击不显示） */
+/* 键盘可达性：只在键盘导航时显示焦点环 */
 :focus-visible {
   outline: 2px solid var(--kb-primary);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
-/* 选中文本 */
 ::selection {
   background: var(--kb-ring);
   color: var(--kb-text);
 }
 
-/* 细滚动条（深色下默认滚动条很突兀） */
+/* 细滚动条 */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--kb-border-strong) transparent;
@@ -133,25 +258,26 @@ body {
   background-clip: content-box;
 }
 
-/* ---------------------------------------------------------------------------
-   组件工具类：统一"手感"。页面用这些类，而不是各自拼 slate-* 硬编码。
-   --------------------------------------------------------------------------- */
+/* ══════════════ 组件工具类 ══════════════ */
 @layer components {
-  /** 卡片 / 面板容器 */
+  /** 卡片 / 面板容器（圆角与阴影随皮肤变化） */
   .kb-card {
-    @apply rounded-xl border border-kb-border bg-kb-surface;
+    @apply border border-kb-border bg-kb-surface;
+    border-radius: var(--kb-radius-card);
     box-shadow: var(--kb-shadow);
   }
 
-  /** 强调卡片（对话框、主操作区）：更大的圆角与阴影 */
+  /** 强调卡片（对话框、主操作区） */
   .kb-card-lg {
-    @apply rounded-2xl border border-kb-border bg-kb-surface;
+    @apply border border-kb-border bg-kb-surface;
+    border-radius: var(--kb-radius-card);
     box-shadow: var(--kb-shadow-lg);
   }
 
-  /** 输入框（含 placeholder、focus、disabled 三态） */
+  /** 输入框 */
   .kb-input {
-    @apply w-full rounded-lg border border-kb-border bg-kb-surface px-3 py-2 text-sm text-kb-text transition placeholder:text-kb-muted disabled:cursor-not-allowed disabled:opacity-60;
+    @apply w-full border border-kb-border bg-kb-surface px-3 py-2 text-sm text-kb-text transition placeholder:text-kb-muted disabled:cursor-not-allowed disabled:opacity-60;
+    border-radius: var(--kb-radius);
   }
   .kb-input:focus {
     border-color: var(--kb-primary);
@@ -159,15 +285,15 @@ body {
     outline: none;
   }
 
-  /** 按钮基座：所有按钮共享（注意 Tailwind 的 @apply 不能引用自定义类，故用并列选择器） */
+  /** 按钮基座（Tailwind 的 @apply 不能引用自定义类，故用并列选择器） */
   .kb-btn,
   .kb-btn-primary,
   .kb-btn-ghost,
   .kb-btn-danger {
-    @apply inline-flex select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
+    @apply inline-flex select-none items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
+    border-radius: var(--kb-radius);
   }
 
-  /** 主按钮（品牌色） */
   .kb-btn-primary {
     @apply text-kb-primary-contrast;
     background-color: var(--kb-primary);
@@ -176,7 +302,6 @@ body {
     background-color: var(--kb-primary-hover);
   }
 
-  /** 次按钮（描边） */
   .kb-btn-ghost {
     @apply border border-kb-border bg-kb-surface text-kb-text;
   }
@@ -184,7 +309,6 @@ body {
     background-color: var(--kb-surface-2);
   }
 
-  /** 危险操作按钮（删除等） */
   .kb-btn-danger {
     @apply text-white;
     background-color: var(--kb-danger);
@@ -195,16 +319,34 @@ body {
 
   /** 小标签 / 徽标 */
   .kb-badge {
-    @apply inline-flex items-center gap-1 rounded-full border border-kb-border bg-kb-surface-2 px-2 py-0.5 text-xs text-kb-muted;
+    @apply inline-flex items-center gap-1 border border-kb-border bg-kb-surface-2 px-2 py-0.5 text-xs text-kb-muted;
+    border-radius: 9999px;
+  }
+  /* 极简皮肤：徽标也去圆角 */
+  [data-skin="minimal"] .kb-badge {
+    border-radius: 0;
   }
 
-  /** 表单字段下的辅助说明 */
+  /** 表单辅助说明 */
   .kb-hint {
     @apply text-xs leading-relaxed text-kb-muted;
   }
 
-  /** 等宽数字（密钥条目数、时间等对齐更整齐） */
+  /** 标题（字距随皮肤变化：极简/纸质更疏） */
+  .kb-heading {
+    letter-spacing: var(--kb-heading-tracking);
+  }
+
+  /** 等宽数字（条目数、时间戳对齐） */
   .kb-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  /** 顶部/侧边等"结构性"描边（纸张风偏爱双线，其它皮肤用单线） */
+  .kb-rule {
+    border-bottom: 1px solid var(--kb-border);
+  }
+  [data-skin="paper"] .kb-rule {
+    border-bottom: 3px double var(--kb-border-strong);
   }
 }

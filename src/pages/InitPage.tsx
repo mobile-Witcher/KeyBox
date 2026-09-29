@@ -103,7 +103,7 @@ export default function InitPage({
         title="请抄下你的恢复码（只显示一次）"
         subtitle="主密码遗忘时，只能靠这串恢复码找回数据。我们不会再次显示它，任何人都无法替你找回。"
       >
-        <div className="my-3 rounded-lg border border-slate-300 bg-slate-50 p-3 font-mono text-base tracking-widest break-all dark:border-slate-600 dark:bg-slate-900">
+        <div className="my-3 rounded-lg border border-kb-border-strong bg-slate-50 p-3 font-mono text-base tracking-widest break-all dark:border-slate-600 dark:bg-slate-900">
           {recoveryCode}
         </div>
         <div className="my-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
@@ -123,7 +123,7 @@ export default function InitPage({
             type="button"
             onClick={() => onInitialized()}
             disabled={!ackChecked}
-            className="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+            className="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
           >
             我已抄好，进入应用
           </button>

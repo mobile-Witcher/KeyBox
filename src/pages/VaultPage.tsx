@@ -414,7 +414,7 @@ export default function VaultPage({
           ) : null}
 
           {loading ? (
-            <p className="text-center text-sm text-slate-500">正在读取账号信息…</p>
+            <p className="text-center text-sm text-kb-muted">正在读取账号信息…</p>
           ) : !masterKey ? (
             <UnlockPanel
               value={unlockPwd}
@@ -433,27 +433,27 @@ export default function VaultPage({
                 <h2 className="text-base font-semibold">
                   我的密钥（{visible.length}
                   {visible.length !== items.length ? ` / 共 ${items.length}` : ""}）
-                  {activeTag ? <span className="ml-2 text-sm text-slate-500">标签：{activeTag}</span> : null}
+                  {activeTag ? <span className="ml-2 text-sm text-kb-muted">标签：{activeTag}</span> : null}
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => void runSync()}
                     disabled={busy}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                    className="rounded-lg border border-kb-border-strong px-3 py-1.5 text-sm text-kb-text hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:brightness-110"
                   >
                     同步
                   </button>
                   <button
                     type="button"
                     onClick={handleAdd}
-                    className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900"
+                    className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 dark:bg-slate-200 dark:text-slate-900"
                   >
                     + 新增密钥
                   </button>
                 </div>
               </div>
-              {busy ? <p className="text-sm text-slate-500">处理中…</p> : null}
+              {busy ? <p className="text-sm text-kb-muted">处理中…</p> : null}
               <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
             </section>
             <SecurityPanel
@@ -555,9 +555,9 @@ function UnlockPanel({
   onClearRemembered: () => void;
 }): JSX.Element {
   return (
-    <div className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <div className="mx-auto max-w-md rounded-xl border border-kb-border bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <h2 className="text-base font-semibold">输入主密码解锁</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-kb-muted">
         主密码只在本机校验，云端没有任何副本。
       </p>
       <form className="mt-4 space-y-3" onSubmit={onSubmit}>
@@ -567,10 +567,10 @@ function UnlockPanel({
           autoComplete="current-password"
           onChange={(e) => onChange(e.target.value)}
           placeholder="主密码"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="w-full rounded-lg border border-kb-border-strong bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
 
-        <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+        <label className="flex items-start gap-2 text-sm text-kb-muted">
           <input
             type="checkbox"
             checked={remember}
@@ -579,7 +579,7 @@ function UnlockPanel({
           />
           <span>
             在这台设备上记住主密码
-            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+            <span className="mt-0.5 block text-xs text-kb-muted">
               下次打开自动解锁。<strong className="font-medium">共享或公用电脑请勿勾选</strong>
               ——勾选后，能打开这台设备的人就能查看你已保存的密钥。
             </span>
@@ -589,14 +589,14 @@ function UnlockPanel({
         <button
           type="submit"
           disabled={unlocking}
-          className="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+          className="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
         >
           {unlocking ? "校验中…" : "解锁"}
         </button>
       </form>
 
       {rememberedAt ? (
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-kb-border pt-3 text-xs text-kb-muted dark:border-slate-700 dark:text-kb-muted">
           <span>本机已保存解锁凭据（{new Date(rememberedAt).toLocaleString()}）</span>
           <button
             type="button"
