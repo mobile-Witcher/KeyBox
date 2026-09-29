@@ -19,6 +19,15 @@ const config: CapacitorConfig = {
   appId: "com.jidongzhanshi.keybox",
   appName: "KeyBox",
   webDir: "dist",
+  /**
+   * 安卓壳优先加载【线上页面】：WebView 的源即托管域名（已在环境安全域名白名单内），
+   * 避免内置资源页面的源（WebView 自定义协议 / localhost）跨域被拒。
+   * 背景：体验版套餐不支持自定义安全域名，而内置页面的源不在白名单里 → 云端请求会被拒。
+   * 未设置 KEYBOX_HOSTING_URL 时退回内置资源（本地调试用）。
+   */
+  ...(process.env.KEYBOX_HOSTING_URL
+    ? { server: { url: String(process.env.KEYBOX_HOSTING_URL).replace(/\/+$/, ""), cleartext: false } }
+    : {}),
   android: {
     // 生产环境应始终走 HTTPS；此处显式关闭“允许混合内容”，避免明文降级。
     allowMixedContent: false,

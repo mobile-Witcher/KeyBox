@@ -56,6 +56,14 @@ jobs:
           npm ci
           npm i --no-save @rollup/rollup-win32-x64-msvc@4.63.5 @esbuild/win32-x64@0.21.5
 
+      - name: Point shell to hosted app
+        # 桌面壳改为加载【线上页面】：WebView 的源＝托管域名（已在环境安全域名白名单内），
+        # 规避内置页面的源 http://tauri.localhost 不在白名单而被跨域拒绝的问题
+        # （体验版套餐不支持自定义安全域名，故只能从壳这一侧解决）。
+        env:
+          KEYBOX_HOSTING_URL: ${{ secrets.KEYBOX_HOSTING_URL }}
+        run: node scripts/point-shell-to-host.js
+
       - name: Build desktop bundle (Tauri)
         env:
           VITE_CLOUDBASE_ENV_ID: ${{ secrets.VITE_CLOUDBASE_ENV_ID }}

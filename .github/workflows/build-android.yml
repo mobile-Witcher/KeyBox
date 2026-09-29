@@ -83,6 +83,11 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Sync Capacitor Android
+        # 安卓壳改为加载【线上页面】（capacitor.config.ts 读取该变量）：
+        # WebView 的源＝托管域名（已在环境安全域名白名单内），规避内置页面的源
+        # 不在白名单而被跨域拒绝的问题（体验版套餐不支持自定义安全域名）。
+        env:
+          KEYBOX_HOSTING_URL: ${{ secrets.KEYBOX_HOSTING_URL }}
         run: npx cap sync android
 
       - name: Prepare signing (optional, from secrets)
