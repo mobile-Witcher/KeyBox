@@ -95,7 +95,7 @@ export default function LoginPage({
             type="button"
             onClick={() => void handleSend()}
             disabled={sending || countdown > 0}
-            className="w-full rounded-lg border border-kb-border-strong px-4 py-2 text-sm font-medium text-kb-text transition hover:bg-kb-surface-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="w-full rounded-lg border border-kb-border-strong px-4 py-2 text-sm font-medium text-kb-text transition hover:bg-kb-surface-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-kb-border-strong dark:text-kb-text dark:hover:bg-kb-surface-2"
           >
             {countdown > 0 ? `${countdown} 秒后可重新发送` : sending ? "发送中…" : "发送验证码"}
           </button>

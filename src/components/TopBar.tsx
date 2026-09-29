@@ -22,21 +22,21 @@ export default function TopBar({
   onOpenAdmin,
 }: TopBarProps): JSX.Element {
   return (
-    <header className="flex items-center gap-4 border-b border-kb-border px-6 py-3 dark:border-slate-700">
+    <header className="flex items-center gap-4 border-b border-kb-border px-6 py-3 dark:border-kb-border">
       <div className="font-semibold">KeyBox</div>
       <input
         type="search"
         value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="搜索站点 / 网址 / 标签（仅本机）"
-        className="ml-2 w-full max-w-md rounded-lg border border-kb-border-strong bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        className="ml-2 w-full max-w-md rounded-lg border border-kb-border-strong bg-white px-3 py-1.5 text-sm outline-none focus:border-kb-border-strong focus:ring-2 focus:ring-kb-border dark:border-kb-border-strong dark:kb-btn-primary"
       />
       <div className="ml-auto flex items-center gap-3 text-sm">
         {onOpenAdmin ? (
           <button
             type="button"
             onClick={onOpenAdmin}
-            className="rounded px-2 py-1 text-kb-text hover:bg-slate-100 dark:text-slate-200 dark:hover:brightness-110"
+            className="rounded px-2 py-1 text-kb-text hover:bg-kb-surface-2 dark:text-kb-text dark:hover:brightness-110"
           >
             管理后台
           </button>
@@ -45,7 +45,7 @@ export default function TopBar({
         <button
           type="button"
           onClick={onSignOut}
-          className="rounded px-2 py-1 text-kb-muted hover:bg-slate-100 dark:text-slate-300 dark:hover:brightness-110"
+          className="rounded px-2 py-1 text-kb-muted hover:bg-kb-surface-2 dark:text-kb-muted dark:hover:brightness-110"
         >
           退出登录
         </button>

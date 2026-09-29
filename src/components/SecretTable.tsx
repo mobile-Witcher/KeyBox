@@ -114,7 +114,7 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-kb-border-strong p-10 text-center text-sm text-kb-muted dark:border-slate-600">
+      <div className="rounded-xl border border-dashed border-kb-border-strong p-10 text-center text-sm text-kb-muted dark:border-kb-border-strong">
         还没有密钥。点上面的「+ 新增密钥」开始。
       </div>
     );
@@ -133,7 +133,7 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
       ) : null}
       <div className="overflow-x-auto rounded-xl border border-kb-border">
         <table className="w-full border-collapse text-left text-sm">
-          <thead className="bg-slate-100 text-kb-muted dark:bg-slate-800 dark:text-slate-300">
+          <thead className="bg-kb-surface-2 text-kb-muted dark:bg-kb-surface dark:text-kb-muted">
             <tr>
               <th className="px-3 py-2 font-medium">站点</th>
               <th className="px-3 py-2 font-medium">网址</th>
@@ -149,7 +149,7 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
               return (
                 <tr
                   key={item.id}
-                  className="border-t border-kb-border align-top dark:border-slate-700"
+                  className="border-t border-kb-border align-top dark:border-kb-border"
                 >
                   <td className="px-3 py-2">
                     <div className="font-medium">{plain ? plain.site || "（未命名）" : "—"}</div>
@@ -158,7 +158,7 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
                         {plain.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-kb-muted dark:bg-slate-700 dark:text-slate-200"
+                            className="rounded bg-kb-surface-2 px-1.5 py-0.5 text-xs text-kb-muted dark:bg-kb-surface-2 dark:text-kb-text"
                           >
                             {tag}
                           </span>
@@ -186,7 +186,7 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
                       type="button"
                       disabled={item.decryptError}
                       onClick={() => toggleReveal(item.id)}
-                      className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:brightness-110"
+                      className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-kb-surface-2 disabled:opacity-40 dark:text-kb-text dark:hover:brightness-110"
                     >
                       {isRevealed ? "隐藏" : "显示"}
                     </button>
@@ -194,14 +194,14 @@ export default function SecretTable({ items, onEdit, onDelete }: SecretTableProp
                       type="button"
                       disabled={item.decryptError}
                       onClick={() => void copy(item)}
-                      className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:brightness-110"
+                      className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-kb-surface-2 disabled:opacity-40 dark:text-kb-text dark:hover:brightness-110"
                     >
                       {copyButtonLabel(copiedId, item.id, remaining)}
                     </button>
                     <button
                       type="button"
                       onClick={() => onEdit(item)}
-                      className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-slate-100 dark:text-slate-200 dark:hover:brightness-110"
+                      className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-kb-surface-2 dark:text-kb-text dark:hover:brightness-110"
                     >
                       编辑
                     </button>

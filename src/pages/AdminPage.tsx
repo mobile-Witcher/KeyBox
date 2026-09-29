@@ -182,13 +182,13 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
   return (
     <div className="flex min-h-full flex-col">
       {/* 顶栏 */}
-      <header className="flex items-center justify-between border-b border-kb-border px-6 py-3 dark:border-slate-700">
+      <header className="flex items-center justify-between border-b border-kb-border px-6 py-3 dark:border-kb-border">
         <div className="flex items-center gap-3">
           <span className="font-semibold">KeyBox · 管理后台</span>
           <button
             type="button"
             onClick={onBack}
-            className="rounded px-2 py-1 text-sm text-kb-muted hover:bg-slate-100 dark:text-slate-300 dark:hover:brightness-110"
+            className="rounded px-2 py-1 text-sm text-kb-muted hover:bg-kb-surface-2 dark:text-kb-muted dark:hover:brightness-110"
           >
             ← 返回密钥库
           </button>
@@ -198,7 +198,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
           <button
             type="button"
             onClick={onSignOut}
-            className="rounded px-2 py-1 text-kb-muted hover:bg-slate-100 dark:text-slate-300 dark:hover:brightness-110"
+            className="rounded px-2 py-1 text-kb-muted hover:bg-kb-surface-2 dark:text-kb-muted dark:hover:brightness-110"
           >
             退出登录
           </button>
@@ -220,7 +220,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
         ) : null}
 
         {/* 邀请码区（R02） */}
-        <section className="rounded-xl border border-kb-border p-5 dark:border-slate-700">
+        <section className="rounded-xl border border-kb-border p-5 dark:border-kb-border">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold">邀请码</h2>
             <div className="text-sm text-kb-muted">
@@ -237,19 +237,19 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
               type="button"
               onClick={() => void handleCreateInvite()}
               disabled={busy || full}
-              className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+              className="rounded-lg kb-btn-primary"
             >
               生成邀请码
             </button>
             {inviteCode ? (
               <>
-                <code className="rounded bg-slate-100 px-3 py-1.5 font-mono text-sm dark:bg-slate-800">
+                <code className="rounded bg-kb-surface-2 px-3 py-1.5 font-mono text-sm dark:bg-kb-surface">
                   {inviteCode}
                 </code>
                 <button
                   type="button"
                   onClick={() => void handleCopyInvite()}
-                  className="rounded px-2 py-1 text-sm text-kb-text hover:bg-slate-100 dark:text-slate-200 dark:hover:brightness-110"
+                  className="rounded px-2 py-1 text-sm text-kb-text hover:bg-kb-surface-2 dark:text-kb-text dark:hover:brightness-110"
                 >
                   {copied ? "已复制" : "复制"}
                 </button>
@@ -276,7 +276,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
               type="button"
               onClick={() => void reload()}
               disabled={busy}
-              className="rounded-lg border border-kb-border-strong px-3 py-1.5 text-sm text-kb-text hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:brightness-110"
+              className="rounded-lg border border-kb-border-strong px-3 py-1.5 text-sm text-kb-text hover:bg-kb-surface-2 disabled:opacity-50 dark:border-kb-border-strong dark:text-kb-text dark:hover:brightness-110"
             >
               刷新
             </button>
@@ -295,7 +295,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
         </section>
       </main>
 
-      <footer className="border-t border-kb-border px-6 py-2 text-center text-xs text-kb-muted dark:border-slate-700">
+      <footer className="border-t border-kb-border px-6 py-2 text-center text-xs text-kb-muted dark:border-kb-border">
         管理员看不到任何人的密钥内容，仅可停用与删除。
       </footer>
     </div>
@@ -319,7 +319,7 @@ export function UserTable({
 }): JSX.Element {
   if (users.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-kb-border-strong p-8 text-center text-sm text-kb-muted dark:border-slate-600">
+      <div className="rounded-xl border border-dashed border-kb-border-strong p-8 text-center text-sm text-kb-muted dark:border-kb-border-strong">
         暂无用户。
       </div>
     );
@@ -327,7 +327,7 @@ export function UserTable({
   return (
     <div className="overflow-x-auto rounded-xl border border-kb-border">
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-slate-100 text-kb-muted dark:bg-slate-800 dark:text-slate-300">
+        <thead className="bg-kb-surface-2 text-kb-muted dark:bg-kb-surface dark:text-kb-muted">
           <tr>
             <th className="px-3 py-2 font-medium">用户名</th>
             <th className="px-3 py-2 font-medium">状态</th>
@@ -352,7 +352,7 @@ export function UserTable({
                       正常
                     </span>
                   ) : (
-                    <span className="rounded bg-slate-200 px-2 py-0.5 text-xs text-kb-muted dark:bg-slate-700 dark:text-slate-300">
+                    <span className="rounded bg-kb-surface-2 px-2 py-0.5 text-xs text-kb-muted dark:bg-kb-surface-2 dark:text-kb-muted">
                       已停用
                     </span>
                   )}
@@ -380,7 +380,7 @@ export function UserTable({
                         type="button"
                         disabled={busy}
                         onClick={() => onToggle(row)}
-                        className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:brightness-110"
+                        className="mr-1 rounded px-2 py-1 text-xs text-kb-text hover:bg-kb-surface-2 disabled:opacity-50 dark:text-kb-text dark:hover:brightness-110"
                       >
                         {active ? "停用" : "启用"}
                       </button>

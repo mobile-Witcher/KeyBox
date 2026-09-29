@@ -24,7 +24,7 @@ export default function TagSidebar({
   onRequestDelete,
 }: TagSidebarProps): JSX.Element {
   return (
-    <aside className="w-56 shrink-0 border-r border-kb-border p-4 dark:border-slate-700">
+    <aside className="w-56 shrink-0 border-r border-kb-border p-4 dark:border-kb-border">
       <div className="mb-2 text-xs font-medium uppercase tracking-wide text-kb-muted">标签</div>
       <ul className="space-y-1 text-sm">
         <li>
@@ -33,7 +33,7 @@ export default function TagSidebar({
             onClick={() => onSelect(null)}
             className={`w-full rounded px-2 py-1 text-left ${
               activeTag === null
-                ? "bg-slate-200 font-medium dark:bg-slate-700"
+                ? "bg-kb-surface-2 font-medium dark:bg-kb-surface-2"
                 : "hover:bg-kb-surface-2"
             }`}
           >
@@ -47,7 +47,7 @@ export default function TagSidebar({
               onClick={() => onSelect(tag.name)}
               className={`flex-1 truncate rounded px-2 py-1 text-left ${
                 activeTag === tag.name
-                  ? "bg-slate-200 font-medium dark:bg-slate-700"
+                  ? "bg-kb-surface-2 font-medium dark:bg-kb-surface-2"
                   : "hover:bg-kb-surface-2"
               }`}
               title={tag.name}
