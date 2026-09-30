@@ -74,18 +74,8 @@ export default function TagSidebar({
   const railOff = "text-kb-muted hover:bg-kb-surface-2 hover:text-kb-text";
 
   return (
-    <aside className="shrink-0 border-kb-border md:flex md:w-16 md:flex-col md:border-r md:py-3">
-      {/* ── 移动端：分类下拉选择器（固顶行为不变：sticky top-[52px] / 背景 / md:static md:hidden） ── */}
-      <div className="sticky top-[52px] z-20 border-b border-kb-border bg-kb-surface px-3 py-2 md:static md:hidden">
-        <MobileTagSelect
-          totalCount={totalCount}
-          tags={tags}
-          activeTag={activeTag}
-          onSelect={onSelect}
-        />
-      </div>
-
-      {/* ── 桌面：窄图标栏 ── */}
+    <aside className="hidden shrink-0 border-kb-border md:block md:w-16 md:border-r md:py-3">
+      {/* ── 桌面：窄图标栏（移动端的分类选择器已移至 VaultPage 主内容流顶部，保证 sticky 生效） ── */}
       <div className="hidden md:flex md:flex-1 md:flex-col md:items-center">
         <nav className="flex flex-col items-center gap-1">
           <button
@@ -174,7 +164,7 @@ export default function TagSidebar({
  *
  * 只发意图（onSelect），不做任何数据逻辑——筛选仍由上层 activeTag / filterItems 完成。
  */
-function MobileTagSelect({
+export function MobileTagSelect({
   totalCount,
   tags,
   activeTag,

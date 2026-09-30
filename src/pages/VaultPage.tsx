@@ -23,7 +23,7 @@ import SecretTable from "../components/SecretTable";
 import SecurityModal from "../components/SecurityModal";
 import SecurityPanel from "../components/SecurityPanel";
 import StatusBar from "../components/StatusBar";
-import TagSidebar from "../components/TagSidebar";
+import TagSidebar, { MobileTagSelect } from "../components/TagSidebar";
 import TopBar from "../components/TopBar";
 import { GridIcon, ListIcon } from "../components/icons";
 import { api } from "../lib/api";
@@ -444,6 +444,15 @@ export default function VaultPage({
             />
           ) : (
             <div className="space-y-6">
+            {/* 移动端分类下拉（固顶）：必须放在滚动流内，sticky 才会生效 */}
+            <div className="sticky top-[52px] z-20 -mx-4 -mt-2 mb-2 border-b border-kb-border bg-kb-surface px-4 py-2 md:static md:mx-0 md:mb-0 md:hidden md:border-0 md:bg-transparent md:px-0 md:py-0">
+              <MobileTagSelect
+                totalCount={items.length}
+                tags={tags}
+                activeTag={activeTag}
+                onSelect={setActiveTag}
+              />
+            </div>
             <section className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">
