@@ -12,3 +12,6 @@
 /phase0/*.log
 /keystore
 /distribution/*.zip
+/distribution/*.hap
+*.hap
+/.codegenie
