@@ -16,13 +16,15 @@
  * ⚠️ 端到端验证状态：**待控制台配置后验证**（四项控制台操作未完成，登录链路尚无法真跑）。
  *    本页的构建与类型检查已通过；真实上下行需控制台配好后联调。
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import SecretCardGrid from "../components/SecretCardGrid";
 import SecretDialog from "../components/SecretDialog";
 import SecretTable from "../components/SecretTable";
 import SecurityPanel from "../components/SecurityPanel";
 import StatusBar from "../components/StatusBar";
 import TagSidebar from "../components/TagSidebar";
 import TopBar from "../components/TopBar";
+import { GridIcon, ListIcon } from "../components/icons";
 import { api } from "../lib/api";
 import { getActiveSession } from "../lib/cloudbase";
 import {
@@ -96,6 +98,14 @@ export default function VaultPage({
   const [busy, setBusy] = useState<boolean>(false);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<SecretItem | null>(null);
+  /** 密钥区视图形态：网格（卡片，默认）/ 列表（表格）。纯视图偏好，不参与任何数据逻辑。 */
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  /** 安全面板锚点：顶栏与侧栏的「设置」图标滚动到这里。 */
+  const securityRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToSettings = useCallback((): void => {
+    securityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   // 1) 取会话与密钥参数
   useEffect(() => {
@@ -375,6 +385,8 @@ export default function VaultPage({
 
   const tags = useMemo(() => collectTags(items), [items]);
   const visible = useMemo(() => filterItems(items, activeTag, keyword), [items, activeTag, keyword]);
+  /** 恢复码已生成但用户还没确认留存 → 设置入口显示角标（只影响视觉，不改任何业务流程）。 */
+  const recoveryPending = Boolean(recoveryBlob) && !recoveryAckAt;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -384,10 +396,11 @@ export default function VaultPage({
         onSearchChange={setKeyword}
         onSignOut={onSignOut}
         onOpenAdmin={onOpenAdmin}
+        onOpenSettings={masterKey ? scrollToSettings : undefined}
       />
 
       {/* 桌面：侧栏与主区左右并排；移动端：纵向堆叠（侧栏变成横向标签条，见 TagSidebar） */}
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col md:flex-row">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col md:flex-row">
         {masterKey ? (
           <TagSidebar
             totalCount={items.length}
@@ -396,6 +409,8 @@ export default function VaultPage({
             onSelect={setActiveTag}
             onRequestRename={(tag) => void handleRequestRename(tag)}
             onRequestDelete={(tag) => void handleRequestDelete(tag)}
+            onOpenSettings={scrollToSettings}
+            settingsAttention={recoveryPending}
           />
         ) : null}
 
@@ -430,13 +445,34 @@ export default function VaultPage({
           ) : (
             <div className="space-y-6">
             <section className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">
                   我的密钥（{visible.length}
                   {visible.length !== items.length ? ` / 共 ${items.length}` : ""}）
                   {activeTag ? <span className="ml-2 text-sm text-kb-muted">标签：{activeTag}</span> : null}
                 </h2>
                 <div className="flex items-center gap-2">
+                  {/* 视图切换：卡片网格（默认）/ 表格列表。纯显示偏好，不参与任何数据逻辑。 */}
+                  <div
+                    role="group"
+                    aria-label="密钥显示方式"
+                    className="flex items-center gap-0.5 rounded-lg border border-kb-border p-0.5"
+                  >
+                    <ViewToggleButton
+                      active={viewMode === "grid"}
+                      label="卡片视图"
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <GridIcon size={16} />
+                    </ViewToggleButton>
+                    <ViewToggleButton
+                      active={viewMode === "list"}
+                      label="列表视图"
+                      onClick={() => setViewMode("list")}
+                    >
+                      <ListIcon size={16} />
+                    </ViewToggleButton>
+                  </div>
                   <button
                     type="button"
                     onClick={() => void runSync()}
@@ -455,20 +491,34 @@ export default function VaultPage({
                 </div>
               </div>
               {busy ? <p className="text-sm text-kb-muted">处理中…</p> : null}
-              <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
+              {viewMode === "grid" ? (
+                <SecretCardGrid
+                  items={visible}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onSync={() => void runSync()}
+                  syncing={busy}
+                  onAdd={handleAdd}
+                />
+              ) : (
+                <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
+              )}
             </section>
-            <SecurityPanel
-              uid={uid}
-              masterKey={masterKey}
-              kdfSalt={kdfSalt}
-              kdfVerifier={kdfVerifier}
-              keyEpoch={keyEpoch}
-              recoverySalt={recoverySalt}
-              recoveryBlob={recoveryBlob}
-              recoveryAckAt={recoveryAckAt}
-              onRotated={handleRotated}
-              onDataChanged={handleDataChanged}
-            />
+            {/* 顶栏 / 侧栏的「设置」图标滚动到这里（安全操作入口，业务逻辑一字未动） */}
+            <div ref={securityRef}>
+              <SecurityPanel
+                uid={uid}
+                masterKey={masterKey}
+                kdfSalt={kdfSalt}
+                kdfVerifier={kdfVerifier}
+                keyEpoch={keyEpoch}
+                recoverySalt={recoverySalt}
+                recoveryBlob={recoveryBlob}
+                recoveryAckAt={recoveryAckAt}
+                onRotated={handleRotated}
+                onDataChanged={handleDataChanged}
+              />
+            </div>
             </div>
           )}
         </main>
@@ -487,6 +537,39 @@ export default function VaultPage({
         onSubmit={(plain, existingId) => void handleSubmitDialog(plain, existingId)}
       />
     </div>
+  );
+}
+
+/**
+ * 视图切换按钮（卡片 / 列表）。
+ * 选中态与未选中态都只用主题令牌，9 套皮肤与深色模式下自动可读。
+ */
+function ViewToggleButton({
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      className={`grid h-7 w-7 place-items-center rounded-md transition ${
+        active
+          ? "bg-kb-surface-2 text-kb-primary"
+          : "text-kb-muted hover:bg-kb-surface-2 hover:text-kb-text"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
