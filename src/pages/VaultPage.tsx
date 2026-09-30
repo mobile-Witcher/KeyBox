@@ -400,7 +400,7 @@ export default function VaultPage({
       />
 
       {/* 桌面：侧栏与主区左右并排；移动端：纵向堆叠（侧栏变成横向标签条，见 TagSidebar） */}
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col md:flex-row">
+      <div className="flex min-h-full flex-1 flex-col md:flex-row">
         {masterKey ? (
           <TagSidebar
             totalCount={items.length}
@@ -414,7 +414,7 @@ export default function VaultPage({
           />
         ) : null}
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 md:pl-10"><div className="mx-auto w-full max-w-6xl">
           {error ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
               {error}
@@ -516,6 +516,7 @@ export default function VaultPage({
             </section>
             </div>
           )}
+        </div>
         </main>
       </div>
 

@@ -69,15 +69,15 @@ export default function TagSidebar({
   settingsAttention = false,
 }: TagSidebarProps): JSX.Element {
   /** 图标按钮基座（40×40，居中）。 */
-  const railBtn = "grid h-10 w-10 place-items-center rounded-xl transition";
+  const railBtn = "grid h-10 w-full place-items-center rounded-xl transition";
   const railOn = "bg-kb-surface-2 text-kb-primary";
   const railOff = "text-kb-muted hover:bg-kb-surface-2 hover:text-kb-text";
 
   return (
-    <aside className="hidden shrink-0 border-kb-border md:block md:w-16 md:border-r md:py-3">
-      {/* ── 桌面：窄图标栏（移动端的分类选择器已移至 VaultPage 主内容流顶部，保证 sticky 生效） ── */}
-      <div className="hidden md:flex md:flex-1 md:flex-col md:items-center">
-        <nav className="flex flex-col items-center gap-1">
+    <aside className="hidden shrink-0 border-kb-border md:block md:w-16 md:border-r md:py-3 lg:w-56 lg:py-4">
+      {/* ── 桌面侧栏：md 收窄为图标栏，lg 起展开为图标+文字（屏宽自适应） ── */}
+      <div className="hidden md:flex md:flex-1 md:flex-col">
+        <nav className="flex flex-col items-stretch gap-1 px-2">
           <button
             type="button"
             onClick={() => onSelect(null)}
@@ -86,12 +86,14 @@ export default function TagSidebar({
             className={`${railBtn} ${activeTag === null ? railOn : railOff}`}
           >
             <BoxIcon size={18} />
+            <span className="hidden flex-1 text-left text-sm lg:inline">全部密钥</span>
+            <span className="hidden text-xs lg:inline">{totalCount}</span>
           </button>
 
           {tags.map((tag) => {
             const selected = activeTag === tag.name;
             return (
-              <div key={tag.name} className="flex flex-col items-center">
+              <div key={tag.name} className="flex flex-col">
                 <button
                   type="button"
                   onClick={() => onSelect(tag.name)}
@@ -100,10 +102,12 @@ export default function TagSidebar({
                   className={`${railBtn} ${selected ? railOn : railOff}`}
                 >
                   <TagGlyph name={tag.name} />
+                  <span className="hidden flex-1 truncate text-left text-sm lg:inline">{tag.name}</span>
+                  <span className="hidden text-xs lg:inline">{tag.count}</span>
                 </button>
-                {/* 选中后显示分类管理（R18）：图标栏放不下文字，故用图标 */}
+                {/* 选中后显示分类管理（R18） */}
                 {selected ? (
-                  <div className="mt-0.5 flex gap-0.5">
+                  <div className="mt-0.5 flex gap-0.5 lg:justify-end">
                     <button
                       type="button"
                       onClick={() => onRequestRename(tag.name)}
@@ -136,14 +140,15 @@ export default function TagSidebar({
             onClick={onOpenSecurity}
             title="安全（改主密码 / 备份 / 恢复码）"
             aria-label="安全（改主密码 / 备份 / 恢复码）"
-            className={`relative ${railBtn} ${railOff}`}
+            className={`relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-kb-muted transition hover:bg-kb-surface-2 hover:text-kb-text ${railOff}`}
           >
             <ShieldIcon size={18} />
+            <span className="hidden text-sm lg:inline">安全</span>
             {settingsAttention ? (
               <span
                 aria-hidden="true"
                 title="有未完成的安全提醒"
-                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-kb-primary"
+                className="absolute right-2 top-2 h-2 w-2 rounded-full bg-kb-primary"
               />
             ) : null}
           </button>
