@@ -389,7 +389,7 @@ export default function VaultPage({
   const recoveryPending = Boolean(recoveryBlob) && !recoveryAckAt;
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-screen flex-col">
       <TopBar
         username={username}
         searchValue={keyword}
@@ -400,7 +400,7 @@ export default function VaultPage({
       />
 
       {/* 桌面：侧栏与主区左右并排；移动端：纵向堆叠（侧栏变成横向标签条，见 TagSidebar） */}
-      <div className="flex min-h-full flex-1 flex-col md:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         {masterKey ? (
           <TagSidebar
             totalCount={items.length}
@@ -414,7 +414,7 @@ export default function VaultPage({
           />
         ) : null}
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 md:pl-10"><div className="mx-auto w-full max-w-6xl">
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden p-4 sm:p-6 md:pl-10"><div className="mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col overflow-hidden"><div className="mx-auto w-full max-w-6xl">
           {error ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
               {error}
@@ -445,7 +445,7 @@ export default function VaultPage({
           ) : (
             <div className="space-y-6">
             {/* ── 吸顶控制区：分类下拉 + 密钥页头（固定在 TopBar 下方，滚动不消失） ── */}
-            <div className="sticky top-[52px] z-20 -mx-4 border-b border-kb-border bg-kb-surface px-4 pb-3 pt-2 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
+            <div className="shrink-0 border-b border-kb-border pb-3">
               <MobileTagSelect
                 totalCount={items.length}
                 tags={tags}
@@ -500,6 +500,7 @@ export default function VaultPage({
               <div className="text-[10px] text-kb-muted opacity-60">build b20261001-02（验收后移除）</div>
             </div>
             {busy ? <p className="text-sm text-kb-muted">处理中…</p> : null}
+            <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-0.5">
             {viewMode === "grid" ? (
               <SecretCardGrid
                 items={visible}
@@ -512,6 +513,7 @@ export default function VaultPage({
             ) : (
               <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
             )}
+            </div>
             </div>
           )}
         </div>
