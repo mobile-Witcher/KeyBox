@@ -1,22 +1,14 @@
 /**
- * TopBar.tsx —— 顶栏（桌面视图重设计，纯布局/视觉层）。
+ * TopBar.tsx —— 顶栏（响应式：桌面三段式 / 移动端精简三件套）。
  *
- * 三段式：左=品牌标识，中=常驻搜索胶囊，右=明暗一键 / 外观 / 账户菜单。
- *
- * 账户管理：头像点开下拉菜单，整合「安全（改主密码 / 备份 / 恢复码）」、
- *   「管理后台（仅管理员）」与「退出登录」——三个独立图标合并为一个入口。
- *
- * 一键深浅切换：顶栏最右的太阳/月亮按钮，单击即在深浅色间切换，
- *   并同步 Android 状态栏图标颜色（Web 环境静默跳过）。
+ * 桌面（≥sm）：左=品牌，中=搜索胶囊，右=明暗一键 + 皮肤面板 + 安全 + 管理后台 + 退出 + 头像。
+ * 移动端（<sm）：品牌图标 + 搜索胶囊 + 头像菜单——**所有功能收进头像下拉菜单**：
+ *   深浅切换 / 安全（改主密码 / 备份 / 恢复码）/ 管理后台（仅管理员）/ 退出登录。
  *
  * 关键约束：
- *   - R19：搜索输入只用于【本机内存过滤】（vault.filterItems），
- *     本组件不触发任何网络请求；title 里保留"不会发往云端"的说明。
- *   - 颜色一律走主题令牌；本文件不出现硬编码色值。
- *   - 功能入口一个都不少：管理后台（仅管理员）、安全、外观切换、退出登录全部保留，
- *     只是整合进账户菜单与一键切换按钮。
- *
- * 响应式：小屏隐藏品牌字标与次要图标间距；搜索框始终占满剩余宽度。
+ *   - R19：搜索输入只用于【本机内存过滤】（vault.filterItems），不触发网络请求。
+ *   - 颜色一律走主题令牌（--kb-*），本文件不出现硬编码色值。
+ *   - 深浅切换同步 Android 状态栏图标颜色（Web 环境静默跳过）。
  */
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
@@ -86,7 +78,7 @@ export default function TopBar({
   const [accountOpen, setAccountOpen] = useState(false);
   const acctRef = useRef<HTMLDivElement | null>(null);
 
-  // 点击菜单外 / 按 Esc 关闭（与 ThemeToggle 同一套交互约定）
+  // 点击菜单外 / 按 Esc 关闭
   useEffect(() => {
     if (!accountOpen) return undefined;
     function onDocClick(e: MouseEvent): void {
@@ -106,8 +98,8 @@ export default function TopBar({
   /** 一键切换深浅色，并同步 Android 状态栏图标颜色。 */
   const flipColorScheme = (): void => {
     toggleTheme();
-    const next = theme === "dark" ? "light" : "dark";
     if (Capacitor.isNativePlatform()) {
+      const next = theme === "dark" ? "light" : "dark";
       void StatusBar.setStyle({ style: next === "dark" ? Style.Dark : Style.Light }).catch(
         () => undefined,
       );
@@ -119,8 +111,8 @@ export default function TopBar({
       className="sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5"
       style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
     >
-      {/* ── 左：品牌标识（flex-1 与右侧功能组等宽 → 搜索严格居中） ── */}
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+      {/* ── 左：品牌标识（移动端只留图标） ── */}
+      <div className="flex shrink-0 items-center gap-2">
         <span
           aria-hidden="true"
           className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-kb-primary text-kb-primary-contrast"
@@ -130,8 +122,8 @@ export default function TopBar({
         <span className="kb-heading hidden truncate text-[15px] font-semibold sm:block">KeyBox</span>
       </div>
 
-      {/* ── 中：常驻搜索胶囊（flex-1：占中间剩余宽度，不挤压左右两段） ── */}
-      <div className="relative min-w-0 flex-1 sm:max-w-md md:max-w-lg">
+      {/* ── 中：常驻搜索胶囊（占中间剩余宽度） ── */}
+      <div className="relative min-w-0 flex-1">
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-kb-muted"
@@ -149,82 +141,113 @@ export default function TopBar({
         />
       </div>
 
-      {/* ── 右：一键深浅切换 + 外观 + 账户菜单（flex-1 justify-end → 贴最右） ── */}
-      <div className="flex min-w-0 flex-1 shrink-0 items-center justify-end gap-0.5 sm:gap-1">
-        {/* 一键切换深浅色（最顶部，单击即生效并同步状态栏图标） */}
+      {/* ── 右：桌面端独立功能图标（小屏全部收进头像菜单） ── */}
+      <div className="hidden shrink-0 items-center gap-0.5 sm:flex sm:gap-1">
+        {onOpenAdmin ? (
+          <TopIconButton label="管理后台" onClick={onOpenAdmin}>
+            <UsersIcon size={18} />
+          </TopIconButton>
+        ) : null}
+        {onOpenSecurity ? (
+          <TopIconButton label="安全（改主密码 / 备份 / 恢复码）" onClick={onOpenSecurity}>
+            <ShieldIcon size={18} />
+          </TopIconButton>
+        ) : null}
+        {/* 外观选择（皮肤面板，用户端/管理端同一位置） */}
+        <ThemeToggle />
+        <TopIconButton label="退出登录" onClick={onSignOut}>
+          <LogOutIcon size={18} />
+        </TopIconButton>
+      </div>
+
+      {/* ── 账户头像（点击打开账户菜单：全端统一入口） ── */}
+      <div className="relative shrink-0" ref={acctRef}>
         <button
           type="button"
-          onClick={flipColorScheme}
-          title={isDark ? "切换到浅色" : "切换到深色"}
-          aria-label={isDark ? "切换到浅色" : "切换到深色"}
-          className="grid h-9 w-9 place-items-center rounded-lg text-kb-muted transition hover:bg-kb-surface-2 hover:text-kb-text"
+          onClick={() => setAccountOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={accountOpen}
+          title={`账户：${username}`}
+          className="grid h-8 w-8 place-items-center rounded-full bg-kb-surface-2 text-xs font-semibold text-kb-text transition hover:bg-kb-surface-2 hover:ring-2 hover:ring-kb-primary"
         >
-          {isDark ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+          {avatarText}
         </button>
 
-        {/* 外观面板（9 皮肤选择） */}
-        <ThemeToggle />
-
-        {/* 账户菜单（安全 / 管理后台 / 退出登录整合于此） */}
-        <div className="relative" ref={acctRef}>
-          <button
-            type="button"
-            onClick={() => setAccountOpen((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={accountOpen}
-            title={`账户：${username}`}
-            className="ml-1 grid h-8 w-8 place-items-center rounded-full bg-kb-surface-2 text-xs font-semibold text-kb-text transition hover:bg-kb-surface-2 hover:ring-2 hover:ring-kb-primary"
-          >
-            {avatarText}
-          </button>
-
-          {accountOpen ? (
-            <div className="kb-card-lg absolute right-0 z-40 mt-2 w-64 p-2" role="menu">
-              {/* 头部：用户身份 */}
-              <div className="flex items-center gap-3 px-2 py-2">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-kb-surface-2 text-sm font-semibold text-kb-text">
-                  {avatarText}
-                </div>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-kb-text">{username}</div>
-                  <div className="truncate text-xs text-kb-muted">已登录 · 数据端到端加密</div>
-                </div>
+        {accountOpen ? (
+          <div className="kb-card-lg absolute right-0 z-40 mt-2 w-64 p-2" role="menu">
+            {/* 头部：用户身份 */}
+            <div className="flex items-center gap-3 px-2 py-2">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-kb-surface-2 text-sm font-semibold text-kb-text">
+                {avatarText}
               </div>
-              <div className="my-1 border-t border-kb-border" />
-              {onOpenSecurity ? (
-                <MenuItem
-                  icon={<ShieldIcon size={16} />}
-                  label="安全（改主密码 / 备份 / 恢复码）"
-                  onClick={() => {
-                    setAccountOpen(false);
-                    onOpenSecurity();
-                  }}
-                />
-              ) : null}
-              {onOpenAdmin ? (
-                <MenuItem
-                  icon={<UsersIcon size={16} />}
-                  label="管理后台"
-                  onClick={() => {
-                    setAccountOpen(false);
-                    onOpenAdmin();
-                  }}
-                />
-              ) : null}
-              <div className="my-1 border-t border-kb-border" />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-kb-text">{username}</div>
+                <div className="truncate text-xs text-kb-muted">已登录 · 数据端到端加密</div>
+              </div>
+            </div>
+            <div className="my-1 border-t border-kb-border" />
+            {onOpenSecurity ? (
               <MenuItem
-                icon={<LogOutIcon size={16} />}
-                label="退出登录"
-                danger
+                icon={<ShieldIcon size={16} />}
+                label="安全（改主密码 / 备份 / 恢复码）"
                 onClick={() => {
                   setAccountOpen(false);
-                  onSignOut();
+                  onOpenSecurity();
                 }}
               />
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+            {onOpenAdmin ? (
+              <MenuItem
+                icon={<UsersIcon size={16} />}
+                label="管理后台"
+                onClick={() => {
+                  setAccountOpen(false);
+                  onOpenAdmin();
+                }}
+              />
+            ) : null}
+            <div className="my-1 border-t border-kb-border" />
+            {/* 深浅切换（账户菜单内也有，与顶栏一键按钮等效） */}
+            <MenuItem
+              icon={isDark ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+              label={isDark ? "切换到浅色模式" : "切换到深色模式"}
+              onClick={flipColorScheme}
+            />
+            <div className="my-1 border-t border-kb-border" />
+            <MenuItem
+              icon={<LogOutIcon size={16} />}
+              label="退出登录"
+              danger
+              onClick={() => {
+                setAccountOpen(false);
+                onSignOut();
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     </header>
+  );
+}
+
+function TopIconButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="grid h-9 w-9 place-items-center rounded-lg text-kb-muted transition hover:bg-kb-surface-2 hover:text-kb-text"
+    >
+      {children}
+    </button>
   );
 }

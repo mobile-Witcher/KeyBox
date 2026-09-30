@@ -444,17 +444,15 @@ export default function VaultPage({
             />
           ) : (
             <div className="space-y-6">
-            {/* 移动端分类下拉（固顶）：必须放在滚动流内，sticky 才会生效 */}
-            <div className="sticky top-[52px] z-20 -mx-4 -mt-2 mb-2 border-b border-kb-border bg-kb-surface px-4 py-2 md:static md:mx-0 md:mb-0 md:hidden md:border-0 md:bg-transparent md:px-0 md:py-0">
+            {/* ── 吸顶控制区：分类下拉 + 密钥页头（固定在 TopBar 下方，滚动不消失） ── */}
+            <div className="sticky top-[52px] z-20 -mx-4 border-b border-kb-border bg-kb-surface px-4 pb-3 pt-2 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
               <MobileTagSelect
                 totalCount={items.length}
                 tags={tags}
                 activeTag={activeTag}
                 onSelect={setActiveTag}
               />
-            </div>
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">
                   我的密钥（{visible.length}
                   {visible.length !== items.length ? ` / 共 ${items.length}` : ""}）
@@ -499,21 +497,21 @@ export default function VaultPage({
                   </button>
                 </div>
               </div>
-              <div className="text-[10px] text-kb-muted opacity-60">build b20261001-02（若你看不到这行，说明运行的不是最新安装包）</div>
-              {busy ? <p className="text-sm text-kb-muted">处理中…</p> : null}
-              {viewMode === "grid" ? (
-                <SecretCardGrid
-                  items={visible}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onSync={() => void runSync()}
-                  syncing={busy}
-                  onAdd={handleAdd}
-                />
-              ) : (
-                <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
-              )}
-            </section>
+              <div className="text-[10px] text-kb-muted opacity-60">build b20261001-02（验收后移除）</div>
+            </div>
+            {busy ? <p className="text-sm text-kb-muted">处理中…</p> : null}
+            {viewMode === "grid" ? (
+              <SecretCardGrid
+                items={visible}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onSync={() => void runSync()}
+                syncing={busy}
+                onAdd={handleAdd}
+              />
+            ) : (
+              <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
+            )}
             </div>
           )}
         </div>
