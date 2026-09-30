@@ -42,19 +42,19 @@ export default function TopBar({
       className="sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5"
       style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
     >
-      {/* ── 左：品牌标识 ── */}
-      <div className="flex shrink-0 items-center gap-2">
+      {/* ── 左：品牌标识（flex-1 与右侧功能组等宽 → 搜索严格居中） ── */}
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <span
           aria-hidden="true"
-          className="grid h-8 w-8 place-items-center rounded-lg bg-kb-primary text-kb-primary-contrast"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-kb-primary text-kb-primary-contrast"
         >
           <KeyIcon size={17} />
         </span>
-        <span className="kb-heading hidden text-[15px] font-semibold sm:block">KeyBox</span>
+        <span className="kb-heading hidden truncate text-[15px] font-semibold sm:block">KeyBox</span>
       </div>
 
       {/* ── 中：常驻搜索胶囊 ── */}
-      <div className="relative min-w-0 flex-1 sm:max-w-xl">
+      <div className="relative w-full max-w-md min-w-0 sm:max-w-lg">
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-kb-muted"
@@ -72,8 +72,8 @@ export default function TopBar({
         />
       </div>
 
-      {/* ── 右：功能图标 + 头像 ── */}
-      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+      {/* ── 右：功能图标 + 头像（flex-1 justify-end → 贴最右） ── */}
+      <div className="flex min-w-0 flex-1 shrink-0 items-center justify-end gap-0.5 sm:gap-1">
         {onOpenAdmin ? (
           <TopIconButton label="管理后台" onClick={onOpenAdmin}>
             <UsersIcon size={18} />

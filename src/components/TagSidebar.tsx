@@ -69,7 +69,8 @@ export default function TagSidebar({
   settingsAttention = false,
 }: TagSidebarProps): JSX.Element {
   /** 图标按钮基座（40×40，居中）。 */
-  const railBtn = "grid h-10 w-full place-items-center rounded-xl transition";
+  const railBtn =
+    "flex h-10 w-full items-center gap-3 rounded-xl px-2.5 transition md:justify-center lg:justify-start";
   const railOn = "bg-kb-surface-2 text-kb-primary";
   const railOff = "text-kb-muted hover:bg-kb-surface-2 hover:text-kb-text";
 
