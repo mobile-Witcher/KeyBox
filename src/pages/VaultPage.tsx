@@ -16,10 +16,11 @@
  * ⚠️ 端到端验证状态：**待控制台配置后验证**（四项控制台操作未完成，登录链路尚无法真跑）。
  *    本页的构建与类型检查已通过；真实上下行需控制台配好后联调。
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import SecretCardGrid from "../components/SecretCardGrid";
 import SecretDialog from "../components/SecretDialog";
 import SecretTable from "../components/SecretTable";
+import SecurityModal from "../components/SecurityModal";
 import SecurityPanel from "../components/SecurityPanel";
 import StatusBar from "../components/StatusBar";
 import TagSidebar from "../components/TagSidebar";
@@ -100,13 +101,10 @@ export default function VaultPage({
   const [editing, setEditing] = useState<SecretItem | null>(null);
   /** 密钥区视图形态：网格（卡片，默认）/ 列表（表格）。纯视图偏好，不参与任何数据逻辑。 */
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  /** 安全面板锚点：顶栏与侧栏的「设置」图标滚动到这里。 */
-  const securityRef = useRef<HTMLDivElement | null>(null);
+  /** 安全弹层开关：顶栏 / 侧栏的「安全」入口打开，Esc / 遮罩 / 关闭钮关闭。 */
   const [securityOpen, setSecurityOpen] = useState(false);
-
-  const scrollToSettings = useCallback((): void => {
-    securityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setSecurityOpen(true); // 设置图标点过来时自动展开
+  const openSecurity = useCallback((): void => {
+    setSecurityOpen(true);
   }, []);
 
   // 1) 取会话与密钥参数
@@ -398,7 +396,7 @@ export default function VaultPage({
         onSearchChange={setKeyword}
         onSignOut={onSignOut}
         onOpenAdmin={onOpenAdmin}
-        onOpenSettings={masterKey ? scrollToSettings : undefined}
+        onOpenSecurity={masterKey ? openSecurity : undefined}
       />
 
       {/* 桌面：侧栏与主区左右并排；移动端：纵向堆叠（侧栏变成横向标签条，见 TagSidebar） */}
@@ -411,7 +409,7 @@ export default function VaultPage({
             onSelect={setActiveTag}
             onRequestRename={(tag) => void handleRequestRename(tag)}
             onRequestDelete={(tag) => void handleRequestDelete(tag)}
-            onOpenSettings={scrollToSettings}
+            onOpenSecurity={openSecurity}
             settingsAttention={recoveryPending}
           />
         ) : null}
@@ -506,50 +504,31 @@ export default function VaultPage({
                 <SecretTable items={visible} onEdit={handleEdit} onDelete={handleDelete} />
               )}
             </section>
-            {/* 顶栏 / 侧栏的「设置」图标滚动到这里（安全操作入口，业务逻辑一字未动） */}
-            <div ref={securityRef}>
-            <button
-              type="button"
-              onClick={() => setSecurityOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-lg border border-kb-border bg-kb-surface px-4 py-3 text-left"
-            >
-              <span>
-                <span className="text-sm font-semibold">安全</span>
-                <span className="ml-2 text-xs text-kb-muted">修改主密码 · 恢复码管理（点击展开/收起）</span>
-              </span>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={securityOpen ? "rotate-180 transition-transform" : "transition-transform"}
-              >
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
-            </button>
-            {securityOpen ? (
-              <SecurityPanel
-                uid={uid}
-                masterKey={masterKey}
-                kdfSalt={kdfSalt}
-                kdfVerifier={kdfVerifier}
-                keyEpoch={keyEpoch}
-                recoverySalt={recoverySalt}
-                recoveryBlob={recoveryBlob}
-                recoveryAckAt={recoveryAckAt}
-                onRotated={handleRotated}
-                onDataChanged={handleDataChanged}
-              />
-            ) : null}
-            </div>
             </div>
           )}
         </main>
       </div>
 
       <StatusBar unlocked={Boolean(masterKey)} online={online} pending={pending} />
+
+      {/* 安全弹层：顶栏 / 侧栏「安全」入口打开。
+          SecurityPanel 的 props 原样透传，业务逻辑与文案一字未动。 */}
+      <SecurityModal open={securityOpen && Boolean(masterKey)} onClose={() => setSecurityOpen(false)}>
+        {masterKey ? (
+          <SecurityPanel
+            uid={uid}
+            masterKey={masterKey}
+            kdfSalt={kdfSalt}
+            kdfVerifier={kdfVerifier}
+            keyEpoch={keyEpoch}
+            recoverySalt={recoverySalt}
+            recoveryBlob={recoveryBlob}
+            recoveryAckAt={recoveryAckAt}
+            onRotated={handleRotated}
+            onDataChanged={handleDataChanged}
+          />
+        ) : null}
+      </SecurityModal>
 
       <SecretDialog
         open={dialogOpen}

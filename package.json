@@ -1,7 +1,7 @@
 {
   "name": "keybox",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "MIT",
   "description": "KeyBox —— 20 人以内团队的本地加密密钥保管箱（云端只存密文）",

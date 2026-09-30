@@ -1,19 +1,20 @@
 /**
  * TopBar.tsx —— 顶栏（桌面视图重设计，纯布局/视觉层）。
  *
- * 三段式：左=品牌标识，中=常驻搜索胶囊，右=外观 / 设置 / 管理后台 / 退出 / 用户头像。
+ * 三段式：左=品牌标识，中=常驻搜索胶囊，右=安全 / 外观 / 管理后台 / 退出 / 用户头像。
  *
  * 关键约束：
  *   - R19：搜索输入只用于【本机内存过滤】（上层交给 vault.filterItems），
  *     本组件不触发任何网络请求；title 里保留"不会发往云端"的说明，避免用户误会。
  *   - 颜色一律走主题令牌；本文件不出现硬编码色值。
- *   - 功能入口一个都不少：管理后台（仅管理员）、设置、外观切换、退出登录全部保留，
+ *   - 功能入口一个都不少：管理后台（仅管理员）、安全、外观切换、退出登录全部保留，
  *     只是把文字换成了图标 + title 提示（窄屏空间更从容）。
+ *     「安全」在移动端与桌面端都显示（打开安全弹层）。
  *
  * 响应式：小屏隐藏品牌字标与次要图标间距；搜索框始终占满剩余宽度。
  */
 import ThemeToggle from "./ThemeToggle";
-import { KeyIcon, LogOutIcon, SearchIcon, SettingsIcon, UsersIcon } from "./icons";
+import { KeyIcon, LogOutIcon, SearchIcon, ShieldIcon, UsersIcon } from "./icons";
 
 interface TopBarProps {
   username: string;
@@ -22,8 +23,8 @@ interface TopBarProps {
   onSignOut: () => void;
   /** 仅管理员传入：显示“管理后台”入口（第 8 步）。 */
   onOpenAdmin?: () => void;
-  /** 点击“设置”（滚动到安全面板：改主密码 / 备份 / 恢复码）。 */
-  onOpenSettings?: () => void;
+  /** 点击“安全”（打开安全弹层：改主密码 / 加密备份 / 恢复码）。未解锁（无主密钥）时上层不传。 */
+  onOpenSecurity?: () => void;
 }
 
 export default function TopBar({
@@ -32,7 +33,7 @@ export default function TopBar({
   onSearchChange,
   onSignOut,
   onOpenAdmin,
-  onOpenSettings,
+  onOpenSecurity,
 }: TopBarProps): JSX.Element {
   const avatarText = (Array.from(username.trim())[0] || "?").toUpperCase();
 
@@ -75,9 +76,9 @@ export default function TopBar({
             <UsersIcon size={18} />
           </TopIconButton>
         ) : null}
-        {onOpenSettings ? (
-          <TopIconButton label="设置（改主密码 / 备份 / 恢复码）" onClick={onOpenSettings}>
-            <SettingsIcon size={18} />
+        {onOpenSecurity ? (
+          <TopIconButton label="安全（改主密码 / 备份 / 恢复码）" onClick={onOpenSecurity}>
+            <ShieldIcon size={18} />
           </TopIconButton>
         ) : null}
         {/* 外观选择（用户端/管理端同一位置） */}

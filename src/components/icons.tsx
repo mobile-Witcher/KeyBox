@@ -258,3 +258,21 @@ export function LogOutIcon({ size = 18, className }: IconProps): JSX.Element {
     </svg>
   );
 }
+
+/** 关闭（弹层右上角 ×）。 */
+export function CloseIcon({ size = 18, className }: IconProps): JSX.Element {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+/** 下拉箭头（移动端分类下拉选择器）。 */
+export function ChevronDownIcon({ size = 18, className }: IconProps): JSX.Element {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}

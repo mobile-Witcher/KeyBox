@@ -8,19 +8,23 @@
  *     未命中的分类回落到通用「标签」图标——因为标签是用户自建的，无法穷举。
  *   - 标签管理（改名 / 删除，R18）**没有丢**：选中某个分类后，在其下方出现两个小图标按钮。
  *     （原实现是 hover 显示文字按钮，图标栏放不下文字，故改为「选中后显示图标」。）
- *   - 图标栏底部固定「设置」入口，可带角标提示安全操作在那里。
+ *   - 图标栏底部固定「安全」入口（打开安全弹层），可带角标提示。
  *
- * 移动端（<768px）保持横向可滚动标签条：触屏没有 hover，且窄屏下 56px 竖栏太占宽度。
+ * 移动端（<768px）：横向标签条改为**下拉选择器**——
+ *   收起态显示当前选中项（默认「全部密钥（N）」），点击展开菜单列出「全部」+ 各分类（带条数），
+ *   选中后收起。固顶行为（sticky top-[52px]）与桌面图标栏都不受影响。
+ *   分类管理（改名/删除）仍只放桌面端：下拉项是「选择器」语义，混入破坏性动作易误触。
  *
  * 颜色一律走主题令牌；本文件不出现硬编码色值。
  */
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TagCount } from "../lib/vault";
 import {
   BarChartIcon,
   BoxIcon,
+  ChevronDownIcon,
   CloudIcon,
   PencilIcon,
-  SettingsIcon,
   ShieldIcon,
   StarIcon,
   TagIcon,
@@ -34,9 +38,9 @@ interface TagSidebarProps {
   onSelect: (tag: string | null) => void;
   onRequestRename: (tag: string) => void;
   onRequestDelete: (tag: string) => void;
-  /** 点击底部「设置」图标（滚动到安全面板）。 */
-  onOpenSettings: () => void;
-  /** true 时在设置图标上显示角标（有未完成的安全提醒）。 */
+  /** 点击底部「安全」图标（打开安全弹层）。 */
+  onOpenSecurity: () => void;
+  /** true 时在安全图标上显示角标（有未完成的安全提醒）。 */
   settingsAttention?: boolean;
 }
 
@@ -61,13 +65,9 @@ export default function TagSidebar({
   onSelect,
   onRequestRename,
   onRequestDelete,
-  onOpenSettings,
+  onOpenSecurity,
   settingsAttention = false,
 }: TagSidebarProps): JSX.Element {
-  const chipBase = "shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm transition";
-  const chipOn = "border-kb-primary bg-kb-surface-2 font-medium text-kb-text";
-  const chipOff = "border-kb-border text-kb-muted";
-
   /** 图标按钮基座（40×40，居中）。 */
   const railBtn = "grid h-10 w-10 place-items-center rounded-xl transition";
   const railOn = "bg-kb-surface-2 text-kb-primary";
@@ -75,25 +75,14 @@ export default function TagSidebar({
 
   return (
     <aside className="shrink-0 border-kb-border md:flex md:w-16 md:flex-col md:border-r md:py-3">
-      {/* ── 移动端：横向标签条（可滚动） ── */}
-      <div className="sticky top-[52px] z-20 flex gap-2 overflow-x-auto border-b border-kb-border bg-kb-surface px-3 py-2 md:static md:hidden">
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          className={`${chipBase} ${activeTag === null ? chipOn : chipOff}`}
-        >
-          全部 ({totalCount})
-        </button>
-        {tags.map((tag) => (
-          <button
-            key={tag.name}
-            type="button"
-            onClick={() => onSelect(tag.name)}
-            className={`${chipBase} ${activeTag === tag.name ? chipOn : chipOff}`}
-          >
-            {tag.name} ({tag.count})
-          </button>
-        ))}
+      {/* ── 移动端：分类下拉选择器（固顶行为不变：sticky top-[52px] / 背景 / md:static md:hidden） ── */}
+      <div className="sticky top-[52px] z-20 border-b border-kb-border bg-kb-surface px-3 py-2 md:static md:hidden">
+        <MobileTagSelect
+          totalCount={totalCount}
+          tags={tags}
+          activeTag={activeTag}
+          onSelect={onSelect}
+        />
       </div>
 
       {/* ── 桌面：窄图标栏 ── */}
@@ -150,16 +139,16 @@ export default function TagSidebar({
           })}
         </nav>
 
-        {/* 底部固定：设置（安全操作入口） */}
+        {/* 底部固定：安全（打开安全弹层：改主密码 / 备份 / 恢复码） */}
         <div className="mt-auto pt-3">
           <button
             type="button"
-            onClick={onOpenSettings}
-            title="设置（改主密码 / 备份 / 恢复码）"
-            aria-label="设置（改主密码 / 备份 / 恢复码）"
+            onClick={onOpenSecurity}
+            title="安全（改主密码 / 备份 / 恢复码）"
+            aria-label="安全（改主密码 / 备份 / 恢复码）"
             className={`relative ${railBtn} ${railOff}`}
           >
-            <SettingsIcon size={18} />
+            <ShieldIcon size={18} />
             {settingsAttention ? (
               <span
                 aria-hidden="true"
@@ -171,5 +160,172 @@ export default function TagSidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+/**
+ * 移动端分类下拉选择器。
+ *
+ * 交互与可访问性（不引入新依赖）：
+ *   - 收起态是 button（aria-expanded / aria-haspopup="listbox"），显示当前选中项；
+ *   - 展开后是 role="listbox" 菜单，方向键上下移动、Home/End 首尾、Enter/空格选中、
+ *     Esc 关闭并还焦点给触发按钮；点击菜单外任意处也会收起；
+ *   - 菜单最高 60vh 内部滚动，分类再多也不会撑破 320px 小屏。
+ *
+ * 只发意图（onSelect），不做任何数据逻辑——筛选仍由上层 activeTag / filterItems 完成。
+ */
+function MobileTagSelect({
+  totalCount,
+  tags,
+  activeTag,
+  onSelect,
+}: {
+  totalCount: number;
+  tags: TagCount[];
+  activeTag: string | null;
+  onSelect: (tag: string | null) => void;
+}): JSX.Element {
+  const [open, setOpen] = useState<boolean>(false);
+  /** 键盘导航的活动项下标（0 = 「全部」）。 */
+  const [active, setActive] = useState<number>(0);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  /** 菜单选项：「全部」+ 各分类（含条数徽章）。 */
+  const options = useMemo<Array<{ label: string; tag: string | null; count: number }>>(
+    () => [
+      { label: "全部密钥", tag: null, count: totalCount },
+      ...tags.map((t) => ({ label: t.name, tag: t.name, count: t.count })),
+    ],
+    [totalCount, tags]
+  );
+
+  const selectedIndex = options.findIndex((o) => o.tag === activeTag);
+  const selected = selectedIndex >= 0 ? options[selectedIndex] : options[0];
+
+  // 展开时：活动项定位到当前选中项；点菜单外收起
+  useEffect(() => {
+    if (!open) return;
+    setActive(selectedIndex >= 0 ? selectedIndex : 0);
+    const onPointerDown = (e: PointerEvent): void => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open, selectedIndex]);
+
+  // 菜单展开或活动项变化后，把焦点移到活动项（键盘可达）
+  useEffect(() => {
+    if (open) optionRefs.current[active]?.focus();
+  }, [open, active]);
+
+  function choose(tag: string | null): void {
+    onSelect(tag);
+    setOpen(false);
+    btnRef.current?.focus();
+  }
+
+  function onButtonKeyDown(e: React.KeyboardEvent<HTMLButtonElement>): void {
+    if (open) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOpen(true);
+    }
+  }
+
+  function onMenuKeyDown(e: React.KeyboardEvent<HTMLUListElement>): void {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setActive((i) => (i + 1) % options.length);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setActive((i) => (i - 1 + options.length) % options.length);
+        break;
+      case "Home":
+        e.preventDefault();
+        setActive(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setActive(options.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        choose(options[active].tag);
+        break;
+      case "Escape":
+      case "Tab":
+        e.preventDefault();
+        setOpen(false);
+        btnRef.current?.focus();
+        break;
+      default:
+        break;
+    }
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={onButtonKeyDown}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-controls="mobile-tag-listbox"
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-kb-border bg-kb-surface px-3 py-2 text-sm text-kb-text transition hover:bg-kb-surface-2"
+      >
+        <span className="min-w-0 truncate font-medium">
+          {selected.label}（{selected.count}）
+        </span>
+        <ChevronDownIcon
+          size={16}
+          className={`shrink-0 text-kb-muted transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <ul
+          id="mobile-tag-listbox"
+          role="listbox"
+          aria-label="选择分类"
+          onKeyDown={onMenuKeyDown}
+          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[60vh] overflow-y-auto rounded-xl border border-kb-border bg-kb-surface py-1 shadow-[var(--kb-shadow-lg)]"
+        >
+          {options.map((option, i) => {
+            const isSelected = option.tag === activeTag;
+            return (
+              <li key={option.label} role="none">
+                <button
+                  ref={(el) => {
+                    optionRefs.current[i] = el;
+                  }}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  tabIndex={-1}
+                  onClick={() => choose(option.tag)}
+                  className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition ${
+                    isSelected
+                      ? "bg-kb-surface-2 font-medium text-kb-primary"
+                      : "text-kb-text hover:bg-kb-surface-2"
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{option.label}</span>
+                  <span className="kb-badge shrink-0 kb-nums">{option.count}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
   );
 }
