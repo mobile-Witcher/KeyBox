@@ -130,8 +130,8 @@ export default function TopBar({
         <span className="kb-heading hidden truncate text-[15px] font-semibold sm:block">KeyBox</span>
       </div>
 
-      {/* ── 中：常驻搜索胶囊 ── */}
-      <div className="relative w-full max-w-md min-w-0 sm:max-w-lg">
+      {/* ── 中：常驻搜索胶囊（flex-1：占中间剩余宽度，不挤压左右两段） ── */}
+      <div className="relative min-w-0 flex-1 sm:max-w-md md:max-w-lg">
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-kb-muted"
