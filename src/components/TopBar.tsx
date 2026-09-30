@@ -38,7 +38,10 @@ export default function TopBar({
   const avatarText = (Array.from(username.trim())[0] || "?").toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5">
+    <header
+      className="sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5"
+      style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+    >
       {/* ── 左：品牌标识 ── */}
       <div className="flex shrink-0 items-center gap-2">
         <span
