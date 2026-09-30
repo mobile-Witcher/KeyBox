@@ -51,6 +51,17 @@ export interface SecurityPanelProps {
   onDataChanged: () => void;
 }
 
+/**
+ * 凭据/密钥变更类操作（改主密码会更新账号的 kdf_salt / kdf_verifier / key_epoch），
+ * 服务端会【全局作废该账号的所有会话】：包括本机在内的全部端（网页端、Windows 端、鸿蒙 App）
+ * 下次打开都要重新用手机号收验证码登录。
+ *
+ * 这是服务端的既定安全行为，不是缺陷：本组件【不改动任何加密/签名/会话/token 逻辑】，
+ * 只负责在操作前把后果讲清楚、操作后把结果讲清楚。
+ */
+const RELOGIN_CONFIRM_LINE = "此操作会使所有设备（含本机）退出登录，需要重新用手机号验证登录。";
+const RELOGIN_DONE_LINE = "已完成。其他设备下次打开时需要重新登录。";
+
 /** 用给定行整体替换 main 区（改主密码成功后 staging→main / 导入覆盖）。 */
 async function replaceMainRows(rows: CachedSecret[]): Promise<void> {
   const current = await getAllCached();
@@ -164,6 +175,15 @@ export default function SecurityPanel({
       return;
     }
 
+    // 改主密码属“凭据/密钥变更”类操作：动手前明确告知会让所有端掉线（只提示，不改会话逻辑）
+    if (
+      !window.confirm(
+        `即将修改主密码：本机会用原主密码逐条解密、用新主密码重加密后整批提交。\n\n${RELOGIN_CONFIRM_LINE}\n\n确认继续？`
+      )
+    ) {
+      return;
+    }
+
     setBusy(true);
     try {
       // 先本机校验原主密码，避免拿错密钥白跑一轮
@@ -194,7 +214,9 @@ export default function SecurityPanel({
       });
 
       resetChangeForm();
-      setNotice(`主密码已更新（密钥代数 → ${result.keyEpoch}）。请用新主密码解锁。`);
+      setNotice(
+        `主密码已更新（密钥代数 → ${result.keyEpoch}）。请用新主密码解锁。${RELOGIN_DONE_LINE}`
+      );
       onRotated();
     } catch (err) {
       log.error("改主密码失败", err);
@@ -284,6 +306,10 @@ export default function SecurityPanel({
         <h3 className="text-sm font-medium">修改主密码（R21）</h3>
         <p className="text-xs text-kb-muted">
           本机会用原主密码逐条解密、用新主密码重加密后再整批提交；任何一条失败都会整体中止，不会产生“半新半旧”。
+        </p>
+        {/* 后果前置提示（纯展示）：点击按钮前就能看到，确认对话框里会再提示一次 */}
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          注意：{RELOGIN_CONFIRM_LINE}
         </p>
         <input
           type="password"
