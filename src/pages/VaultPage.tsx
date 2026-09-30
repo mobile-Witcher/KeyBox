@@ -102,9 +102,11 @@ export default function VaultPage({
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   /** 安全面板锚点：顶栏与侧栏的「设置」图标滚动到这里。 */
   const securityRef = useRef<HTMLDivElement | null>(null);
+  const [securityOpen, setSecurityOpen] = useState(false);
 
   const scrollToSettings = useCallback((): void => {
     securityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setSecurityOpen(true); // 设置图标点过来时自动展开
   }, []);
 
   // 1) 取会话与密钥参数
@@ -506,6 +508,28 @@ export default function VaultPage({
             </section>
             {/* 顶栏 / 侧栏的「设置」图标滚动到这里（安全操作入口，业务逻辑一字未动） */}
             <div ref={securityRef}>
+            <button
+              type="button"
+              onClick={() => setSecurityOpen((v) => !v)}
+              className="flex w-full items-center justify-between rounded-lg border border-kb-border bg-kb-surface px-4 py-3 text-left"
+            >
+              <span>
+                <span className="text-sm font-semibold">安全</span>
+                <span className="ml-2 text-xs text-kb-muted">修改主密码 · 恢复码管理（点击展开/收起）</span>
+              </span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={securityOpen ? "rotate-180 transition-transform" : "transition-transform"}
+              >
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+            {securityOpen ? (
               <SecurityPanel
                 uid={uid}
                 masterKey={masterKey}
@@ -518,6 +542,7 @@ export default function VaultPage({
                 onRotated={handleRotated}
                 onDataChanged={handleDataChanged}
               />
+            ) : null}
             </div>
             </div>
           )}

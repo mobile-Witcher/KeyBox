@@ -76,7 +76,7 @@ export default function TagSidebar({
   return (
     <aside className="shrink-0 border-kb-border md:flex md:w-16 md:flex-col md:border-r md:py-3">
       {/* ── 移动端：横向标签条（可滚动） ── */}
-      <div className="flex gap-2 overflow-x-auto border-b border-kb-border px-3 py-2 md:hidden">
+      <div className="sticky top-[52px] z-20 flex gap-2 overflow-x-auto border-b border-kb-border bg-kb-surface px-3 py-2 md:static md:hidden">
         <button
           type="button"
           onClick={() => onSelect(null)}
