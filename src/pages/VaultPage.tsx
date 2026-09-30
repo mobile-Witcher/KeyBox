@@ -490,6 +490,7 @@ export default function VaultPage({
                   </button>
                 </div>
               </div>
+              <div className="text-[10px] text-kb-muted opacity-60">build b20261001-02（若你看不到这行，说明运行的不是最新安装包）</div>
               {busy ? <p className="text-sm text-kb-muted">处理中…</p> : null}
               {viewMode === "grid" ? (
                 <SecretCardGrid
