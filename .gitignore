@@ -1,0 +1,14 @@
+/oh_modules
+/hvigor
+/.hvigor
+/.idea
+/build
+/entry/build
+/entry/.cxx
+/entry/oh_modules
+/node_modules
+/local.properties
+*.log
+/phase0/*.log
+/keystore
+/distribution/*.zip

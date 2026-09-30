@@ -1,0 +1,11 @@
+/**
+ * config.ets -- environment config.
+ *
+ * NOTE: this HarmonyOS project is local/private (not in git) for now, so env id and
+ * publishable key are inlined here. Publishable key is a public credential (the Web
+ * client bundles it too). If this project is ever open-sourced, extract both into
+ * build-time injection to keep parity with the Web repo convention.
+ */
+export const ENV_ID: string = 'weichi-d4gfw5uo1334e0ffb';
+export const API_BASE: string = 'https://' + ENV_ID + '.api.tcloudbasegateway.com';
+export const PUBLISHABLE_KEY: string = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwNTg2NjdiLWYxM2UtNDk5Yi05ZjAyLWYzMTNiOTJkYWJkMCJ9.eyJpc3MiOiJodHRwczovL3dlaWNoaS1kNGdmdzV1bzEzMzRlMGZmYi5hcC1zaGFuZ2hhaS50Y2ItYXBpLnRlbmNlbnRjbG91ZGFwaS5jb20iLCJzdWIiOiJhbm9uIiwiYXVkIjoid2VpY2hpLWQ0Z2Z3NXVvMTMzNGUwZmZiIiwiZXhwIjo0MDk0Mjc4MTA2LCJpYXQiOjE3OTA1OTQ5MDYsIm5vbmNlIjoiUHQ4OUpQTVJTVEd4eUhsNHh5ZTNaUSIsImF0X2hhc2giOiJQdDg5SlBNUlNUR3h5SGw0eHllM1pRIiwibmFtZSI6IkFub255bW91cyIsInNjb3BlIjoiYW5vbnltb3VzIiwicHJvamVjdF9pZCI6IndlaWNoaS1kNGdmdzV1bzEzMzRlMGZmYiIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.TBEV2a5_hwId8-ynA8Hey8r9SkrBvXe5GWaS7yB400MNf4RLDP51x6sNbvhgd0MpcY_FRc0rK2cRjOpQ4fz8QYhL2IyqyK7yPNEeT9MM13Y-Uxi5IpiHESBE7w5KDRvNrJoqHI-jIQOt-ntywW1qDuO5Fc4M3FrkkAod_tM865djMyjxNB0AcL30dFsEGAUqSCl-6XxJ9-N0fWsEZywbJ2UTvetl0CcRsSkS9-BPtV3UIc2hcqiMUaAiukMh-A8vYdKdDuM6VmX5yXx-E5NlVB-bq7GzpSfytQHkuFHu4fpPluAixL63bENSCkSUFp-luXk56z3qGrpCcS8iYaLbPw';
