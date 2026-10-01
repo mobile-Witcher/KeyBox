@@ -20,7 +20,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,7 +38,9 @@ import com.keybox.app.data.maskKey
 import kotlin.math.abs
 
 /**
- * 密钥列表页（A2 只读）：下拉刷新 → 解密渲染；复制密钥走 30 秒剪贴板护栏。
+ * 密钥列表页（A2 只读）：手动刷新 → 解密渲染；复制密钥走 30 秒剪贴板护栏。
+ * 说明：material3 1.3.0（BOM 2024.09.03）尚无稳定的 PullToRefreshBox（1.4.0-alpha 才有），
+ * 按硬约束不引 accompanist 新依赖，下拉刷新以顶栏「刷新」按钮代替，A3/A4 配同步一起完善。
  * A3 批才做新增/编辑/删除。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +66,12 @@ fun VaultScreen(
                     }
                 },
                 actions = {
+                    TextButton(
+                        onClick = viewModel::refresh,
+                        enabled = !state.refreshing,
+                    ) {
+                        Text(if (state.refreshing) "刷新中…" else "刷新")
+                    }
                     TextButton(onClick = onLogout) {
                         Text("退出登录")
                     }
@@ -92,9 +99,7 @@ fun VaultScreen(
             }
         },
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = state.refreshing,
-            onRefresh = viewModel::refresh,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
