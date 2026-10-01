@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.material3)
 
     // A1 批只引入 OkHttp + 协程；A2 增补 biometric（三层解锁）与 datastore（包裹物存储）
+    implementation(project(":core-crypto")) // 解锁/解密直接调用共享加密层
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.biometric)
