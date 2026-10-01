@@ -59,15 +59,15 @@ jobs:
           echo "keys.properties: ENV_ID 长度=${#ENV_ID}, PUBLISHABLE_KEY 长度=${#PUBLISHABLE_KEY}"
 
       - name: Run unit tests (:core-crypto 加密向量测试)
-      env:
-        KEYBOX_ENV_ID: ${{ secrets.KEYBOX_ENV_ID }}
-        KEYBOX_PUBLISHABLE_KEY: ${{ secrets.KEYBOX_PUBLISHABLE_KEY }}
+        env:
+          KEYBOX_ENV_ID: ${{ secrets.KEYBOX_ENV_ID }}
+          KEYBOX_PUBLISHABLE_KEY: ${{ secrets.KEYBOX_PUBLISHABLE_KEY }}
         run: ./gradlew :core-crypto:test --stacktrace
 
       - name: Assemble debug APK
-      env:
-        KEYBOX_ENV_ID: ${{ secrets.KEYBOX_ENV_ID }}
-        KEYBOX_PUBLISHABLE_KEY: ${{ secrets.KEYBOX_PUBLISHABLE_KEY }}
+        env:
+          KEYBOX_ENV_ID: ${{ secrets.KEYBOX_ENV_ID }}
+          KEYBOX_PUBLISHABLE_KEY: ${{ secrets.KEYBOX_PUBLISHABLE_KEY }}
         run: ./gradlew :app:assembleDebug --stacktrace
 
       - name: Stage debug APK with versioned name
@@ -105,6 +105,9 @@ jobs:
 
       - name: Assemble release APK
         if: steps.signing.outputs.enabled == 'true'
+        env:
+          KEYBOX_ENV_ID: ${{ secrets.KEYBOX_ENV_ID }}
+          KEYBOX_PUBLISHABLE_KEY: ${{ secrets.KEYBOX_PUBLISHABLE_KEY }}
         run: ./gradlew :app:assembleRelease --stacktrace
 
       - name: Stage release APK with versioned name
