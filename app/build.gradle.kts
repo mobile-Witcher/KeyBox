@@ -16,8 +16,10 @@ val secretProps = Properties().apply {
     val file = if (keysFile.exists()) keysFile else rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
-val envId: String = secretProps.getProperty("ENV_ID", "")
-val publishableKey: String = secretProps.getProperty("PUBLISHABLE_KEY", "")
+// 优先读环境变量（CI 注入），其次 keys.properties / local.properties。
+// 环境变量方案不受 Gradle 配置缓存影响，避免 CI 复用了缓存里的空值。
+val envId: String = (System.getenv("KEYBOX_ENV_ID") ?: "") .ifEmpty { secretProps.getProperty("ENV_ID", "") }
+val publishableKey: String = (System.getenv("KEYBOX_PUBLISHABLE_KEY") ?: "") .ifEmpty { secretProps.getProperty("PUBLISHABLE_KEY", "") }
 
 // ────────────────────────────────────────────────────────────────────────────
 // Release 签名配置：从 key.properties 读取（依次尝试仓库根目录 → app 模块目录）。
