@@ -1,5 +1,6 @@
 package com.keybox.app.data
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -42,7 +43,10 @@ class AuthInterceptor(
             if (current != null && current.refreshToken != session.refreshToken) {
                 current
             } else {
-                repositoryProvider().refreshSession(session.refreshToken).also {
+                // OkHttp 拦截器运行在自身线程池（非主线程），runBlocking 桥接挂起的续期调用
+                runBlocking {
+                    repositoryProvider().refreshSession(session.refreshToken)
+                }.also {
                     sessionStore.save(it)
                 }
             }
