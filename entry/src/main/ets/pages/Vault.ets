@@ -8,80 +8,23 @@
  * R19 搜索：纯本机内存过滤（site/url/website/model/note/tags 小写包含），关键词不出设备。
  * R18 分类：collectTags 收集 → 下拉选择器过滤 → 选中后可重命名/删除（批量重加密上传）。
  * 同步：拉取服务端 → 与本机按 updated_at 比对 → 双向补齐；冲突弹选择（保留本机/用服务端）。
+ * 安全面板（R21/R22/R28/R29）：顶栏「安全」入口挂载 components/SecurityPanel。
  */
 import { router } from '@kit.ArkUI';
 import { mediaquery } from '@kit.ArkUI';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
-  fetchSecretRows, insertSecretRow, updateSecretRow, deleteSecretRow, KbSecretRow
+  fetchSecretRows, insertSecretRow, updateSecretRow, deleteSecretRow, fetchMyRole, KbSecretRow
 } from '../lib/kbapi';
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
 import { savePrefs } from '../lib/prefs';
+import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
+import { SecurityPanel } from '../components/SecurityPanel';
 
 const TAG: string = 'KeyBoxVault';
-
-/** 一条密钥的明文字段（与 Web 端 SecretPlain 对齐；旧数据缺字段补空串）。 */
-interface SecretPlain {
-  site: string;
-  url: string;
-  website: string;
-  model: string;
-  key: string;
-  note: string;
-}
-
-/** 密文 payload 的 JSON 结构（tags 缺失时序列化整个省略键，与旧数据互通）。 */
-class SecretWire {
-  site: string = '';
-  url: string = '';
-  website: string = '';
-  model: string = '';
-  key: string = '';
-  note: string = '';
-  tags: string[] | undefined = undefined;
-}
-
-/** 把明文 + tags 序列化成 payload JSON；tags 为空时整个省略 tags 键。 */
-function serializePlain(p: SecretPlain, tags: string[]): string {
-  const w = new SecretWire();
-  w.site = p.site;
-  w.url = p.url;
-  w.website = p.website;
-  w.model = p.model;
-  w.key = p.key;
-  w.note = p.note;
-  w.tags = tags.length > 0 ? tags : undefined;
-  return JSON.stringify(w);
-}
-
-/** 解析 payload JSON → SecretPlain（容错：缺字段补空串）。 */
-function toPlain(w: SecretWire): SecretPlain {
-  return {
-    site: typeof w.site === 'string' ? w.site : '',
-    url: typeof w.url === 'string' ? w.url : '',
-    website: typeof w.website === 'string' ? w.website : '',
-    model: typeof w.model === 'string' ? w.model : '',
-    key: typeof w.key === 'string' ? w.key : '',
-    note: typeof w.note === 'string' ? w.note : ''
-  };
-}
-
-/** 解析 payload JSON → tags（容错：缺失/非数组补空数组）。 */
-function toTags(w: SecretWire): string[] {
-  if (!Array.isArray(w.tags)) {
-    return [];
-  }
-  const out: string[] = [];
-  for (const t of w.tags) {
-    if (typeof t === 'string' && t !== '' && out.indexOf(t) < 0) {
-      out.push(t);
-    }
-  }
-  return out;
-}
 
 /** 列表渲染项。 */
 class VaultItem {
@@ -155,6 +98,9 @@ struct Vault {
   // 同步
   @State syncing: boolean = false;
   @State pendingConflicts: SyncConflictInfo[] = [];
+  // 安全面板（R21/R28/R29）与恢复码未确认提醒角标
+  @State showSecurity: boolean = false;
+  @State recoveryAttention: boolean = false;
   private copyTimerId: number = -1;
   private mqWide: mediaquery.MediaQueryListener | null = null;
 
@@ -171,6 +117,20 @@ struct Vault {
     });
     AppStorage.setOrCreate('wide', this.mqWide.matches as boolean);
     void this.load();
+    void this.refreshAttention();
+  }
+
+  /** 恢复码未确认提醒（R28 settingsAttention 模式）：已设恢复码但未确认 → 顶栏「安全」带角标。 */
+  async refreshAttention(): Promise<void> {
+    const accessToken = AppStorage.get<string>('accessToken') ?? '';
+    try {
+      const role = await fetchMyRole(accessToken);
+      this.recoveryAttention =
+        role.recoverySalt !== '' && role.recoveryBlob !== '' && role.recoveryAckAt === '';
+    } catch (e) {
+      // 静默失败：提醒只是辅助功能，不打断列表
+      this.recoveryAttention = false;
+    }
   }
 
   /** 解密单行密文 → 渲染项（单条失败不阻断整表）。 */
@@ -684,6 +644,19 @@ struct Vault {
             .fontWeight(FontWeight.Bold)
             .fontColor(this.c().text)
           Blank()
+          Row({ space: 2 }) {
+            Text('安全')
+              .fontSize(13)
+              .fontColor(this.c().muted)
+            if (this.recoveryAttention) {
+              Text('●')
+                .fontSize(9)
+                .fontColor(this.c().warning)
+            }
+          }
+          .onClick(() => {
+            this.showSecurity = true;
+          })
           Text('外观')
             .fontSize(13)
             .fontColor(this.c().muted)
@@ -1312,6 +1285,19 @@ struct Vault {
         .backgroundColor('rgba(0,0,0,0.45)')
         .justifyContent(FlexAlign.Center)
         .align(Alignment.Center)
+      }
+
+      // ── 安全面板（R21 改主密码 / R28 恢复码 / R29 备份导出导入） ──
+      if (this.showSecurity) {
+        SecurityPanel({
+          onClose: () => {
+            this.showSecurity = false;
+          },
+          onDataChanged: () => {
+            void this.load();
+            void this.refreshAttention();
+          }
+        })
       }
     }
     .width('100%')

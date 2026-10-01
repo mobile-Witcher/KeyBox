@@ -99,3 +99,170 @@ export async function updateSecretRow(id: number, payload: string, keyEpoch: num
 export async function deleteSecretRow(id: number, accessToken: string): Promise<void> {
   await request('DELETE', `/v1/rdb/rest/kb_secrets?id=eq.${id}`, null, accessToken);
 }
+
+// ---------------------------------------------------------------------------
+// 云函数调用（CloudBase HTTP API：POST {API_BASE}/v1/functions/{name}，
+// Authorization: Bearer <access_token>，调用者身份由云函数侧从会话注入读取）。
+// 统一返回体 { ok, data?, error? } 与 Web 端 src/lib/api.ts 对齐。
+// ---------------------------------------------------------------------------
+
+/** 云函数归一化返回体。 */
+export interface KbFnEnvelope {
+  ok: boolean;
+  data: Record<string, Object> | null;
+  error: string;
+}
+
+/** kbGetMyRole 返回（本人角色 + 密钥参数 + 恢复码材料状态；recovery_* 仅回本人）。 */
+export interface KbMyRole {
+  role: string;
+  status: string;
+  kdfSalt: string;
+  kdfVerifier: string;
+  keyEpoch: number;
+  recoverySalt: string;
+  recoveryBlob: string;
+  recoveryAckAt: string;
+}
+
+/** kbRotateMaster 的单条重加密密文行。 */
+export interface KbRotateItem {
+  id: number;
+  payload: string;
+}
+
+class KbRotateMasterBody {
+  kdfSalt: string = '';
+  kdfSaltPrev: string = '';
+  kdfVerifier: string = '';
+  recoveryBlob: string | undefined = undefined;
+  items: KbRotateItem[] = [];
+}
+
+function fnStr(v: Object | undefined): string {
+  return typeof v === 'string' ? v : '';
+}
+
+function fnNum(v: Object | undefined): number {
+  return typeof v === 'number' ? v : 0;
+}
+
+/**
+ * 调用一个云函数并归一化返回体。
+ * HTTP API 可能在返回体外再包一层 { result: <函数返回体> }（或 JSON 字符串），此处解包。
+ */
+async function invokeFunction(name: string, bodyJson: string,
+  accessToken: string): Promise<KbFnEnvelope> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + accessToken
+  };
+  const req = http.createHttp();
+  try {
+    const resp = await req.request(`${API_BASE}/v1/functions/${name}`, {
+      method: http.RequestMethod.POST,
+      header: headers,
+      extraData: bodyJson,
+      connectTimeout: 20000,
+      readTimeout: 60000 // rotateMaster 是全量重写，放宽读超时
+    });
+    const text = resp.result as string;
+    const code = resp.responseCode;
+    if (code < 200 || code >= 300) {
+      throw new Error(`HTTP ${code}: ${text.slice(0, 180)}`);
+    }
+    let node = JSON.parse(text) as Record<string, Object>;
+    // 解开至多两层 result 包装（对象或 JSON 字符串均可）
+    for (let i = 0; i < 2; i++) {
+      const inner = node['result'];
+      if (inner === undefined || inner === null) {
+        break;
+      }
+      let innerObj: Object | null = null;
+      if (typeof inner === 'string') {
+        try {
+          innerObj = JSON.parse(inner) as Record<string, Object>;
+        } catch (e) {
+          break;
+        }
+      } else if (typeof inner === 'object') {
+        innerObj = inner;
+      }
+      if (innerObj === null) {
+        break;
+      }
+      const candidate = innerObj as Record<string, Object>;
+      if (typeof candidate['ok'] === 'boolean' && node['ok'] === undefined) {
+        node = candidate;
+      } else {
+        break;
+      }
+    }
+    const ok = typeof node['ok'] === 'boolean' ? node['ok'] as boolean : false;
+    const dataRaw = node['data'];
+    const data = (dataRaw !== undefined && dataRaw !== null && typeof dataRaw === 'object')
+      ? dataRaw as Record<string, Object> : null;
+    const error = fnStr(node['error']);
+    return { ok: ok, data: data, error: error };
+  } catch (err) {
+    const be = err as BusinessError;
+    if (be.code !== undefined && (be.code as number) !== 2300000 &&
+      (be.code as number) < 2300000) {
+      throw new Error(`云函数请求失败 [code=${be.code}] ${be.message}`);
+    }
+    throw err as Error;
+  } finally {
+    req.destroy();
+  }
+}
+
+/** R11/R26：取本人 role/status/密钥参数/恢复码状态（kbGetMyRole，身份取自会话）。 */
+export async function fetchMyRole(accessToken: string): Promise<KbMyRole> {
+  const env = await invokeFunction('kbGetMyRole', '{}', accessToken);
+  if (!env.ok || env.data === null) {
+    throw new Error('读取账号信息失败：' + (env.error === '' ? '未知错误' : env.error));
+  }
+  return {
+    role: fnStr(env.data['role']),
+    status: fnStr(env.data['status']),
+    kdfSalt: fnStr(env.data['kdfSalt']),
+    kdfVerifier: fnStr(env.data['kdfVerifier']),
+    keyEpoch: fnNum(env.data['keyEpoch']),
+    recoverySalt: fnStr(env.data['recoverySalt']),
+    recoveryBlob: fnStr(env.data['recoveryBlob']),
+    recoveryAckAt: fnStr(env.data['recoveryAckAt'])
+  };
+}
+
+/**
+ * R21：整批提交重加密后的全量密文（kbRotateMaster；key_epoch+1 由服务端完成）。
+ * 只传密文与盐/校验串，主密钥与主密码绝不进入本请求。返回推进后的 key_epoch。
+ */
+export async function rotateMasterRemote(kdfSalt: string, kdfSaltPrev: string,
+  kdfVerifier: string, recoveryBlob: string, items: KbRotateItem[],
+  accessToken: string): Promise<number> {
+  const body = new KbRotateMasterBody();
+  body.kdfSalt = kdfSalt;
+  body.kdfSaltPrev = kdfSaltPrev;
+  body.kdfVerifier = kdfVerifier;
+  body.recoveryBlob = recoveryBlob === '' ? undefined : recoveryBlob;
+  body.items = items;
+  const env = await invokeFunction('kbRotateMaster', JSON.stringify(body), accessToken);
+  if (!env.ok || env.data === null) {
+    throw new Error(env.error === '' ? '未知错误' : env.error);
+  }
+  const keyEpoch = fnNum(env.data['keyEpoch']);
+  if (keyEpoch <= 0) {
+    throw new Error('服务端未返回有效的密钥代数');
+  }
+  return keyEpoch;
+}
+
+/** R28：确认「已抄下恢复码」（kbAckRecovery，写 recovery_ack_at；幂等）。返回确认时间。 */
+export async function ackRecoveryRemote(accessToken: string): Promise<string> {
+  const env = await invokeFunction('kbAckRecovery', '{}', accessToken);
+  if (!env.ok || env.data === null) {
+    throw new Error('确认失败：' + (env.error === '' ? '未知错误' : env.error));
+  }
+  return fnStr(env.data['ackedAt']);
+}
