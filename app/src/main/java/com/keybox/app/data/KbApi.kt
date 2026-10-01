@@ -43,6 +43,18 @@ data class KbMyRole(
 /** kbRotateMaster 的单条重加密密文行。 */
 data class KbRotateItem(val id: Long, val payload: String)
 
+/** R12 管理员用户列表行（kb_admin_user_list 白名单字段，不含任何密文/敏感列）。 */
+data class AdminUserRow(
+    val uid: String,
+    val username: String,
+    val status: String,
+    val createdAt: String,
+    val itemCount: Int,
+)
+
+/** R02 一次性邀请码（kbInviteCreate 返回）。 */
+data class KbInvite(val code: String, val createdAt: String)
+
 /** 云函数归一化返回体。 */
 data class KbFnEnvelope(
     val ok: Boolean,
@@ -192,6 +204,108 @@ class KbApi(private val client: OkHttpClient) {
         data.optString("ackedAt")
     }
 
+    // -------------------------------------------------------------------------
+    // 管理员后台（R02 邀请码 / R12 用户列表 / R13 停用启用 / R14 删除数据）。
+    // 照鸿蒙 kbapi.ets 与 Web src/lib/admin.ts 同构：
+    //   列表走直连 RPC、停用走直连 RDB PATCH、邀请码与删除走云函数（删除是唯一 service_role 路径）。
+    // -------------------------------------------------------------------------
+
+    /**
+     * R12：管理员读取用户列表（直连 RPC `kb_admin_user_list`；函数体内 is_admin() 自检）。
+     * 非管理员调用被服务端拒绝（HTTP 非 2xx）→ 抛出、由调用方原样展示。
+     * 仅保留白名单字段（uid / username / status / created_at / item_count），不含任何密文/敏感列。
+     */
+    suspend fun adminListUsers(accessToken: String): List<AdminUserRow> = withContext(Dispatchers.IO) {
+        val text = send("POST", ADMIN_USER_LIST_PATH, "{}", accessToken)
+        parseAdminUsers(text)
+    }
+
+    /**
+     * R13：管理员改某用户 status（active=正常 / disabled=停用）。
+     * ⚠️ 只提交 `{ status }` 一个字段（禁止整行对象）；**必须带 `uid=eq.<uid>`**（无过滤＝全表更新）。
+     * 「不能停用自己」是 UI 防呆、不是权限（服务端 is_admin() + 管理员 RLS 策略兜底）。
+     */
+    suspend fun adminSetUserStatus(uid: String, status: String, accessToken: String): Unit =
+        withContext(Dispatchers.IO) {
+            val body = JSONObject().put("status", status)
+            send("PATCH", "/v1/rdb/rest/kb_users?uid=eq." + urlEncode(uid), body.toString(), accessToken)
+            Unit
+        }
+
+    /** R02：管理员生成一次性邀请码（kbInviteCreate；展示一次，用一次即失效）。 */
+    suspend fun inviteCreateRemote(accessToken: String): KbInvite = withContext(Dispatchers.IO) {
+        val env = invokeFunction("kbInviteCreate", "{}", accessToken, READ_TIMEOUT_SEC)
+        val data = env.data
+        if (!env.ok || data == null) {
+            throw AuthApiException(env.error.ifEmpty { "生成邀请码失败" })
+        }
+        KbInvite(code = data.optString("code"), createdAt = data.optString("createdAt"))
+    }
+
+    /** R02：管理员作废邀请码（kbInviteRevoke；仅 unused 可作废）。返回作废的 codeId。 */
+    suspend fun inviteRevokeRemote(code: String, accessToken: String): Long = withContext(Dispatchers.IO) {
+        val body = JSONObject().put("code", code)
+        val env = invokeFunction("kbInviteRevoke", body.toString(), accessToken, READ_TIMEOUT_SEC)
+        val data = env.data
+        if (!env.ok || data == null) {
+            // 服务端错误（含 CANNOT_* 等）原样带出
+            throw AuthApiException(env.error.ifEmpty { "作废邀请码失败（可能已被使用）" })
+        }
+        data.optLong("codeId", 0L)
+    }
+
+    /**
+     * R14：删除某用户全部密钥数据（kbAdminDeleteUserData，全项目唯一持 service_role 的云函数）。
+     * 入参只接受一个 uid；返回体仅 { deletedCount }。
+     * 服务端自检错误（如 CANNOT_DELETE_SELF）原样展示。
+     */
+    suspend fun adminDeleteUserDataRemote(uid: String, accessToken: String): Int = withContext(Dispatchers.IO) {
+        val body = JSONObject().put("uid", uid)
+        val env = invokeFunction("kbAdminDeleteUserData", body.toString(), accessToken, DELETE_TIMEOUT_SEC)
+        val data = env.data
+        if (!env.ok || data == null) {
+            throw AuthApiException(env.error.ifEmpty { "删除用户数据失败" })
+        }
+        data.optInt("deletedCount", 0)
+    }
+
+    /** 解析 kb_admin_user_list 返回：容错数组直返或网关包装 { kb_admin_user_list: [...] }。 */
+    private fun parseAdminUsers(text: String): List<AdminUserRow> {
+        val trimmed = text.trim()
+        val arr: JSONArray = when {
+            trimmed.startsWith("[") -> JSONArray(trimmed)
+            trimmed.startsWith("{") -> {
+                val obj = JSONObject(trimmed)
+                var found: JSONArray? = null
+                val keys = obj.keys()
+                while (keys.hasNext()) {
+                    val value = obj.opt(keys.next())
+                    if (value is JSONArray) {
+                        found = value
+                        break
+                    }
+                }
+                found ?: JSONArray()
+            }
+
+            else -> JSONArray()
+        }
+        val out = ArrayList<AdminUserRow>(arr.length())
+        for (i in 0 until arr.length()) {
+            val row = arr.optJSONObject(i) ?: continue
+            out.add(
+                AdminUserRow(
+                    uid = row.optString("uid"),
+                    username = row.optString("username"),
+                    status = row.optString("status"),
+                    createdAt = row.optString("created_at"),
+                    itemCount = row.optInt("item_count", 0),
+                ),
+            )
+        }
+        return out
+    }
+
     /** 调用一个云函数并归一化返回体（照鸿蒙 invokeFunction，含 result 包装解包）。 */
     private fun invokeFunction(
         name: String,
@@ -303,6 +417,10 @@ class KbApi(private val client: OkHttpClient) {
         const val HTTP_CONFLICT = 409
         const val READ_TIMEOUT_SEC = 15L
         const val ROTATE_TIMEOUT_SEC = 60L
+        /** 删除用户数据为服务端批量事务，readTimeout 放宽（照鸿蒙 60s）。 */
+        const val DELETE_TIMEOUT_SEC = 60L
+        /** R12 用户列表直连 RPC 路径（不套云函数）。 */
+        const val ADMIN_USER_LIST_PATH = "/v1/rdb/rest/rpc/kb_admin_user_list"
         val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
     }
 }

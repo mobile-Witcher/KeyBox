@@ -44,16 +44,18 @@ fun KeyBoxApp(viewModel: MainViewModel = viewModel()) {
     }
 }
 
-/** 已解锁区域：密钥列表 + 安全面板覆盖层；安全面板的数据变更（改密码/导入）后触发列表重载。 */
+/** 已解锁区域：密钥列表 + 安全面板覆盖层 + 管理后台覆盖层；数据变更后触发列表重载。 */
 @Composable
 private fun UnlockedArea(uid: String, onLogout: () -> Unit) {
     var showSecurity by remember { mutableStateOf(false) }
+    var showAdmin by remember { mutableStateOf(false) }
     var dataVersion by remember { mutableIntStateOf(0) }
 
     VaultScreen(
         uid = uid,
         onLogout = onLogout,
         onOpenSecurity = { showSecurity = true },
+        onOpenAdmin = { showAdmin = true },
         dataVersion = dataVersion,
     )
 
@@ -64,6 +66,14 @@ private fun UnlockedArea(uid: String, onLogout: () -> Unit) {
                 dataVersion += 1
                 showSecurity = false
             },
+        )
+    }
+
+    if (showAdmin) {
+        // 管理后台覆盖层（照 SecurityPanelOverlay 挂载模式）
+        AdminScreenOverlay(
+            onBack = { showAdmin = false },
+            onLogout = onLogout,
         )
     }
 }

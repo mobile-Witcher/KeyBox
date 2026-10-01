@@ -68,6 +68,7 @@ fun VaultScreen(
     uid: String,
     onLogout: () -> Unit,
     onOpenSecurity: () -> Unit = {},
+    onOpenAdmin: () -> Unit = {},
     dataVersion: Int = 0,
     viewModel: VaultViewModel = viewModel(),
 ) {
@@ -84,6 +85,12 @@ fun VaultScreen(
             TopAppBar(
                 title = { Text("KeyBox") },
                 actions = {
+                    // 管理入口（仅 role=admin 显示；非 admin / 拉取失败一律不显示）
+                    if (state.isAdmin) {
+                        TextButton(onClick = onOpenAdmin, enabled = !busy) {
+                            Text("管理")
+                        }
+                    }
                     // 安全面板入口（R21/R28/R29）
                     TextButton(onClick = onOpenSecurity, enabled = !busy) {
                         Text("安全")

@@ -21,6 +21,9 @@ object ServiceLocator {
     lateinit var kbApi: KbApi
         private set
 
+    lateinit var adminRepository: AdminRepository
+        private set
+
     @Synchronized
     fun init(context: Context) {
         if (initialized) return
@@ -39,6 +42,7 @@ object ServiceLocator {
             sessionStore = store
             authRepository = repository
             kbApi = KbApi(client) // 同一 OkHttp：数据请求经拦截器自动 401 续期重试
+            adminRepository = AdminRepository(kbApi, store) // A6：管理后台数据访问（复用同一 kbApi）
             initialized = true
         }
     }

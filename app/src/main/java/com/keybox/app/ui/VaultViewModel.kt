@@ -104,7 +104,12 @@ data class VaultUiState(
     // 双向同步冲突
     val pendingConflicts: List<SyncConflict> = emptyList(),
     val showConflictDialog: Boolean = false,
-)
+    /** 本人角色（R11）；仅当为 "admin" 时才显示「管理」入口。 */
+    val myRole: String = "",
+) {
+    /** 是否管理员（R12 入口门禁：非 admin / 未拉取到一律不显示）。 */
+    val isAdmin: Boolean get() = myRole == "admin"
+}
 
 /**
  * 密钥列表 ViewModel：
@@ -124,6 +129,24 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         load()
+        loadMyRole()
+    }
+
+    /**
+     * 拉取本人角色（R11，复用 A5 已实现的 kbGetMyRole）。
+     * 仅用于「管理」入口门禁：role=admin 才显示；拉取失败/非 admin 一律保持不显示（失败静默，不打扰用户）。
+     */
+    fun loadMyRole() {
+        val session = ServiceLocator.sessionStore.load() ?: return
+        viewModelScope.launch {
+            try {
+                val role = ServiceLocator.kbApi.fetchMyRole(session.accessToken)
+                _uiState.update { it.copy(myRole = role.role) }
+            } catch (_: Exception) {
+                // 非 admin / 拉取失败：不显示入口（保持 myRole 为空）
+                _uiState.update { it.copy(myRole = "") }
+            }
+        }
     }
 
     /** 首次加载。 */
