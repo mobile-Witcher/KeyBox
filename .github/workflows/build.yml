@@ -17,7 +17,8 @@
 # 未配置 secrets 时（fork / 新克隆仓库）：Release 步骤自动跳过并打印 ::warning::，
 # 仅出未签名 debug 包，CI 不会变红。
 #
-# 敏感配置不入库：CI 上 ENV_ID/PUBLISHABLE_KEY 为空串兜底，仅影响运行时联网，不影响编译。
+# 敏感配置不入库：CI 从 secrets（KEYBOX_ENV_ID / KEYBOX_PUBLISHABLE_KEY）生成 keys.properties
+# 供 BuildConfig 注入；未配置时为空串（编译通过但运行时无法联网，会提示 Invalid URL host）。
 # ─────────────────────────────────────────────────────────────────────────────
 name: build
 
@@ -45,6 +46,17 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare keys.properties (from secrets)
+        env:
+          ENV_ID: ${{ secrets.KEYBOX_ENV_ID }}
+          PUBLISHABLE_KEY: ${{ secrets.KEYBOX_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$ENV_ID" ] || [ -z "$PUBLISHABLE_KEY" ]; then
+            echo "::warning::KEYBOX_ENV_ID / KEYBOX_PUBLISHABLE_KEY 未配置——产物将无法联网（仅可用于编译验证）"
+          fi
+          printf 'ENV_ID=%s\nPUBLISHABLE_KEY=%s\n' "$ENV_ID" "$PUBLISHABLE_KEY" > keys.properties
+          echo "keys.properties: ENV_ID 长度=${#ENV_ID}, PUBLISHABLE_KEY 长度=${#PUBLISHABLE_KEY}"
 
       - name: Run unit tests (:core-crypto 加密向量测试)
         run: ./gradlew :core-crypto:test --stacktrace
