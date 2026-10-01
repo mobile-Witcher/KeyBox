@@ -229,11 +229,11 @@ class KbApi(private val client: OkHttpClient) {
         for (i in 0 until 2) {
             if (!node.has("result") || node.isNull("result")) break
             val inner = node.opt("result")
-            val innerObj: JSONObject? = when (inner) {
+            val innerObj: JSONObject = when (inner) {
                 is JSONObject -> inner
-                is String -> runCatching { JSONObject(inner) }.getOrNull()
-                else -> null
-            } ?: break
+                is String -> runCatching { JSONObject(inner) }.getOrNull() ?: break
+                else -> break
+            }
             if (innerObj.has("ok") && !node.has("ok")) {
                 node = innerObj
             } else {
