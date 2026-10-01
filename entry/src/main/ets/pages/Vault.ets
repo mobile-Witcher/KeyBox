@@ -101,6 +101,8 @@ struct Vault {
   // 安全面板（R21/R28/R29）与恢复码未确认提醒角标
   @State showSecurity: boolean = false;
   @State recoveryAttention: boolean = false;
+  // 管理后台入口（仅 role=admin 显示）
+  @State isAdmin: boolean = false;
   private copyTimerId: number = -1;
   private mqWide: mediaquery.MediaQueryListener | null = null;
 
@@ -120,16 +122,18 @@ struct Vault {
     void this.refreshAttention();
   }
 
-  /** 恢复码未确认提醒（R28 settingsAttention 模式）：已设恢复码但未确认 → 顶栏「安全」带角标。 */
+  /** 恢复码未确认提醒（R28）+ 管理员角色判定（R12：role=admin 才显示「管理」入口）。 */
   async refreshAttention(): Promise<void> {
     const accessToken = AppStorage.get<string>('accessToken') ?? '';
     try {
       const role = await fetchMyRole(accessToken);
       this.recoveryAttention =
         role.recoverySalt !== '' && role.recoveryBlob !== '' && role.recoveryAckAt === '';
+      this.isAdmin = role.role === 'admin';
     } catch (e) {
-      // 静默失败：提醒只是辅助功能，不打断列表
+      // 静默失败：提醒/入口只是辅助功能，不打断列表
       this.recoveryAttention = false;
+      this.isAdmin = false;
     }
   }
 
@@ -644,6 +648,14 @@ struct Vault {
             .fontWeight(FontWeight.Bold)
             .fontColor(this.c().text)
           Blank()
+          if (this.isAdmin) {
+            Text('管理')
+              .fontSize(13)
+              .fontColor(this.c().muted)
+              .onClick(() => {
+                router.pushUrl({ url: 'pages/Admin' });
+              })
+          }
           Row({ space: 2 }) {
             Text('安全')
               .fontSize(13)

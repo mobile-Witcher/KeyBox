@@ -266,3 +266,120 @@ export async function ackRecoveryRemote(accessToken: string): Promise<string> {
   }
   return fnStr(env.data['ackedAt']);
 }
+
+// ---------------------------------------------------------------------------
+// 管理员后台（R02 邀请码 / R12 用户列表 / R13 停用启用 / R14 删除数据）。
+// 与 Web 端 src/lib/admin.ts 同构：列表走直连 RPC、停用走直连 RDB、删除走云函数。
+// ---------------------------------------------------------------------------
+
+/** R12：管理员用户列表行（kb_admin_user_list() 白名单字段，不含任何密文/敏感列）。 */
+export interface KbAdminUserRow {
+  uid: string;
+  username: string;
+  status: string;
+  createdAt: string;
+  itemCount: number;
+}
+
+/** R02：一次性邀请码（kbInviteCreate 返回）。 */
+export interface KbInvite {
+  code: string;
+  createdAt: string;
+}
+
+class KbUserStatusBody {
+  status: string = '';
+}
+
+class KbInviteRevokeBody {
+  code: string = '';
+}
+
+class KbAdminDeleteBody {
+  uid: string = '';
+}
+
+/**
+ * R12：管理员读取用户列表（直连 RPC kb_admin_user_list；函数体内 is_admin() 自检）。
+ * 非管理员调用返回 0 行或被服务端拒绝——调用方据此展示错误。
+ */
+export async function adminListUsers(accessToken: string): Promise<KbAdminUserRow[]> {
+  const resp = await request('POST', '/v1/rdb/rest/rpc/kb_admin_user_list', '{}', accessToken);
+  const parsed = JSON.parse(resp) as Object;
+  let rows: Object[] = [];
+  if (Array.isArray(parsed)) {
+    rows = parsed as Object[];
+  } else if (parsed !== null && typeof parsed === 'object') {
+    // 容错：个别网关会把 SETOF 结果包成 { kb_admin_user_list: [...] }
+    const rec = parsed as Record<string, Object>;
+    const keys = Object.keys(rec);
+    for (let i = 0; i < keys.length; i++) {
+      const v = rec[keys[i]];
+      if (Array.isArray(v)) {
+        rows = v as Object[];
+        break;
+      }
+    }
+  }
+  const out: KbAdminUserRow[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (typeof r !== 'object' || r === null) {
+      continue;
+    }
+    const rec = r as Record<string, Object>;
+    out.push({
+      uid: fnStr(rec['uid']),
+      username: fnStr(rec['username']),
+      status: fnStr(rec['status']),
+      createdAt: fnStr(rec['created_at']),
+      itemCount: fnNum(rec['item_count'])
+    });
+  }
+  return out;
+}
+
+/**
+ * R13：管理员改某用户 status（active=正常 / disabled=停用）。
+ * 只提交 { status } 单列（列级 GRANT + RLS 管理员策略兜底）；「不能停用自己」由 UI 防呆。
+ */
+export async function adminSetUserStatus(uid: string, status: string,
+  accessToken: string): Promise<void> {
+  const body = new KbUserStatusBody();
+  body.status = status;
+  await request('PATCH', `/v1/rdb/rest/kb_users?uid=eq.${uid}`, JSON.stringify(body), accessToken);
+}
+
+/** R02：生成一次性邀请码（展示一次，用一次即失效）。 */
+export async function inviteCreateRemote(accessToken: string): Promise<KbInvite> {
+  const env = await invokeFunction('kbInviteCreate', '{}', accessToken);
+  if (!env.ok || env.data === null) {
+    throw new Error(env.error === '' ? '生成邀请码失败' : env.error);
+  }
+  return {
+    code: fnStr(env.data['code']),
+    createdAt: fnStr(env.data['createdAt'])
+  };
+}
+
+/** R02：作废邀请码（仅 unused 可作废；作废后不能再用于注册）。返回作废的 codeId。 */
+export async function inviteRevokeRemote(code: string, accessToken: string): Promise<number> {
+  const body = new KbInviteRevokeBody();
+  body.code = code;
+  const env = await invokeFunction('kbInviteRevoke', JSON.stringify(body), accessToken);
+  if (!env.ok || env.data === null) {
+    throw new Error(env.error === '' ? '作废邀请码失败（可能已被使用）' : env.error);
+  }
+  return fnNum(env.data['codeId']);
+}
+
+/** R14：删除某用户全部密钥数据（唯一持 service_role 的云函数；用户置为 deleted）。返回删除条数。 */
+export async function adminDeleteUserDataRemote(uid: string, accessToken: string): Promise<number> {
+  const body = new KbAdminDeleteBody();
+  body.uid = uid;
+  const env = await invokeFunction('kbAdminDeleteUserData', JSON.stringify(body), accessToken);
+  if (!env.ok || env.data === null) {
+    throw new Error(env.error === '' ? '删除用户数据失败' : env.error);
+  }
+  return fnNum(env.data['deletedCount']);
+}
