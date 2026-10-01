@@ -339,13 +339,13 @@ private fun AdminConfirmDialog(
 
         AdminConfirmKind.DISABLE_USER -> Triple(
             "确认停用？",
-            "停用用户「$name」？其已登录会话将在 ≤1 分钟内失效。",
+            "停用用户「${name}」？其已登录会话将在 ≤1 分钟内失效。",
             "停用",
         )
 
         AdminConfirmKind.DELETE_USER -> Triple(
             "确认删除数据？",
-            "确定删除用户「$name」的全部密钥数据？\n" +
+            "确定删除用户「${name}」的全部密钥数据？\n" +
                 "将删除其 ${row?.itemCount ?: 0} 条记录，并把该用户置为 deleted（无法再登录）。\n" +
                 "此操作不可撤销。",
             "删除",

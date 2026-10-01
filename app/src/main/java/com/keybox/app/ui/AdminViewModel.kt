@@ -183,7 +183,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 ServiceLocator.adminRepository.setUserStatus(row.uid, next)
                 _uiState.update {
-                    it.copy(busy = false, notice = "已$verb用户「${displayName(row)}」。")
+                    it.copy(busy = false, notice = "已${verb}用户「${displayName(row)}」。")
                 }
                 reload()
             } catch (e: Exception) {
