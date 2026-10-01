@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.core) // A3 卡片编辑/删除、搜索、FAB 图标
 
     // A1 批只引入 OkHttp + 协程；A2 增补 biometric（三层解锁）与 datastore（包裹物存储）
     implementation(project(":core-crypto")) // 解锁/解密直接调用共享加密层

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,10 +17,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,10 +51,8 @@ import com.keybox.app.data.maskKey
 import kotlin.math.abs
 
 /**
- * 密钥列表页（A2 只读）：手动刷新 → 解密渲染；复制密钥走 30 秒剪贴板护栏。
- * 说明：material3 1.3.0（BOM 2024.09.03）尚无稳定的 PullToRefreshBox（1.4.0-alpha 才有），
- * 按硬约束不引 accompanist 新依赖，下拉刷新以顶栏「刷新」按钮代替，A3/A4 配同步一起完善。
- * A3 批才做新增/编辑/删除。
+ * 密钥列表页（A3：CRUD + 本机搜索）：
+ *   吸顶搜索框（本机内存过滤，零网络）+ FAB 新增 + 卡片编辑/删除（二次确认）+ 复制护栏。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,9 +68,10 @@ fun VaultScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("KeyBox")
+                        // 标题计数联动：搜索时显示 可见/总数
+                        Text("我的密钥（${state.visibleItems.size}/${state.items.size}）")
                         Text(
-                            text = "已解锁 · ${state.items.size} 条密钥",
+                            text = "已解锁 · KeyBox",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -98,62 +110,148 @@ fun VaultScreen(
                 }
             }
         },
+        floatingActionButton = {
+            FloatingActionButton(onClick = viewModel::openNewEditor) {
+                Icon(Icons.Filled.Add, contentDescription = "新增密钥")
+            }
+        },
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            when {
-                state.loading -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+            // ── 吸顶搜索框（本机过滤，关键词不出设备） ──
+            OutlinedTextField(
+                value = state.searchKw,
+                onValueChange = viewModel::onSearchChange,
+                placeholder = { Text("搜索站点、接口地址、模型名…") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (state.searchKw.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onSearchChange("") }) {
+                            Icon(Icons.Filled.Close, contentDescription = "清除搜索")
+                        }
+                    }
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
-                state.items.isEmpty() -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "暂无密钥，下拉刷新试试",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    state.loading -> Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(state.items, key = { it.id }) { item ->
-                        SecretCard(item = item, onCopy = { viewModel.copyKey(item) })
+                    state.visibleItems.isEmpty() -> Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = if (state.items.isEmpty()) {
+                                "暂无密钥，点右下角 + 新增"
+                            } else {
+                                "没有匹配「${state.searchKw.trim()}」的密钥"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(state.visibleItems, key = { it.id }) { item ->
+                            SecretCard(
+                                item = item,
+                                onCopy = { viewModel.copyKey(item) },
+                                onEdit = { viewModel.openEditor(item) },
+                                onDelete = { viewModel.requestDelete(item) },
+                            )
+                        }
                     }
                 }
             }
         }
     }
+
+    // ── 新增/编辑对话框 ──
+    if (state.showEditor) {
+        EditorDialog(
+            form = state.form,
+            isEditing = state.editingItem != null,
+            submitting = state.submitting,
+            error = state.formError,
+            onSiteChange = viewModel::onSiteChange,
+            onUrlChange = viewModel::onUrlChange,
+            onWebsiteChange = viewModel::onWebsiteChange,
+            onModelChange = viewModel::onModelChange,
+            onKeyChange = viewModel::onKeyChange,
+            onNoteChange = viewModel::onNoteChange,
+            onTagsChange = viewModel::onTagsChange,
+            onDismiss = viewModel::dismissEditor,
+            onSubmit = viewModel::submitEditor,
+        )
+    }
+
+    // ── 删除二次确认（显示站点名） ──
+    state.deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissDelete,
+            title = { Text("删除确认") },
+            text = {
+                Text("确定删除「${target.site.ifEmpty { "未命名" }}」吗？此操作不可恢复。")
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmDelete, enabled = !state.deleting) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissDelete, enabled = !state.deleting) {
+                    Text("取消")
+                }
+            },
+        )
+    }
 }
 
 @Composable
-private fun SecretCard(item: VaultItem, onCopy: () -> Unit) {
+private fun SecretCard(
+    item: VaultItem,
+    onCopy: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         if (item.decryptError) {
             // 解密失败的条目：标记原因，不阻断其他条目（照鸿蒙语义）
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "解密失败 #${item.id}",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = item.decryptErrMsg,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Row(
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "解密失败 #${item.id}",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = item.decryptErrMsg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                CardActionIcons(onEdit = onEdit, onDelete = onDelete)
             }
             return@Card
         }
@@ -228,11 +326,36 @@ private fun SecretCard(item: VaultItem, onCopy: () -> Unit) {
                     }
                 }
             }
+
+            CardActionIcons(onEdit = onEdit, onDelete = onDelete)
         }
     }
 }
 
-/** 副标题：域名 · 分类（照任务口径「域名·分类」）。 */
+/** 卡片操作图标：编辑 + 删除（紧凑竖排）。 */
+@Composable
+private fun CardActionIcons(onEdit: () -> Unit, onDelete: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+            ActionIcon(Icons.Filled.Edit, MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+            ActionIcon(Icons.Filled.Delete, MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
+private fun ActionIcon(icon: ImageVector, tint: androidx.compose.ui.graphics.Color) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = tint,
+        modifier = Modifier.size(20.dp),
+    )
+}
+
+/** 副标题：域名 · 分类。 */
 private fun VaultItem.subtitle(): String {
     val domain = url.ifEmpty { website }
     val parts = buildList {

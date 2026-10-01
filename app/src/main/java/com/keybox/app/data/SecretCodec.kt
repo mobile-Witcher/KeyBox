@@ -1,5 +1,6 @@
 package com.keybox.app.data
 
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** 一条密钥的明文字段（与 Web 端 SecretPlain / 鸿蒙 secretcodec.ets 对齐）。 */
@@ -45,6 +46,30 @@ fun parseSecretPayload(json: String): SecretItem {
         tags = tags,
     )
 }
+
+/**
+ * 把明文 + tags 序列化成 payload JSON（照鸿蒙 serializePlain / Web serializePlain 口径）：
+ * 字段顺序 site/url/website/model/key/note/tags；tags 为空时整个省略 tags 键（与旧数据互通）。
+ */
+fun serializeSecretPayload(item: SecretItem): String {
+    val obj = JSONObject()
+    obj.put("site", item.site)
+    obj.put("url", item.url)
+    obj.put("website", item.website)
+    obj.put("model", item.model)
+    obj.put("key", item.key)
+    obj.put("note", item.note)
+    if (item.tags.isNotEmpty()) {
+        obj.put("tags", JSONArray(item.tags))
+    }
+    return obj.toString()
+}
+
+/** 规整用户输入的分类串：逗号/中文逗号/顿号分隔，去空白去重（照鸿蒙表单行为）。 */
+fun parseTags(raw: String): List<String> = raw.split(',', '，', '、')
+    .map { it.trim() }
+    .filter { it.isNotEmpty() }
+    .distinct()
 
 /** 脱敏展示：sk-c8ab…9f2e 形态（首 7 字符 + 省略号 + 末 4 字符）。 */
 fun maskKey(key: String): String = when {
