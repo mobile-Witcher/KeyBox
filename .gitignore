@@ -12,6 +12,8 @@
 /phase0/*.log
 /keystore
 /distribution/*.zip
+*.hap
+/entry/src/main/ets/lib/config.private.ets
 /distribution/*.hap
 *.hap
 /.codegenie
