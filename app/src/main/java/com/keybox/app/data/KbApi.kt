@@ -28,6 +28,28 @@ data class KbSecretRow(
     val updatedAt: String,
 )
 
+/** kbGetMyRole 返回（本人角色 + 密钥参数 + 恢复码材料状态；recovery_* 仅回本人）。 */
+data class KbMyRole(
+    val role: String,
+    val status: String,
+    val kdfSalt: String,
+    val kdfVerifier: String,
+    val keyEpoch: Int,
+    val recoverySalt: String,
+    val recoveryBlob: String,
+    val recoveryAckAt: String,
+)
+
+/** kbRotateMaster 的单条重加密密文行。 */
+data class KbRotateItem(val id: Long, val payload: String)
+
+/** 云函数归一化返回体。 */
+data class KbFnEnvelope(
+    val ok: Boolean,
+    val data: JSONObject?,
+    val error: String,
+)
+
 /**
  * CloudBase 数据访问（RDB REST，PostgREST 风格，纯 HTTP）——照鸿蒙 kbapi.ets 形态。
  *
@@ -99,6 +121,130 @@ class KbApi(private val client: OkHttpClient) {
         Unit
     }
 
+    // -------------------------------------------------------------------------
+    // 云函数调用（CloudBase HTTP API）：POST {API_BASE}/v1/functions/{name}，
+    // Authorization: Bearer <access_token>，调用者身份由云函数侧从会话注入读取。
+    // 返回体 { ok, data?, error? }，HTTP API 可能在体外再包一层 { result: <体> }，统一解包。
+    // 照鸿蒙 kbapi.ets invokeFunction。
+    // -------------------------------------------------------------------------
+
+    /** R11/R26：取本人 role/status/密钥参数/恢复码材料状态（kbGetMyRole，身份取自会话）。 */
+    suspend fun fetchMyRole(accessToken: String): KbMyRole = withContext(Dispatchers.IO) {
+        val env = invokeFunction("kbGetMyRole", "{}", accessToken, READ_TIMEOUT_SEC)
+        val data = env.data
+        if (!env.ok || data == null) {
+            throw AuthApiException("读取账号信息失败：" + env.error.ifEmpty { "未知错误" })
+        }
+        KbMyRole(
+            role = data.optString("role"),
+            status = data.optString("status"),
+            kdfSalt = data.optString("kdfSalt"),
+            kdfVerifier = data.optString("kdfVerifier"),
+            keyEpoch = data.optInt("keyEpoch", 0),
+            recoverySalt = data.optString("recoverySalt"),
+            recoveryBlob = data.optString("recoveryBlob"),
+            recoveryAckAt = data.optString("recoveryAckAt"),
+        )
+    }
+
+    /**
+     * R21：整批提交重加密后的全量密文（kbRotateMaster；key_epoch+1 由服务端完成）。
+     * 只传密文与盐/校验串，主密钥与主密码绝不进入本请求。返回推进后的 key_epoch。
+     * readTimeout 放宽（全量重写，照鸿蒙 60s）。
+     */
+    suspend fun rotateMasterRemote(
+        kdfSalt: String,
+        kdfSaltPrev: String,
+        kdfVerifier: String,
+        recoveryBlob: String,
+        items: List<KbRotateItem>,
+        accessToken: String,
+    ): Int = withContext(Dispatchers.IO) {
+        val arr = JSONArray()
+        for (item in items) {
+            arr.put(JSONObject().put("id", item.id).put("payload", item.payload))
+        }
+        val body = JSONObject()
+            .put("kdfSalt", kdfSalt)
+            .put("kdfSaltPrev", kdfSaltPrev)
+            .put("kdfVerifier", kdfVerifier)
+            .put("items", arr)
+        if (recoveryBlob.isNotEmpty()) {
+            body.put("recoveryBlob", recoveryBlob)
+        }
+        val env = invokeFunction("kbRotateMaster", body.toString(), accessToken, ROTATE_TIMEOUT_SEC)
+        val data = env.data
+        if (!env.ok || data == null) {
+            throw AuthApiException(env.error.ifEmpty { "未知错误" })
+        }
+        val keyEpoch = data.optInt("keyEpoch", 0)
+        if (keyEpoch <= 0) throw AuthApiException("服务端未返回有效的密钥代数")
+        keyEpoch
+    }
+
+    /** R28：确认「已抄下恢复码」（kbAckRecovery，写 recovery_ack_at；幂等）。返回确认时间。 */
+    suspend fun ackRecoveryRemote(accessToken: String): String = withContext(Dispatchers.IO) {
+        val env = invokeFunction("kbAckRecovery", "{}", accessToken, READ_TIMEOUT_SEC)
+        val data = env.data
+        if (!env.ok || data == null) {
+            throw AuthApiException("确认失败：" + env.error.ifEmpty { "未知错误" })
+        }
+        data.optString("ackedAt")
+    }
+
+    /** 调用一个云函数并归一化返回体（照鸿蒙 invokeFunction，含 result 包装解包）。 */
+    private fun invokeFunction(
+        name: String,
+        bodyJson: String,
+        accessToken: String,
+        timeoutSec: Long,
+    ): KbFnEnvelope {
+        val request = Request.Builder()
+            .url(apiBase() + "/v1/functions/" + name)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer $accessToken")
+            .tag(AuthRequired::class.java, AuthRequired)
+            .post(bodyJson.toRequestBody(JSON_MEDIA))
+            .build()
+        // 全量重写类请求放宽 readTimeout（派生 client 共享连接池/线程池，不改动默认 client）
+        val callClient =
+            if (timeoutSec == READ_TIMEOUT_SEC) client
+            else client.newBuilder().readTimeout(timeoutSec, java.util.concurrent.TimeUnit.SECONDS).build()
+        try {
+            callClient.newCall(request).execute().use { response ->
+                val text = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    throw AuthException("HTTP ${response.code}：" + text.take(180))
+                }
+                return parseEnvelope(text)
+            }
+        } catch (e: IOException) {
+            throw AuthException("云函数请求失败：${e.message}")
+        }
+    }
+
+    /** 解析云函数返回体，解开至多两层 result 包装（对象或 JSON 字符串均可）。 */
+    private fun parseEnvelope(text: String): KbFnEnvelope {
+        var node = JSONObject(text)
+        for (i in 0 until 2) {
+            if (!node.has("result") || node.isNull("result")) break
+            val inner = node.opt("result")
+            val innerObj: JSONObject? = when (inner) {
+                is JSONObject -> inner
+                is String -> runCatching { JSONObject(inner) }.getOrNull()
+                else -> null
+            } ?: break
+            if (innerObj.has("ok") && !node.has("ok")) {
+                node = innerObj
+            } else {
+                break
+            }
+        }
+        val ok = node.optBoolean("ok", false)
+        val data = if (node.has("data") && !node.isNull("data")) node.optJSONObject("data") else null
+        return KbFnEnvelope(ok = ok, data = data, error = node.optString("error"))
+    }
+
     private fun parseSecretRows(text: String): List<KbSecretRow> {
         val rows = JSONArray(text)
         val out = ArrayList<KbSecretRow>(rows.length())
@@ -155,6 +301,8 @@ class KbApi(private val client: OkHttpClient) {
 
     private companion object {
         const val HTTP_CONFLICT = 409
+        const val READ_TIMEOUT_SEC = 15L
+        const val ROTATE_TIMEOUT_SEC = 60L
         val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
     }
 }

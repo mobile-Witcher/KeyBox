@@ -1,5 +1,6 @@
 package com.keybox.core.crypto
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
@@ -146,4 +147,55 @@ class CryptoVectorTest {
         val wrongPinKey = KeyBoxCrypto.deriveKey("000000", saltB64, KeyBoxCrypto.PIN_ITERATIONS)
         assertThrows(Exception::class.java) { KeyBoxCrypto.decryptFromKb1(wrongPinKey, enc) }
     }
+
+    // ── R28 恢复码原语（纯新增；既有 11 项不受影响） ──
+
+    /** 恢复码跨端解密：解开 Node crypto 参考实现产出的固定 KBRC1 向量（主密钥 00..1f）。 */
+    @Test
+    fun recovery_unwrapsFixedCrossPlatformBlob() {
+        val recovered = KeyBoxCrypto.unwrapMasterKeyWithRecovery(
+            RECOVERY_CODE_VECTOR,
+            RECOVERY_SALT_B64,
+            RECOVERY_BLOB_VECTOR,
+        )
+        assertArrayEquals(ByteArray(32) { it.toByte() }, recovered)
+    }
+
+    /** 恢复码往返：包裹 → 解包；错恢复码拒绝；recovery_salt 复用 kdf_salt 必须抛错。 */
+    @Test
+    fun recovery_wrapRoundTripAndGuards() {
+        val recoverySalt = KeyBoxCrypto.generateSaltB64()
+        val kdfSalt = KeyBoxCrypto.generateSaltB64()
+        val mk = ByteArray(32) { (it * 7 + 1).toByte() }
+        val blob = KeyBoxCrypto.wrapMasterKeyWithRecovery(
+            RECOVERY_CODE_VECTOR, recoverySalt, kdfSalt, mk,
+        )
+        assertTrue(blob.startsWith("KBRC1:"))
+        assertArrayEquals(mk, KeyBoxCrypto.unwrapMasterKeyWithRecovery(RECOVERY_CODE_VECTOR, recoverySalt, blob))
+        // 错恢复码（换一位）
+        val wrongCode = RECOVERY_CODE_VECTOR.dropLast(1) + "A"
+        assertThrows(Exception::class.java) {
+            KeyBoxCrypto.unwrapMasterKeyWithRecovery(wrongCode, recoverySalt, blob)
+        }
+        // 复用 kdf_salt 必须拒绝
+        assertThrows(IllegalArgumentException::class.java) {
+            KeyBoxCrypto.wrapMasterKeyWithRecovery(RECOVERY_CODE_VECTOR, kdfSalt, kdfSalt, mk)
+        }
+    }
+
+    /** 恢复码规整与分组（照 Web/鸿蒙 normalize/format 语义）。 */
+    @Test
+    fun recovery_normalizeAndFormat() {
+        val raw = KeyBoxCrypto.generateRecoveryCodeRaw()
+        assertEquals(32, raw.length)
+        assertTrue(raw.all { it in "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567" })
+        val formatted = KeyBoxCrypto.formatRecoveryCode(raw)
+        assertEquals(raw, KeyBoxCrypto.normalizeRecoveryCode(formatted))
+        assertEquals(8, formatted.split("-").size) // 32 字符按 4 分组 → 8 组
+    }
 }
+
+private const val RECOVERY_CODE_VECTOR = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+private const val RECOVERY_SALT_B64 = "YWJjZGVmZ2hpamtsbW5vcA==" // "abcdefghijklmnop" 16B
+private const val RECOVERY_BLOB_VECTOR =
+    "KBRC1:AAECAwQFBgcICQoLqcxc5jjGI5XaVX1hMdD5DO/L5/qo9y1I8Rpy5gAIDrkZwF3MOv54omQVASlRXQ+8"

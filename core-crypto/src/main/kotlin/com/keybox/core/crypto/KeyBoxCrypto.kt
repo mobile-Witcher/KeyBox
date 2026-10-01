@@ -40,6 +40,9 @@ object KeyBoxCrypto {
     /** 密文前缀（与 Web SECRET_PREFIX 一致）。 */
     const val SECRET_PREFIX = "KB1:"
 
+    /** R28 恢复码包裹前缀（与 Web crypto.ts RECOVERY_PREFIX / 鸿蒙 kbrecovery.ets 一致）。 */
+    const val RECOVERY_PREFIX = "KBRC1:"
+
     /** 主密钥校验用的固定串：它不是密钥，只是"解对了没"的判据。 */
     const val VERIFIER_PLAINTEXT = "KeyBox-Verify"
 
@@ -148,5 +151,136 @@ object KeyBoxCrypto {
     /** 字节数组转小写 hex（测试断言用）。 */
     fun bytesToHex(bytes: ByteArray): String = bytes.joinToString(separator = "") { byte ->
         "%02x".format(byte.toInt() and 0xff)
+    }
+
+    // -------------------------------------------------------------------------
+    // R28 恢复码原语（纯新增，与 Web crypto.ts / 鸿蒙 kbrecovery.ets 字节级对齐）
+    //
+    //   恢复码：32 字符标准 base32（无易混字符），分组展示为 XXXX-XXXX-…
+    //   派生：RK = PBKDF2-HMAC-SHA256(normalize(恢复码), recovery_salt, 600000, 32B)
+    //         —— 复用 deriveKey（与主密钥同一派生原语、同参数）
+    //   包裹：`KBRC1:` + base64( IV(12B) ‖ AES-256-GCM(RK, masterKeyRaw) ‖ GCM tag(16B) )
+    //   recovery_salt 必须独立于 kdf_salt（入口强校验）
+    //
+    //   既有 deriveKey/encryptToKb1/decryptFromKb1 的算法参数与实现零改动。
+    // -------------------------------------------------------------------------
+
+    /** RFC 4648 标准 base32 字母表（与 Web BASE32_ALPHABET 一致）。 */
+    private const val BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    private const val RECOVERY_CODE_LENGTH = 32
+    private const val RECOVERY_GROUP_SIZE = 4
+
+    /** 生成恢复码原始串（32 字符、无分隔；拒绝采样保证无偏）。 */
+    fun generateRecoveryCodeRaw(): String = randomBase32(RECOVERY_CODE_LENGTH)
+
+    /** 把恢复码按 4 字符一组分组（XXXX-XXXX-…），便于抄写。 */
+    fun formatRecoveryCode(rawCode: String): String {
+        val normalized = normalizeRecoveryCode(rawCode)
+        val groups = ArrayList<String>()
+        var i = 0
+        while (i < normalized.length) {
+            groups.add(normalized.substring(i, minOf(i + RECOVERY_GROUP_SIZE, normalized.length)))
+            i += RECOVERY_GROUP_SIZE
+        }
+        return groups.joinToString("-")
+    }
+
+    /** 规整用户输入的恢复码：去分隔符与空格、转大写，只保留 base32 字符。 */
+    fun normalizeRecoveryCode(input: String): String {
+        val upper = input.uppercase()
+        val out = StringBuilder(upper.length)
+        for (ch in upper) {
+            if (BASE32_ALPHABET.indexOf(ch) >= 0) out.append(ch)
+        }
+        return out.toString()
+    }
+
+    /** 由恢复码 + 独立 recovery_salt 派生恢复密钥 RK（32 字节）。 */
+    fun deriveRecoveryKeyRaw(
+        recoveryCode: String,
+        recoverySaltB64: String,
+        iterations: Int = PBKDF2_ITERATIONS,
+    ): ByteArray {
+        val code = normalizeRecoveryCode(recoveryCode)
+        require(code.length == RECOVERY_CODE_LENGTH) { "恢复码长度必须为 32 个 base32 字符" }
+        return deriveKey(code, recoverySaltB64, iterations)
+    }
+
+    /**
+     * 用恢复码把主密钥（原始 32 字节）包裹成 `KBRC1:` 串。
+     * 入口强校验 recovery_salt 独立于 kdf_salt（与 Web/鸿蒙一致，不得复用主密码派生盐）。
+     */
+    fun wrapMasterKeyWithRecovery(
+        recoveryCode: String,
+        recoverySaltB64: String,
+        kdfSaltB64: String,
+        masterKeyRaw: ByteArray,
+        iterations: Int = PBKDF2_ITERATIONS,
+    ): String {
+        require(recoverySaltB64 != kdfSaltB64) {
+            "recovery_salt 必须独立于 kdf_salt（不得复用主密码派生盐）"
+        }
+        val rk = deriveRecoveryKeyRaw(recoveryCode, recoverySaltB64, iterations)
+        val boxed = sealGcm(keyFromRaw(rk), masterKeyRaw)
+        return RECOVERY_PREFIX + Base64.getEncoder().encodeToString(boxed)
+    }
+
+    /**
+     * 反向流程：用恢复码解开 `KBRC1:` 串，取回主密钥原始字节（32 字节）。
+     * 恢复码输错或密文被改都会抛异常（GCM 校验）。
+     */
+    fun unwrapMasterKeyWithRecovery(
+        recoveryCode: String,
+        recoverySaltB64: String,
+        recoveryBlob: String,
+        iterations: Int = PBKDF2_ITERATIONS,
+    ): ByteArray {
+        require(recoveryBlob.startsWith(RECOVERY_PREFIX)) {
+            "恢复码密文前缀不是 $RECOVERY_PREFIX"
+        }
+        val rk = deriveRecoveryKeyRaw(recoveryCode, recoverySaltB64, iterations)
+        val boxed = Base64.getDecoder().decode(recoveryBlob.substring(RECOVERY_PREFIX.length))
+        if (boxed.size < IV_BYTES + 16) throw IllegalArgumentException("恢复码密文长度不足")
+        val plain = openGcm(keyFromRaw(rk), boxed)
+        if (plain.size != KEY_BITS / 8) throw IllegalArgumentException("解回的主密钥长度非法")
+        return plain
+    }
+
+    /** 生成无偏 base32 随机串（256 是 32 的整数倍，天然无偏；护栏保留）。 */
+    private fun randomBase32(length: Int): String {
+        val alphabetLen = BASE32_ALPHABET.length
+        val maxUnbiased = 256 - (256 % alphabetLen)
+        val out = StringBuilder(length)
+        while (out.length < length) {
+            val buf = ByteArray(length - out.length + 8).also { random.nextBytes(it) }
+            for (b in buf) {
+                if (out.length >= length) break
+                if ((b.toInt() and 0xff) < maxUnbiased) {
+                    out.append(BASE32_ALPHABET[(b.toInt() and 0xff) % alphabetLen])
+                }
+            }
+        }
+        return out.toString()
+    }
+
+    /** AES-256-GCM 封装：返回 IV(12B) ‖ 密文 ‖ 标签(16B)。 */
+    private fun sealGcm(key: SecretKey, plaintext: ByteArray): ByteArray {
+        val iv = ByteArray(IV_BYTES).also { random.nextBytes(it) }
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
+        val ctWithTag = cipher.doFinal(plaintext)
+        val boxed = ByteArray(iv.size + ctWithTag.size)
+        iv.copyInto(boxed, 0)
+        ctWithTag.copyInto(boxed, iv.size)
+        return boxed
+    }
+
+    /** AES-256-GCM 解封：入参 IV(12B) ‖ 密文 ‖ 标签(16B)。 */
+    private fun openGcm(key: SecretKey, boxed: ByteArray): ByteArray {
+        val iv = boxed.copyOfRange(0, IV_BYTES)
+        val ctWithTag = boxed.copyOfRange(IV_BYTES, boxed.size)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
+        return cipher.doFinal(ctWithTag)
     }
 }

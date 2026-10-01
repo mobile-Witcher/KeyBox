@@ -67,16 +67,27 @@ private const val BUILD_ID = "build b20261001-02（验收后移除）"
 fun VaultScreen(
     uid: String,
     onLogout: () -> Unit,
+    onOpenSecurity: () -> Unit = {},
+    dataVersion: Int = 0,
     viewModel: VaultViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val busy = state.syncing || state.tagBusy || state.submitting || state.deleting
+
+    // 安全面板改主密码/导入后 dataVersion 递增 → 重载列表
+    androidx.compose.runtime.LaunchedEffect(dataVersion) {
+        if (dataVersion > 0) viewModel.refresh()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("KeyBox") },
                 actions = {
+                    // 安全面板入口（R21/R28/R29）
+                    TextButton(onClick = onOpenSecurity, enabled = !busy) {
+                        Text("安全")
+                    }
                     TextButton(onClick = onLogout) {
                         Text("退出登录")
                     }
