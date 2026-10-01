@@ -1,0 +1,4 @@
+# KeyBox 安卓端敏感配置示例 —— 复制为 keys.properties 并填入真实值（keys.properties 已 gitignore，不入库）。
+# 值的获取：腾讯云 CloudBase 控制台 → 环境 → 概览（环境 ID）/ 应用认证（publishable key）。
+ENV_ID=your-cloudbase-env-id
+PUBLISHABLE_KEY=your-publishable-key

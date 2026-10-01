@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动图标前景：钥匙图形（minSdk 26，自适应图标无需位图） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 钥匙环：外圆 + 内孔（evenOdd） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M44,31 a13,13 0 1,0 0.01,0 Z M44,37.5 a6.5,6.5 0 1,1 -0.01,0 Z" />
+    <!-- 钥匙柄（斜向右下）+ 齿 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,53 L53,48 L74,69 L69,74 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,71 L69,66 L76,73 L71,78 Z" />
+</vector>

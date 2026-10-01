@@ -1,0 +1,37 @@
+# KeyBox 安卓端 CI：JVM 单元测试（含加密向量测试）+ Debug APK 组装。
+# 敏感配置不入库：CI 上 ENV_ID/PUBLISHABLE_KEY 为空串兜底，仅影响运行时联网，不影响编译。
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests (:core-crypto 加密向量测试)
+        run: ./gradlew :core-crypto:test --stacktrace
+
+      - name: Assemble debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
