@@ -64,9 +64,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    // A1 批只引入 OkHttp + 协程；Ktor/Room 等按路线图留待后续批次
+    // A1 批只引入 OkHttp + 协程；A2 增补 biometric（三层解锁）与 datastore（包裹物存储）
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.datastore.preferences)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

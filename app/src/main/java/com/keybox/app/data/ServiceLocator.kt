@@ -18,6 +18,9 @@ object ServiceLocator {
     lateinit var authRepository: AuthRepository
         private set
 
+    lateinit var kbApi: KbApi
+        private set
+
     @Synchronized
     fun init(context: Context) {
         if (initialized) return
@@ -35,6 +38,7 @@ object ServiceLocator {
             repositoryRef = repository
             sessionStore = store
             authRepository = repository
+            kbApi = KbApi(client) // 同一 OkHttp：数据请求经拦截器自动 401 续期重试
             initialized = true
         }
     }

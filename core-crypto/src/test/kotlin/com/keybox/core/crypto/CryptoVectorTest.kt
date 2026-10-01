@@ -134,4 +134,16 @@ class CryptoVectorTest {
         assertTrue(KeyBoxCrypto.verifyMasterPassword(PASSWORD, saltB64, verifier, ITERATIONS))
         assertTrue(!KeyBoxCrypto.verifyMasterPassword("wrong-password", saltB64, verifier, ITERATIONS))
     }
+
+    /** PIN 快捷解锁通路（与鸿蒙 pinlock.ets 语义一致）：100k 轮派生 → 包裹 → 解包 → 错 PIN 拒绝。 */
+    @Test
+    fun pinWrap_roundTripAtPinIterations() {
+        val saltB64 = KeyBoxCrypto.generateSaltB64()
+        val masterB64 = java.util.Base64.getEncoder().encodeToString(ByteArray(32) { it.toByte() })
+        val pinKey = KeyBoxCrypto.deriveKey("135790", saltB64, KeyBoxCrypto.PIN_ITERATIONS)
+        val enc = KeyBoxCrypto.encryptToKb1(pinKey, masterB64)
+        assertEquals(masterB64, KeyBoxCrypto.decryptFromKb1(pinKey, enc))
+        val wrongPinKey = KeyBoxCrypto.deriveKey("000000", saltB64, KeyBoxCrypto.PIN_ITERATIONS)
+        assertThrows(Exception::class.java) { KeyBoxCrypto.decryptFromKb1(wrongPinKey, enc) }
+    }
 }

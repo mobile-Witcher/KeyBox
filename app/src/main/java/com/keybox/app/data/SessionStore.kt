@@ -39,11 +39,21 @@ class SessionStore(context: Context) {
         prefs.edit().clear().apply()
     }
 
+    /** 持久化 key_epoch（非敏感元数据）：生物/PIN 解锁路径恢复代数校验用。 */
+    @Synchronized
+    fun saveKeyEpoch(epoch: Int) {
+        prefs.edit().putInt(KEY_KEY_EPOCH, epoch).apply()
+    }
+
+    @Synchronized
+    fun loadKeyEpoch(): Int = prefs.getInt(KEY_KEY_EPOCH, 0)
+
     private companion object {
         const val PREFS_NAME = "keybox_session"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
         const val KEY_EXPIRES_IN = "expires_in"
         const val KEY_UID = "uid"
+        const val KEY_KEY_EPOCH = "key_epoch"
     }
 }

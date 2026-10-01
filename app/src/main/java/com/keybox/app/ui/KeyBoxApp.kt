@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-/** 应用根组件：按会话状态切换 启动屏 / 登录页 / 主界面。 */
+/** 应用根组件：按会话/解锁状态切换 启动屏 / 登录页 / 解锁页 / 密钥列表。 */
 @Composable
 fun KeyBoxApp(viewModel: MainViewModel = viewModel()) {
     val state by viewModel.state.collectAsState()
@@ -27,7 +27,12 @@ fun KeyBoxApp(viewModel: MainViewModel = viewModel()) {
 
             MainUiState.NeedsLogin -> LoginScreen(onLoginSuccess = viewModel::onLoginSuccess)
 
-            is MainUiState.LoggedIn -> HomeScreen(
+            is MainUiState.Locked -> UnlockScreen(
+                onUnlocked = viewModel::onUnlocked,
+                onLogout = viewModel::logout,
+            )
+
+            is MainUiState.Unlocked -> VaultScreen(
                 uid = current.uid,
                 onLogout = viewModel::logout,
             )

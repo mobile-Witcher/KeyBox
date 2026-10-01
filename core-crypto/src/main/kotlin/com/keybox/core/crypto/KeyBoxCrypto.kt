@@ -31,6 +31,12 @@ object KeyBoxCrypto {
     /** 迭代次数下限（为流畅降速也不得低于此值，与 Web PBKDF2_ITERATIONS_MIN 一致）。 */
     const val PBKDF2_ITERATIONS_MIN = 210_000
 
+    /**
+     * PIN 快捷解锁的派生轮数（与鸿蒙 pinlock.ets 的 PIN_ITERATIONS 一致）。
+     * 与主密钥同规范但独立轮数：PIN 组合少，靠轮数慢化本地爆破。
+     */
+    const val PIN_ITERATIONS = 100_000
+
     /** 密文前缀（与 Web SECRET_PREFIX 一致）。 */
     const val SECRET_PREFIX = "KB1:"
 
