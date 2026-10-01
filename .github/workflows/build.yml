@@ -1,5 +1,24 @@
-# KeyBox 安卓端 CI：JVM 单元测试（含加密向量测试）+ Debug APK 组装。
+# ─────────────────────────────────────────────────────────────────────────────
+# KeyBox 安卓原生端 CI：JVM 单元测试（含加密向量测试）+ Debug/Release APK 组装。
+#
+# 产物：
+#   app-debug    → KeyBox-android-native-0.1.0-debug.apk（未签名，仅联调）
+#   app-release  → KeyBox-android-native-0.1.0.apk       （已签名，可分发；无 secrets 时跳过）
+#
+# 签名材料【只从 GitHub Secrets 读取】，仓库内不存任何 keystore 或口令。
+# 需在 Settings → Secrets and variables → Actions 配置以下 4 个 secret
+# （与 Web 端 build-android.yml 同一套，见 docs/或 key.properties.example）：
+#
+#   ANDROID_KEYSTORE_BASE64     keystore 文件的 base64（单行）
+#   ANDROID_KEYSTORE_PASSWORD   keystore 口令
+#   ANDROID_KEY_ALIAS           密钥别名
+#   ANDROID_KEY_PASSWORD        该别名口令
+#
+# 未配置 secrets 时（fork / 新克隆仓库）：Release 步骤自动跳过并打印 ::warning::，
+# 仅出未签名 debug 包，CI 不会变红。
+#
 # 敏感配置不入库：CI 上 ENV_ID/PUBLISHABLE_KEY 为空串兜底，仅影响运行时联网，不影响编译。
+# ─────────────────────────────────────────────────────────────────────────────
 name: build
 
 on:
@@ -7,6 +26,9 @@ on:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -30,8 +52,54 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      - name: Stage debug APK with versioned name
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk \
+             dist/KeyBox-android-native-0.1.0-debug.apk
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: dist/KeyBox-android-native-0.1.0-debug.apk
+          if-no-files-found: error
+
+      # ── Release（签名）：无 secrets 时优雅跳过，不影响 debug artifact ──────────
+      - name: Prepare signing material (from secrets, optional)
+        id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > keybox-release.jks
+            printf 'storeFile=keybox-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+              "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" \
+              > key.properties
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::未配置签名 secrets，跳过 Release 构建（debug 包仍可用，release 不产出发行包）"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assemble release APK
+        if: steps.signing.outputs.enabled == 'true'
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Stage release APK with versioned name
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk \
+             dist/KeyBox-android-native-0.1.0.apk
+
+      - name: Upload release APK
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: dist/KeyBox-android-native-0.1.0.apk
+          if-no-files-found: error

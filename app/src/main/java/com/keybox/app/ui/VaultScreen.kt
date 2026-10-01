@@ -54,9 +54,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keybox.app.data.maskKey
 import kotlin.math.abs
 
-/** 构建标识行（照 Web VaultPage.tsx / 鸿蒙 Vault.ets 形态，验收后统一移除）。 */
-private const val BUILD_ID = "build b20261001-02（验收后移除）"
-
 /**
  * 密钥列表页（A4：分类过滤/管理 + 吸顶控制区 + 双向同步冲突）：
  *   固定控制区（页头整行 + 分类下拉 + 搜索框）不随列表滚动；
@@ -117,11 +114,6 @@ fun VaultScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Text(
-                        text = BUILD_ID,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    )
                 }
             }
         },
