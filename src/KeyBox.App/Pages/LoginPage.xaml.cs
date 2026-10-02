@@ -40,6 +40,6 @@ public sealed partial class LoginPage : Page
     private void OnLoginSucceeded()
     {
         _countdownTimer.Stop();
-        AppServices.NavigateToHome();
+        AppServices.NavigateToUnlock();
     }
 }

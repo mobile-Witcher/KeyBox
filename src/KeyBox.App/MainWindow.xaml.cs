@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace KeyBox.App;
 
-/// <summary>主窗口：仅承载 Frame，按会话状态在登录页 / 占位主窗口间导航。</summary>
+/// <summary>主窗口：仅承载 Frame，按状态在 登录 → 解锁 → 密钥库 之间导航。</summary>
 public sealed partial class MainWindow : Window
 {
     public MainWindow()
@@ -16,14 +16,16 @@ public sealed partial class MainWindow : Window
         NavigateToInitial();
     }
 
-    /// <summary>启动导航：本地有会话（session.json）→ 主窗口，否则登录页。</summary>
+    /// <summary>启动导航：无会话 → 登录页；有会话 → 解锁页（Windows Hello 优先，降级主密码）。</summary>
     public void NavigateToInitial()
     {
-        bool loggedIn = AppServices.SessionManager.LoadFromStore() is not null;
-        RootFrame.Navigate(loggedIn ? typeof(HomePage) : typeof(LoginPage));
+        bool hasSession = AppServices.SessionManager.LoadFromStore() is not null;
+        RootFrame.Navigate(hasSession ? typeof(UnlockPage) : typeof(LoginPage));
     }
 
-    public void NavigateToHome() => RootFrame.Navigate(typeof(HomePage));
-
     public void NavigateToLogin() => RootFrame.Navigate(typeof(LoginPage));
+
+    public void NavigateToUnlock() => RootFrame.Navigate(typeof(UnlockPage));
+
+    public void NavigateToVault() => RootFrame.Navigate(typeof(VaultPage));
 }
