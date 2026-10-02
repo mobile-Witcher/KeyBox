@@ -81,9 +81,6 @@ import com.keybox.app.R
 import com.keybox.app.ui.theme.LocalAppearance
 import com.keybox.app.ui.theme.LocalKbColors
 import kotlin.math.abs
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import com.keybox.app.data.maskKey
 
@@ -194,21 +191,6 @@ fun VaultScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 116.dp),
                 )
-                // 视图切换（图标按钮 40dp）
-                IconButton(
-                    onClick = viewModel::toggleView,
-                    enabled = !busy,
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            if (state.view == VaultView.LIST) R.drawable.ic_grid_view else R.drawable.ic_view_list,
-                        ),
-                        contentDescription = if (state.view == VaultView.LIST) "切换到网格" else "切换到列表",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
                 // 同步（图标按钮 40dp）
                 IconButton(
                     onClick = viewModel::runSync,
@@ -276,25 +258,6 @@ fun VaultScreen(
                             viewModel.selectTag(null)
                         },
                     )
-
-                    state.view == VaultView.GRID -> LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        // 底部留出 FAB 不遮挡的 padding
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(state.visibleItems, key = { it.id }) { item ->
-                            SecretGridCard(
-                                item = item,
-                                modifier = Modifier.animateItem(),
-                                onCopy = { viewModel.copyKey(item) },
-                                onEdit = { viewModel.openEditor(item) },
-                                onDelete = { viewModel.requestDelete(item) },
-                            )
-                        }
-                    }
 
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -1212,65 +1175,6 @@ private fun TagChip(tag: String) {
 // ---------------------------------------------------------------------------
 // 网格紧凑卡（B3 样式，保持不变）
 // ---------------------------------------------------------------------------
-
-@Composable
-private fun SecretGridCard(
-    item: VaultItem,
-    modifier: Modifier = Modifier,
-    onCopy: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Badge(item = item, size = 38.dp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.site.ifEmpty { "未命名" },
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    val subtitle = item.subtitle()
-                    if (subtitle.isNotEmpty()) {
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-            if (item.decryptError) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = item.decryptErrMsg,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                return@Column
-            }
-            if (item.model.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                ModelChip(item.model)
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            KeyChip(item.key)
-        }
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 12.dp),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-        CardActionsRow(item = item, onCopy = onCopy, onEdit = onEdit, onDelete = onDelete)
-    }
-}
 
 /** 脱敏密钥容器：等宽字体 + surface 底小圆角。 */
 @Composable

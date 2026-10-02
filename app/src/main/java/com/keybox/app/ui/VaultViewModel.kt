@@ -55,9 +55,6 @@ data class SyncConflict(
     val remoteKeyEpoch: Int,
 )
 
-/** 视图模式（页头「视图切换」）。 */
-enum class VaultView { LIST, GRID }
-
 /** 编辑/新增表单（独立于列表状态：网络失败时保留输入，用户不必重打）。 */
 data class EditorForm(
     val site: String = "",
@@ -79,7 +76,6 @@ data class VaultUiState(
     /** 过滤后的可见列表（分类 + 搜索叠加，本机内存过滤，零网络）。 */
     val visibleItems: List<VaultItem> = emptyList(),
     val searchKw: String = "",
-    val view: VaultView = VaultView.LIST,
     val loading: Boolean = true,
     val refreshing: Boolean = false,
     val syncing: Boolean = false,
@@ -210,13 +206,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun selectTag(tag: String?) {
         _uiState.update { it.copy(activeTag = tag) }
         recomputeDerived()
-    }
-
-    /** 切换列表/网格视图。 */
-    fun toggleView() {
-        _uiState.update {
-            it.copy(view = if (it.view == VaultView.LIST) VaultView.GRID else VaultView.LIST)
-        }
     }
 
     /** 重算分类统计与可见列表（items / 关键词 / 选中分类任一变化时调用）。 */
