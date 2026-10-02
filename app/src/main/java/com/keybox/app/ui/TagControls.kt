@@ -1,6 +1,8 @@
 package com.keybox.app.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,20 +10,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,10 +37,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
- * 分类过滤下拉（R18）：收起态显示「全部密钥（N）」或「{分类}（N）」，
- * 展开列「全部」+各分类+条数，选中即收起。选中分类后显示重命名/删除入口。
+ * 分类过滤下拉（R18）· 紧凑单行形态（供与「计数 / 视图 / 同步」并排一行）：
+ * 收起态显示「全部（N）▾」或「{分类}（N）▾」，展开列「全部」+各分类+条数，选中即收起；
+ * 选中某分类后，菜单底部追加重命名 / 删除（R18）入口（不再占用行内横向空间）。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TagFilterBar(
     tagCounts: List<TagCount>,
@@ -48,80 +50,93 @@ fun TagFilterBar(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     enabled: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val currentLabel = if (activeTag == null) {
-        "全部密钥（$totalCount）"
+        "全部（$totalCount）"
     } else {
         val count = tagCounts.firstOrNull { it.name == activeTag }?.count ?: 0
         "$activeTag（$count）"
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { if (enabled) expanded = !expanded },
-            modifier = Modifier.weight(1f),
+    Box(modifier = modifier) {
+        Surface(
+            onClick = { expanded = !expanded },
+            enabled = enabled,
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp),
         ) {
-            OutlinedTextField(
-                value = currentLabel,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("分类") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                enabled = enabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
+            Row(
+                modifier = Modifier.padding(start = 12.dp, end = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                DropdownMenuItem(
-                    text = { Text("全部密钥（$totalCount）") },
-                    onClick = {
-                        onSelect(null)
-                        expanded = false
-                    },
+                Text(
+                    text = currentLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
-                tagCounts.forEach { tc ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                "${tc.name}（${tc.count}）",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        onClick = {
-                            onSelect(tc.name)
-                            expanded = false
-                        },
-                    )
-                }
+                // 箭头固定尺寸：长分类名只压缩左侧文字，箭头不参与压缩
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = "展开分类",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
             }
         }
 
-        // 选中某分类后提供重命名/删除（R18）
-        if (activeTag != null) {
-            IconButton(onClick = onRename, enabled = enabled) {
-                Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = "重命名分类",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("全部（$totalCount）") },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                },
+            )
+            tagCounts.forEach { tc ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "${tc.name}（${tc.count}）",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    onClick = {
+                        onSelect(tc.name)
+                        expanded = false
+                    },
                 )
             }
-            IconButton(onClick = onDelete, enabled = enabled) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = "删除分类",
-                    tint = MaterialTheme.colorScheme.error,
+            // 选中分类后提供重命名 / 删除（R18）——收进菜单，避免行内再占横向空间
+            if (activeTag != null) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DropdownMenuItem(
+                    text = { Text("重命名分类") },
+                    enabled = enabled,
+                    onClick = {
+                        expanded = false
+                        onRename()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("删除分类", color = MaterialTheme.colorScheme.error) },
+                    enabled = enabled,
+                    onClick = {
+                        expanded = false
+                        onDelete()
+                    },
                 )
             }
         }

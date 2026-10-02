@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,6 +30,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -48,7 +51,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -65,6 +67,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
@@ -111,11 +114,30 @@ fun VaultScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "KeyBox",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    // 品牌（左，固定上限宽）+ 搜索胶囊（weight 占中间）。
+                    // 顶栏 Row 中「品牌/搜索」在 title 槽（weight 1f），右侧动作为非加权先测量，
+                    // 故太阳/调色盘/头像永远拿到完整尺寸、不会被搜索框挤没。
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "KeyBox",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 72.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        SearchPill(
+                            value = state.searchKw,
+                            onValueChange = viewModel::onSearchChange,
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 },
                 actions = {
                     // 深浅一键切换（太阳/月亮）：图标带可见底色，避免与顶栏背景同色。
@@ -163,74 +185,67 @@ fun VaultScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // ── 吸顶控制区（固定，不随列表滚动） ──
+            // ── 吸顶控制区（固定，不随列表滚动）：分类下拉 + 计数 + 视图切换 + 同步，合并为一行 ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // 分类下拉（紧凑形态，weight 占主；长分类名 Ellipsis，箭头不压缩）
+                TagFilterBar(
+                    tagCounts = state.tagCounts,
+                    activeTag = state.activeTag,
+                    totalCount = state.items.size,
+                    onSelect = viewModel::selectTag,
+                    onRename = viewModel::openTagRename,
+                    onDelete = viewModel::openTagDelete,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // 计数（固定、不参与压缩；极窄屏 Ellipsis 兜底）
                 Text(
                     text = "我的密钥（${state.visibleItems.size}/${state.items.size}）",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 116.dp),
                 )
-                // 视图切换（文本按钮：避免依赖精简图标集里不存在的网格图标）
-                TextButton(onClick = viewModel::toggleView, enabled = !busy) {
-                    Text(if (state.view == VaultView.LIST) "网格" else "列表")
+                // 视图切换（图标按钮 40dp）
+                IconButton(
+                    onClick = viewModel::toggleView,
+                    enabled = !busy,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.view == VaultView.LIST) R.drawable.ic_grid_view else R.drawable.ic_view_list,
+                        ),
+                        contentDescription = if (state.view == VaultView.LIST) "切换到网格" else "切换到列表",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
-                IconButton(onClick = viewModel::runSync, enabled = !busy) {
+                // 同步（图标按钮 40dp）
+                IconButton(
+                    onClick = viewModel::runSync,
+                    enabled = !busy,
+                    modifier = Modifier.size(40.dp),
+                ) {
                     if (state.syncing) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
                         Icon(
                             Icons.Filled.Refresh,
                             contentDescription = "同步",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
             }
-
-            // 分类下拉 + 管理入口
-            TagFilterBar(
-                tagCounts = state.tagCounts,
-                activeTag = state.activeTag,
-                totalCount = state.items.size,
-                onSelect = viewModel::selectTag,
-                onRename = viewModel::openTagRename,
-                onDelete = viewModel::openTagDelete,
-                enabled = !busy,
-            )
-
-            // 搜索胶囊（本机过滤，关键词不出设备）
-            OutlinedTextField(
-                value = state.searchKw,
-                onValueChange = viewModel::onSearchChange,
-                placeholder = {
-                    Text(
-                        text = "搜索站点、接口地址、模型名…",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (state.searchKw.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onSearchChange("") }) {
-                            Icon(Icons.Filled.Close, contentDescription = "清除搜索")
-                        }
-                    }
-                },
-                singleLine = true,
-                enabled = !busy,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
 
             // 冲突未处理时页内常驻可点击提示条（语义色 = warning）
             if (state.pendingConflicts.isNotEmpty()) {
@@ -422,6 +437,77 @@ private fun TopBarRoundIconButton(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp),
         )
+    }
+}
+
+/**
+ * 顶栏内联搜索胶囊（本机过滤，关键词不出设备）：surfaceVariant 底 + outline 描边的胶囊，
+ * 前导搜索图标 + 可编辑文本 +（有内容时）清除图标。用 BasicTextField 以在 64dp 顶栏内保持紧凑。
+ */
+@Composable
+private fun SearchPill(
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = modifier.height(40.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = "搜索站点、模型…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    enabled = enabled,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (value.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "清除搜索",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clickable { onValueChange("") },
+                )
+            }
+        }
     }
 }
 
