@@ -27,9 +27,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,6 +81,11 @@ import com.keybox.app.R
 import com.keybox.app.ui.theme.LocalAppearance
 import com.keybox.app.ui.theme.LocalKbColors
 import kotlin.math.abs
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import com.keybox.app.data.maskKey
 
 /**
  * 顶栏统一间距基准（改动 A）：品牌↔搜索、搜索↔首图标、图标↔图标、末图标↔屏边 全部取该值。
