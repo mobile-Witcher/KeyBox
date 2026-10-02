@@ -55,9 +55,6 @@ data class SyncConflict(
     val remoteKeyEpoch: Int,
 )
 
-/** 视图模式（页头「视图切换」）。 */
-enum class VaultView { LIST, GRID }
-
 /** 编辑/新增表单（独立于列表状态：网络失败时保留输入，用户不必重打）。 */
 data class EditorForm(
     val site: String = "",
@@ -79,7 +76,6 @@ data class VaultUiState(
     /** 过滤后的可见列表（分类 + 搜索叠加，本机内存过滤，零网络）。 */
     val visibleItems: List<VaultItem> = emptyList(),
     val searchKw: String = "",
-    val view: VaultView = VaultView.LIST,
     val loading: Boolean = true,
     val refreshing: Boolean = false,
     val syncing: Boolean = false,
@@ -210,13 +206,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun selectTag(tag: String?) {
         _uiState.update { it.copy(activeTag = tag) }
         recomputeDerived()
-    }
-
-    /** 切换列表/网格视图。 */
-    fun toggleView() {
-        _uiState.update {
-            it.copy(view = if (it.view == VaultView.LIST) VaultView.GRID else VaultView.LIST)
-        }
     }
 
     /** 重算分类统计与可见列表（items / 关键词 / 选中分类任一变化时调用）。 */
@@ -745,21 +734,32 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         tags = item.tags,
     )
 
-    /** 复制密钥 + 30 秒自动清空剪贴板（重复复制重置倒计时）。 */
-    fun copyKey(item: VaultItem) {
-        if (item.decryptError || item.key.isEmpty()) return
-        clipboard.setPrimaryClip(ClipData.newPlainText("KeyBox key", item.key))
+    /**
+     * 复制任意字段到剪贴板 + 30 秒自动清空（R25 护栏，重复复制重置倒计时）。
+     * 「复制站点/接口地址/…/密钥」共用此逻辑，统一走既有护栏，不新造一套。
+     * @param text 待复制文本（为空则忽略）
+     * @param label 状态提示中的字段名（如「密钥」「接口地址」）
+     */
+    fun copyProtected(text: String, label: String) {
+        if (text.isEmpty()) return
+        clipboard.setPrimaryClip(ClipData.newPlainText("KeyBox $label", text))
         copyJob?.cancel()
         copyJob = viewModelScope.launch {
             for (left in COPY_GUARD_SECONDS downTo 1) {
                 _uiState.update {
-                    it.copy(copyCountdown = left, status = "已复制密钥，$left 秒后自动清空剪贴板", statusIsError = false)
+                    it.copy(copyCountdown = left, status = "已复制$label，$left 秒后自动清空剪贴板", statusIsError = false)
                 }
                 delay(1_000L)
             }
             clipboard.setPrimaryClip(ClipData.newPlainText("KeyBox key", ""))
             _uiState.update { it.copy(copyCountdown = 0, status = "剪贴板已自动清空", statusIsError = false) }
         }
+    }
+
+    /** 复制密钥 + 30 秒自动清空剪贴板（走 [copyProtected]，R25 语义不变）。 */
+    fun copyKey(item: VaultItem) {
+        if (item.decryptError || item.key.isEmpty()) return
+        copyProtected(item.key, "密钥")
     }
 
     override fun onCleared() {
