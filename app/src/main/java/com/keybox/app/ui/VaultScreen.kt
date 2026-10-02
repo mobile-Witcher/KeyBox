@@ -1,6 +1,7 @@
 package com.keybox.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,12 +47,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keybox.app.R
 import com.keybox.app.data.maskKey
+import com.keybox.app.ui.theme.LocalAppearance
 import kotlin.math.abs
 
 /**
@@ -66,10 +72,12 @@ fun VaultScreen(
     onLogout: () -> Unit,
     onOpenSecurity: () -> Unit = {},
     onOpenAdmin: () -> Unit = {},
+    onOpenAppearance: () -> Unit = {},
     dataVersion: Int = 0,
     viewModel: VaultViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val appearance = LocalAppearance.current
     val busy = state.syncing || state.tagBusy || state.submitting || state.deleting
 
     // 安全面板改主密码/导入后 dataVersion 递增 → 重载列表
@@ -82,6 +90,20 @@ fun VaultScreen(
             TopAppBar(
                 title = { Text("KeyBox") },
                 actions = {
+                    // 外观入口（B2）：深浅一键切换 + 调色盘（打开外观面板）。
+                    // 图标带可见底色（surfaceVariant + outline 描边），确保不与背景同色。
+                    TopBarRoundIconButton(
+                        onClick = appearance.onToggleDark,
+                        contentDescription = if (appearance.isDark) "切换到浅色" else "切换到深色",
+                        painter = painterResource(
+                            if (appearance.isDark) R.drawable.ic_light_mode else R.drawable.ic_dark_mode,
+                        ),
+                    )
+                    TopBarRoundIconButton(
+                        onClick = onOpenAppearance,
+                        contentDescription = "外观",
+                        painter = painterResource(R.drawable.ic_palette),
+                    )
                     // 管理入口（仅 role=admin 显示；非 admin / 拉取失败一律不显示）
                     if (state.isAdmin) {
                         TextButton(onClick = onOpenAdmin, enabled = !busy) {
@@ -350,6 +372,36 @@ fun VaultScreen(
             onDismiss = viewModel::dismissConflictDialog,
             onKeepLocal = { viewModel.resolveConflicts(useRemote = false) },
             onUseRemote = { viewModel.resolveConflicts(useRemote = true) },
+        )
+    }
+}
+
+/**
+ * 顶栏圆形图标按钮：带可见底色（surfaceVariant）+ outline 描边，确保不与顶栏背景同色；
+ * 图标用 [Painter]（自定义矢量，避免依赖精简图标集里不存在的调色盘/日/月图标）。
+ */
+@Composable
+private fun TopBarRoundIconButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    painter: Painter,
+) {
+    val shape = CircleShape
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .size(40.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painter,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
         )
     }
 }

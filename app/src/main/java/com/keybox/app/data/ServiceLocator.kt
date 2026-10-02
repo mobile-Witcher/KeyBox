@@ -24,6 +24,10 @@ object ServiceLocator {
     lateinit var adminRepository: AdminRepository
         private set
 
+    /** 外观（皮肤 / 深浅模式）持久化。 */
+    lateinit var themeStore: ThemeStore
+        private set
+
     @Synchronized
     fun init(context: Context) {
         if (initialized) return
@@ -43,6 +47,7 @@ object ServiceLocator {
             authRepository = repository
             kbApi = KbApi(client) // 同一 OkHttp：数据请求经拦截器自动 401 续期重试
             adminRepository = AdminRepository(kbApi, store) // A6：管理后台数据访问（复用同一 kbApi）
+            themeStore = ThemeStore(context.applicationContext) // B1：外观持久化
             initialized = true
         }
     }
