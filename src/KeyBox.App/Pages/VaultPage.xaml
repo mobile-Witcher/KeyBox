@@ -8,13 +8,15 @@
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- 顶栏：标题 + uid + 刷新 + 退出 -->
+        <!-- 顶栏：标题/计数 + 动作按钮 -->
         <Grid
             Grid.Row="0"
-            Padding="16,12"
+            Padding="16,10"
             ColumnSpacing="8"
             Background="{ThemeResource LayerFillColorDefaultBrush}">
             <Grid.ColumnDefinitions>
@@ -22,9 +24,13 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Spacing="2">
-                <TextBlock Text="密钥库" FontSize="20" FontWeight="Bold" />
+                <TextBlock
+                    Text="{x:Bind ViewModel.CountText, Mode=OneWay}"
+                    FontSize="20"
+                    FontWeight="Bold" />
                 <TextBlock
                     Text="{x:Bind ViewModel.UidText, Mode=OneWay}"
                     FontSize="11"
@@ -32,22 +38,86 @@
             </StackPanel>
             <Button
                 Grid.Column="1"
+                Content="＋ 新增密钥"
+                Click="OnAddNewClick"
+                VerticalAlignment="Center" />
+            <Button
+                Grid.Column="2"
+                Content="同步"
+                Command="{x:Bind ViewModel.RunSyncCommand}"
+                IsEnabled="{x:Bind ViewModel.SyncButtonEnabled, Mode=OneWay}"
+                VerticalAlignment="Center" />
+            <Button
+                Grid.Column="3"
                 Content="刷新"
                 Command="{x:Bind ViewModel.RefreshCommand}"
                 VerticalAlignment="Center" />
             <Button
-                Grid.Column="2"
+                Grid.Column="4"
                 Content="退出登录"
                 Command="{x:Bind ViewModel.LogoutCommand}"
                 VerticalAlignment="Center" />
         </Grid>
 
+        <!-- 搜索 + 分类过滤 -->
+        <Grid
+            Grid.Row="1"
+            Padding="16,8"
+            ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                Grid.Column="0"
+                PlaceholderText="搜索站点、接口地址、模型名…"
+                Text="{x:Bind ViewModel.SearchKw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <ComboBox
+                Grid.Column="1"
+                MinWidth="180"
+                PlaceholderText="分类"
+                ItemsSource="{x:Bind ViewModel.TagOptions}"
+                SelectedItem="{x:Bind ViewModel.SelectedTagOption, Mode=OneWay}"
+                SelectionChanged="OnTagSelectionChanged"
+                VerticalAlignment="Center" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Button
+                    Content="重命名分类"
+                    Click="OnTagRenameClick"
+                    IsEnabled="{x:Bind ViewModel.TagManageEnabled, Mode=OneWay}" />
+                <Button
+                    Content="删除分类"
+                    Click="OnTagDeleteClick"
+                    IsEnabled="{x:Bind ViewModel.TagManageEnabled, Mode=OneWay}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 冲突常驻提示条 -->
+        <Button
+            Grid.Row="2"
+            Margin="16,0,16,8"
+            Padding="12,8"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left"
+            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+            Click="OnConflictBannerClick"
+            Visibility="{x:Bind ViewModel.ConflictBannerVisibility, Mode=OneWay}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="⚠" FontSize="14" />
+                <TextBlock
+                    Text="{x:Bind ViewModel.ConflictBannerText, Mode=OneWay}"
+                    FontSize="13"
+                    FontWeight="SemiBold" />
+            </StackPanel>
+        </Button>
+
         <!-- 列表区 -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="3">
             <ListView
-                ItemsSource="{x:Bind ViewModel.Items}"
+                ItemsSource="{x:Bind ViewModel.VisibleItems}"
                 SelectionMode="None"
-                Padding="12,8">
+                Padding="12,4">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -89,17 +159,49 @@
                                         Foreground="DodgerBlue"
                                         Visibility="{x:Bind KeyVisibility}" />
                                 </StackPanel>
-                                <Button
-                                    Grid.Column="1"
-                                    Content="复制"
-                                    VerticalAlignment="Center"
-                                    Click="OnCopyClick"
-                                    Visibility="{x:Bind CopyButtonVisibility}" />
+                                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                                    <Button
+                                        Content="复制"
+                                        Click="OnCopyClick"
+                                        Visibility="{x:Bind CopyButtonVisibility}" />
+                                    <Button
+                                        Content="编辑"
+                                        Click="OnEditClick"
+                                        Visibility="{x:Bind EditButtonVisibility}" />
+                                    <Button
+                                        Content="删除"
+                                        Click="OnDeleteClick"
+                                        Visibility="{x:Bind DeleteButtonVisibility}" />
+                                </StackPanel>
                             </Grid>
                         </Border>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+
+            <!-- 空态：无任何密钥 -->
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="8"
+                Visibility="{x:Bind ViewModel.EmptyListVisibility, Mode=OneWay}">
+                <TextBlock Text="暂无密钥" FontSize="16" Foreground="Gray" HorizontalAlignment="Center" />
+                <TextBlock Text="点击「＋ 新增密钥」添加第一条" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- 空态：搜索无匹配 -->
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="8"
+                Visibility="{x:Bind ViewModel.NoMatchVisibility, Mode=OneWay}">
+                <TextBlock
+                    Text="{x:Bind ViewModel.NoMatchText, Mode=OneWay}"
+                    FontSize="14"
+                    Foreground="Gray"
+                    HorizontalAlignment="Center" />
+                <Button Content="清除搜索" Command="{x:Bind ViewModel.ClearSearchCommand}" HorizontalAlignment="Center" />
+            </StackPanel>
 
             <ProgressRing
                 Width="36"

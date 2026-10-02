@@ -73,4 +73,57 @@ public class SecretCodecTests
         Assert.Equal("shortkey", SecretCodec.MaskKey("shortkey"));
         Assert.Equal("123456789012", SecretCodec.MaskKey("123456789012")); // 12 字符不截断
     }
+
+    [Fact]
+    public void SerializeSecretPayload_RoundTrips_With_Tags()
+    {
+        var item = new SecretItem("GitHub", "https://github.com", "github.com", "PAT", "ghp_1", "备注", new List<string> { "dev", "git" });
+
+        string json = SecretCodec.SerializeSecretPayload(item);
+        SecretItem parsed = SecretCodec.ParseSecretPayload(json);
+
+        Assert.Equal(item.Site, parsed.Site);
+        Assert.Equal(item.Url, parsed.Url);
+        Assert.Equal(item.Website, parsed.Website);
+        Assert.Equal(item.Model, parsed.Model);
+        Assert.Equal(item.Key, parsed.Key);
+        Assert.Equal(item.Note, parsed.Note);
+        Assert.Equal(item.Tags, parsed.Tags); // List 按内容比较
+    }
+
+    [Fact]
+    public void SerializeSecretPayload_Omits_Tags_When_Empty()
+    {
+        var item = new SecretItem("A", "", "", "", "k", "", new List<string>());
+        string json = SecretCodec.SerializeSecretPayload(item);
+
+        Assert.DoesNotContain("tags", json);
+        Assert.Contains("\"site\":\"A\"", json);
+    }
+
+    [Fact]
+    public void SerializeSecretPayload_Keeps_Field_Order_For_Interop()
+    {
+        // 与安卓 serializeSecretPayload 字段顺序一致：site/url/website/model/key/note(/tags)
+        var item = new SecretItem("s", "u", "w", "m", "k", "n", new List<string> { "t" });
+        string json = SecretCodec.SerializeSecretPayload(item);
+
+        int site = json.IndexOf("\"site\"", StringComparison.Ordinal);
+        int url = json.IndexOf("\"url\"", StringComparison.Ordinal);
+        int website = json.IndexOf("\"website\"", StringComparison.Ordinal);
+        int model = json.IndexOf("\"model\"", StringComparison.Ordinal);
+        int key = json.IndexOf("\"key\"", StringComparison.Ordinal);
+        int note = json.IndexOf("\"note\"", StringComparison.Ordinal);
+        int tags = json.IndexOf("\"tags\"", StringComparison.Ordinal);
+        Assert.True(site < url && url < website && website < model && model < key && key < note && note < tags);
+    }
+
+    [Fact]
+    public void ParseTags_Splits_By_Comma_ChineseComma_Separator_And_Dedups()
+    {
+        Assert.Equal(new List<string> { "a", "b", "c" }, SecretCodec.ParseTags("a,b，b、c"));
+        Assert.Equal(new List<string> { "x" }, SecretCodec.ParseTags(" x , , x "));
+        Assert.Empty(SecretCodec.ParseTags(""));
+        Assert.Empty(SecretCodec.ParseTags("  ，、  "));
+    }
 }

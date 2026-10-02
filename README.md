@@ -41,18 +41,20 @@ KeyBox 四端（网页 / Windows / Android / HarmonyOS）端到端加密密钥�
 { "ENV_ID": "...", "PUBLISHABLE_KEY": "..." }
 ```
 
-## 主密码解锁 + Windows Hello（W2）
+## 密钥库 CRUD / 搜索 / 分类 / 同步（W3）
 
-- **主密码解锁**：`UnlockService` 拉取 `GET /v1/rdb/rest/kb_users?select=kdf_salt,kdf_verifier,key_epoch&uid=eq.{uid}`
-  （Bearer access_token）→ `DeriveKey` → `DecryptFromKb1(kdf_verifier) == "KeyBox-Verify"` → 主密钥进**内存单例**（`MasterKeySession`，绝不持久化）。
-  失败只提示「主密码错误」，不暴露具体原因（网络/账号错误单独区分）。
-- **Windows Hello 解锁**（替代安卓 BiometricPrompt）：
-  - 首次主密码解锁成功后引导启用 → `UserConsentVerifier` 验证 → DPAPI（`ProtectedData`，CurrentUser 作用域）包裹主密钥 → `%APPDATA%\KeyBox\hello.bin`
-  - 解锁页有包裹物时**优先弹 Windows Hello**，通过即解包直进密钥库（epoch 以服务端为准）；不可用/未通过自动降级主密码
-- **密钥列表只读**：`GET /v1/rdb/rest/kb_secrets?select=id,payload,key_epoch,updated_at&owner_id=eq.{uid}&order=updated_at.desc`
-  → 逐条解密 → 单列详情卡（站点名 + 域名·分类 + 脱敏密钥 `sk-c8ab…9f2e` + 复制）。
-- **复制护栏**（照安卓 R25）：复制密钥后 30 秒倒计时，到点真正清空剪贴板；重复复制重置倒计时。
-- 401 拦截器（W1 的 `AuthHttpHandler`）直接承载 RDB 请求：自动附加 Bearer 并静默续期重试。
+- **新增/编辑/删除**（ContentDialog 表单）：
+  - 新增：`SecretCodec.serialize`（tags 空省略键）→ `EncryptToKb1` → `POST /v1/rdb/rest/kb_secrets`（key_epoch 当前）
+  - 编辑：预填 → 重加密 → `PATCH /v1/rdb/rest/kb_secrets?id=eq.{id}`（key_epoch + updated_at 本机当前 ISO）
+  - 删除：二次确认 → `DELETE /v1/rdb/rest/kb_secrets?id=eq.{id}`；site/key 必填、busy 禁用、**网络失败保留表单输入**
+  - 409 / 代数冲突 → 「密钥代数已变化，请先同步」
+- **本机搜索**：site/url/website/model/note/tags 小写包含（filterItems 逻辑），纯内存零网络；
+  标题联动「我的密钥（可见/共 N）」；无匹配空态 + 清除按钮
+- **分类过滤 + 管理**（R18）：工具栏下拉「全部密钥（N）」+各分类（N）；
+  重命名/删除=逐条重加密 PATCH 上传，**失败收集后继续处理其余**；删除二次确认显示影响条数
+- **双向同步 + 冲突**（照安卓 A4）：按 updated_at 比对（拉取/上传/冲突）；
+  冲突对话框整体裁决「保留本机」=重加密上传 /「用服务端」=解密覆盖；未决冲突常驻提示条可点击
+- 复制护栏（R25）、Windows Hello 解锁、401 自动刷新（W1/W2）保持不变
 
 ## 构建与测试
 
@@ -66,11 +68,13 @@ CI：`.github/workflows/build.yml`（windows-latest：restore → test → build
 
 ## 交付范围
 
-- [x] 加密层（KB1 向量全绿，35 项保持）
+- [x] 加密层（KB1 向量全绿，保持逐字节通过）
 - [x] 手机验证码登录 + 倒计时 + 会话持久化 + 401 自动刷新
-- [x] 主密码解锁（拉 KeyInfo + verifier 校验 + 内存单例）
-- [x] Windows Hello 解锁（DPAPI 包裹 + 自动弹验证 + 降级主密码）
-- [x] 密钥列表只读（解密渲染 + 复制护栏 30s 清空 + 刷新）
-- [ ] 密钥编辑/删除/新增 + 完整同步（W3）
+- [x] 主密码解锁 + Windows Hello 解锁（DPAPI 包裹 + 降级）
+- [x] 密钥列表只读 + 复制护栏（30s 自动清空剪贴板）
+- [x] 新增/编辑/删除（ContentDialog）+ 代数冲突提示
+- [x] 本机搜索 + 分类过滤/重命名/删除
+- [x] 双向同步 + 冲突裁决
 - [ ] MSIX 打包（W5）
+
 

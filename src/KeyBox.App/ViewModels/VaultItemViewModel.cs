@@ -4,9 +4,7 @@ using Microsoft.UI.Xaml;
 
 namespace KeyBox.App.ViewModels;
 
-/// <summary>
-/// 密钥列表渲染项（包一层 VaultItem，暴露卡片所需展示属性；照安卓 VaultItem 语义）。
-/// </summary>
+/// <summary>密钥列表渲染项（包一层 VaultItem，暴露卡片所需展示属性；照安卓 VaultItem 语义）。</summary>
 public sealed class VaultItemViewModel
 {
     public VaultItem Item { get; }
@@ -45,4 +43,10 @@ public sealed class VaultItemViewModel
     public Visibility KeyVisibility => CanCopy ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility CopyButtonVisibility => CanCopy ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>编辑：解密失败条目不可编辑（照安卓 openEditor）。</summary>
+    public Visibility EditButtonVisibility => Item.DecryptError ? Visibility.Collapsed : Visibility.Visible;
+
+    /// <summary>删除：任何条目（含解密失败）都可删除（照安卓 confirmDelete）。</summary>
+    public Visibility DeleteButtonVisibility => Visibility.Visible;
 }

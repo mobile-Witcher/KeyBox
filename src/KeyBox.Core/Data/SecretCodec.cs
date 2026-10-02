@@ -46,6 +46,43 @@ public static class SecretCodec
     }
 
     /// <summary>
+    /// 把明文 + tags 序列化成 payload JSON（照安卓 serializeSecretPayload / Web serializePlain 口径）：
+    /// 字段 site/url/website/model/key/note；tags 为空时整个省略 tags 键（与旧数据互通）。
+    /// </summary>
+    public static string SerializeSecretPayload(SecretItem item)
+    {
+        var payload = new Dictionary<string, object?>
+        {
+            ["site"] = item.Site,
+            ["url"] = item.Url,
+            ["website"] = item.Website,
+            ["model"] = item.Model,
+            ["key"] = item.Key,
+            ["note"] = item.Note,
+        };
+        if (item.Tags.Count > 0)
+        {
+            payload["tags"] = item.Tags;
+        }
+        return JsonSerializer.Serialize(payload);
+    }
+
+    /// <summary>规整用户输入的分类串：逗号/中文逗号/顿号分隔，去空白去重（照安卓 parseTags）。</summary>
+    public static List<string> ParseTags(string raw)
+    {
+        var tags = new List<string>();
+        foreach (string part in raw.Split(',', '，', '、'))
+        {
+            string tag = part.Trim();
+            if (tag.Length > 0 && !tags.Contains(tag))
+            {
+                tags.Add(tag);
+            }
+        }
+        return tags;
+    }
+
+    /// <summary>
     /// 脱敏展示：sk-c8ab…9f2e 形态（首 7 字符 + 省略号 + 末 4 字符；照安卓 maskKey）。
     /// 空 → "（无密钥）"；长度 ≤ 12 → 原样。
     /// </summary>
