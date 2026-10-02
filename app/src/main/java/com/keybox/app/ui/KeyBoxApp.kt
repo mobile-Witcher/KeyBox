@@ -1,5 +1,10 @@
 package com.keybox.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -120,7 +125,11 @@ private fun UnlockedArea(uid: String, onLogout: () -> Unit) {
         dataVersion = dataVersion,
     )
 
-    if (showSecurity) {
+    // 覆盖层统一淡入 + 轻微上移（B4；200ms 进入 / 150ms 退出）。
+    val overlayEnter = fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 12 }
+    val overlayExit = fadeOut(tween(150))
+
+    AnimatedVisibility(visible = showSecurity, enter = overlayEnter, exit = overlayExit) {
         SecurityPanelOverlay(
             onClose = { showSecurity = false },
             onDataChanged = {
@@ -130,16 +139,16 @@ private fun UnlockedArea(uid: String, onLogout: () -> Unit) {
         )
     }
 
-    if (showAdmin) {
-        // 管理后台覆盖层（照 SecurityPanelOverlay 挂载模式）
+    // 管理后台覆盖层（照 SecurityPanelOverlay 挂载模式）
+    AnimatedVisibility(visible = showAdmin, enter = overlayEnter, exit = overlayExit) {
         AdminScreenOverlay(
             onBack = { showAdmin = false },
             onLogout = onLogout,
         )
     }
 
-    if (showAppearance) {
-        // 外观选择覆盖层（B2）
+    // 外观选择覆盖层（B2）
+    AnimatedVisibility(visible = showAppearance, enter = overlayEnter, exit = overlayExit) {
         AppearancePanelOverlay(onClose = { showAppearance = false })
     }
 }

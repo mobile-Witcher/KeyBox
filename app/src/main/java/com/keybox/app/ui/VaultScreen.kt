@@ -1,5 +1,11 @@
 package com.keybox.app.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,12 +33,18 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,25 +57,35 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keybox.app.R
 import com.keybox.app.data.maskKey
 import com.keybox.app.ui.theme.LocalAppearance
+import com.keybox.app.ui.theme.LocalKbColors
 import kotlin.math.abs
 
 /**
- * 密钥列表页（A4：分类过滤/管理 + 吸顶控制区 + 双向同步冲突）：
- *   固定控制区（页头整行 + 分类下拉 + 搜索框）不随列表滚动；
- *   列表/网格视图切换；冲突未处理时页内常驻可点击提示条。
+ * 密钥列表页（B3 视觉打磨 + B4 交互动效）：
+ *   顶栏：品牌 + 深浅（太阳）+ 皮肤（调色盘）+ 头像账户菜单（安全/管理/退出）；
+ *   吸顶控制区：计数 / 视图切换 / 同步 / 分类下拉 / 搜索胶囊；
+ *   列表：分类语义色徽章 + 站名 + 副标题 + 模型 chip + 等宽密钥容器 + 底部三动作；
+ *   空态 / 骨架屏 / 状态胶囊 / FAB；列表项 animateItem 增删动效。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,10 +110,15 @@ fun VaultScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("KeyBox") },
+                title = {
+                    Text(
+                        text = "KeyBox",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 actions = {
-                    // 外观入口（B2）：深浅一键切换 + 调色盘（打开外观面板）。
-                    // 图标带可见底色（surfaceVariant + outline 描边），确保不与背景同色。
+                    // 深浅一键切换（太阳/月亮）：图标带可见底色，避免与顶栏背景同色。
                     TopBarRoundIconButton(
                         onClick = appearance.onToggleDark,
                         contentDescription = if (appearance.isDark) "切换到浅色" else "切换到深色",
@@ -99,45 +126,36 @@ fun VaultScreen(
                             if (appearance.isDark) R.drawable.ic_light_mode else R.drawable.ic_dark_mode,
                         ),
                     )
+                    // 皮肤（调色盘）
                     TopBarRoundIconButton(
                         onClick = onOpenAppearance,
                         contentDescription = "外观",
                         painter = painterResource(R.drawable.ic_palette),
                     )
-                    // 管理入口（仅 role=admin 显示；非 admin / 拉取失败一律不显示）
-                    if (state.isAdmin) {
-                        TextButton(onClick = onOpenAdmin, enabled = !busy) {
-                            Text("管理")
-                        }
-                    }
-                    // 安全面板入口（R21/R28/R29）
-                    TextButton(onClick = onOpenSecurity, enabled = !busy) {
-                        Text("安全")
-                    }
-                    TextButton(onClick = onLogout) {
-                        Text("退出登录")
-                    }
+                    // 账户菜单（B3：原「管理/安全/退出登录」三 TextButton 收敛于此）
+                    AccountMenuButton(
+                        uid = uid,
+                        isAdmin = state.isAdmin,
+                        enabled = !busy,
+                        onOpenSecurity = onOpenSecurity,
+                        onOpenAdmin = onOpenAdmin,
+                        onLogout = onLogout,
+                    )
                 },
             )
         },
-        bottomBar = {
-            Surface(shadowElevation = 8.dp) {
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                    state.status?.let { message ->
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (state.statusIsError) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
+        floatingActionButton = {
+            // 新增密钥（右下角 +）：primaryContainer 底，保证与任意皮肤背景可辨。
+            FloatingActionButton(
+                onClick = viewModel::openNewEditor,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "新增密钥")
             }
+        },
+        bottomBar = {
+            StatusBar(state = state)
         },
     ) { padding ->
         Column(
@@ -146,7 +164,6 @@ fun VaultScreen(
                 .padding(padding),
         ) {
             // ── 吸顶控制区（固定，不随列表滚动） ──
-            // 页头整行：计数 / 视图切换 / 同步 / 新增
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -157,6 +174,8 @@ fun VaultScreen(
                     text = "我的密钥（${state.visibleItems.size}/${state.items.size}）",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 // 视图切换（文本按钮：避免依赖精简图标集里不存在的网格图标）
                 TextButton(onClick = viewModel::toggleView, enabled = !busy) {
@@ -173,13 +192,6 @@ fun VaultScreen(
                         )
                     }
                 }
-                IconButton(onClick = viewModel::openNewEditor, enabled = !busy) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = "新增密钥",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
             }
 
             // 分类下拉 + 管理入口
@@ -193,11 +205,17 @@ fun VaultScreen(
                 enabled = !busy,
             )
 
-            // 搜索框（本机过滤，关键词不出设备）
+            // 搜索胶囊（本机过滤，关键词不出设备）
             OutlinedTextField(
                 value = state.searchKw,
                 onValueChange = viewModel::onSearchChange,
-                placeholder = { Text("搜索站点、接口地址、模型名…") },
+                placeholder = {
+                    Text(
+                        text = "搜索站点、接口地址、模型名…",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 trailingIcon = {
                     if (state.searchKw.isNotEmpty()) {
@@ -208,18 +226,21 @@ fun VaultScreen(
                 },
                 singleLine = true,
                 enabled = !busy,
+                shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
-            // 冲突未处理时页内常驻可点击提示条
+            // 冲突未处理时页内常驻可点击提示条（语义色 = warning）
             if (state.pendingConflicts.isNotEmpty()) {
+                val kb = LocalKbColors.current
                 Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
+                    color = kb.warningContainer,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .clickable { viewModel.openConflictDialog() },
                     shape = RoundedCornerShape(8.dp),
                 ) {
@@ -230,14 +251,16 @@ fun VaultScreen(
                         Icon(
                             Icons.Filled.Warning,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            tint = kb.onWarningContainer,
                             modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "有 ${state.pendingConflicts.size} 处同步冲突待处理，点击裁决",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            color = kb.onWarningContainer,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -246,39 +269,30 @@ fun VaultScreen(
             // ── 可滚动列表区 ──
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
-                    state.loading -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    state.loading -> VaultSkeleton()
 
-                    state.visibleItems.isEmpty() -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = when {
-                                state.items.isEmpty() -> "暂无密钥，点右上角 + 新增"
-                                state.searchKw.isNotEmpty() -> "没有匹配「${state.searchKw.trim()}」的密钥"
-                                state.activeTag != null -> "分类「${state.activeTag}」下暂无密钥"
-                                else -> "暂无密钥"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    state.visibleItems.isEmpty() -> EmptyState(
+                        itemsEmpty = state.items.isEmpty(),
+                        searchKw = state.searchKw.trim(),
+                        activeTag = state.activeTag,
+                        onClearFilters = {
+                            viewModel.onSearchChange("")
+                            viewModel.selectTag(null)
+                        },
+                    )
 
                     state.view == VaultView.GRID -> LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        // 底部留出 FAB 不遮挡的 padding
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(state.visibleItems, key = { it.id }) { item ->
                             SecretGridCard(
                                 item = item,
+                                modifier = Modifier.animateItem(),
                                 onCopy = { viewModel.copyKey(item) },
                                 onEdit = { viewModel.openEditor(item) },
                                 onDelete = { viewModel.requestDelete(item) },
@@ -288,12 +302,13 @@ fun VaultScreen(
 
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(state.visibleItems, key = { it.id }) { item ->
                             SecretCard(
                                 item = item,
+                                modifier = Modifier.animateItem(),
                                 onCopy = { viewModel.copyKey(item) },
                                 onEdit = { viewModel.openEditor(item) },
                                 onDelete = { viewModel.requestDelete(item) },
@@ -376,6 +391,10 @@ fun VaultScreen(
     }
 }
 
+// ---------------------------------------------------------------------------
+// 顶栏
+// ---------------------------------------------------------------------------
+
 /**
  * 顶栏圆形图标按钮：带可见底色（surfaceVariant）+ outline 描边，确保不与顶栏背景同色；
  * 图标用 [Painter]（自定义矢量，避免依赖精简图标集里不存在的调色盘/日/月图标）。
@@ -406,17 +425,329 @@ private fun TopBarRoundIconButton(
     }
 }
 
+/**
+ * 头像账户菜单（照 Web/鸿蒙端账户菜单形态）：点击头像弹下拉，
+ * 含账户头部 + 安全 +（仅 admin）管理后台 + 退出登录。
+ * 头像带可见底色（primaryContainer + outline 描边），不与顶栏背景同色。
+ */
+@Composable
+private fun AccountMenuButton(
+    uid: String,
+    isAdmin: Boolean,
+    enabled: Boolean,
+    onOpenSecurity: () -> Unit,
+    onOpenAdmin: () -> Unit,
+    onLogout: () -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    val shape = CircleShape
+
+    Box {
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 4.dp)
+                .size(40.dp)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                .clickable { open = true },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = "账户菜单",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            modifier = Modifier.width(240.dp),
+        ) {
+            // 账户头部（不可点击）
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Text(
+                    text = "KeyBox 账户",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = uid.ifEmpty { "已登录" },
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            DropdownMenuItem(
+                text = { Text("安全") },
+                enabled = enabled,
+                onClick = {
+                    open = false
+                    onOpenSecurity()
+                },
+            )
+            if (isAdmin) {
+                DropdownMenuItem(
+                    text = { Text("管理后台") },
+                    enabled = enabled,
+                    onClick = {
+                        open = false
+                        onOpenAdmin()
+                    },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("退出登录", color = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    open = false
+                    onLogout()
+                },
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 底栏状态（B3.4 语义色胶囊）
+// ---------------------------------------------------------------------------
+
+/** 状态语义类别。 */
+private enum class StatusKind { SUCCESS, WARNING, ERROR, INFO }
+
+/**
+ * 底栏状态区：有瞬时状态时显示语义色胶囊；否则显示一条不抢视线的常驻状态。
+ * 颜色取 LocalKbColors（success/warning）+ M3 error/primary，9 皮肤自适应。
+ */
+@Composable
+private fun StatusBar(state: VaultUiState) {
+    Surface(shadowElevation = 8.dp) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+        ) {
+            val message = state.status
+            if (message != null) {
+                val kind = when {
+                    state.copyCountdown > 0 -> StatusKind.INFO
+                    state.statusIsError -> StatusKind.ERROR
+                    state.pendingConflicts.isNotEmpty() -> StatusKind.WARNING
+                    else -> StatusKind.SUCCESS
+                }
+                StatusPill(kind = kind, text = message)
+            } else {
+                val kb = LocalKbColors.current
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(kb.success),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (state.syncing) {
+                            "同步中…"
+                        } else {
+                            "已解锁 · 共 ${state.items.size} 条密钥"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(kind: StatusKind, text: String) {
+    val scheme = MaterialTheme.colorScheme
+    val kb = LocalKbColors.current
+    val (bg, fg) = when (kind) {
+        StatusKind.SUCCESS -> kb.successContainer to kb.onSuccessContainer
+        StatusKind.WARNING -> kb.warningContainer to kb.onWarningContainer
+        StatusKind.ERROR -> scheme.errorContainer to scheme.onErrorContainer
+        StatusKind.INFO -> scheme.primaryContainer to scheme.onPrimaryContainer
+    }
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = bg,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(fg),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = fg,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 空态 / 骨架屏
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun EmptyState(
+    itemsEmpty: Boolean,
+    searchKw: String,
+    activeTag: String?,
+    onClearFilters: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = if (itemsEmpty) Icons.Filled.Lock else Icons.Filled.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(48.dp),
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = when {
+                itemsEmpty -> "还没有密钥"
+                searchKw.isNotEmpty() -> "没有找到匹配「$searchKw」的密钥"
+                activeTag != null -> "分类「$activeTag」下还没有密钥"
+                else -> "暂无密钥"
+            },
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = if (itemsEmpty) "点右下角 + 添加第一条" else "换个关键词，或清除当前筛选",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (!itemsEmpty && (searchKw.isNotEmpty() || activeTag != null)) {
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(onClick = onClearFilters) { Text("清除筛选") }
+        }
+    }
+}
+
+/** 首次加载骨架屏：3 个灰块卡片 + 微光呼吸（替代转圈）。 */
+@Composable
+private fun VaultSkeleton() {
+    val transition = rememberInfiniteTransition(label = "vault-skeleton")
+    val alpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "vault-skeleton-alpha",
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        repeat(3) {
+            SkeletonCard(alpha = alpha)
+        }
+    }
+}
+
+@Composable
+private fun SkeletonCard(alpha: Float) {
+    val blockColor = MaterialTheme.colorScheme.surfaceVariant
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .alpha(alpha)
+                        .background(blockColor),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .alpha(alpha)
+                            .background(blockColor),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .alpha(alpha)
+                            .background(blockColor),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .alpha(alpha)
+                    .background(blockColor),
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 密钥卡片（B3.1）
+// ---------------------------------------------------------------------------
+
 @Composable
 private fun SecretCard(
     item: VaultItem,
+    modifier: Modifier = Modifier,
     onCopy: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = modifier.fillMaxWidth()) {
         if (item.decryptError) {
             Row(
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 4.dp, bottom = 4.dp),
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -424,49 +755,67 @@ private fun SecretCard(
                         text = "解密失败 #${item.id}",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.error,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = item.decryptErrMsg,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                CardActionIcons(onEdit = onEdit, onDelete = onDelete)
+                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
             return@Card
         }
 
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Badge(item)
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                SecretBody(item = item, onCopy = onCopy)
+        Column(modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Badge(item = item, size = 44.dp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    SecretTitle(item)
+                }
             }
-            CardActionIcons(onEdit = onEdit, onDelete = onDelete)
+            Spacer(modifier = Modifier.height(10.dp))
+            KeyChip(item.key)
         }
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+        CardActionsRow(item = item, onCopy = onCopy, onEdit = onEdit, onDelete = onDelete)
     }
 }
 
 @Composable
 private fun SecretGridCard(
     item: VaultItem,
+    modifier: Modifier = Modifier,
     onCopy: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Badge(item)
+                Badge(item = item, size = 38.dp)
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.site.ifEmpty { "未命名" },
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -498,35 +847,22 @@ private fun SecretGridCard(
                 ModelChip(item.model)
             }
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = maskKey(item.key),
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onCopy, enabled = item.key.isNotEmpty()) {
-                    Text("复制")
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.Edit, contentDescription = "编辑", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.Delete, contentDescription = "删除", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
-                }
-            }
+            KeyChip(item.key)
         }
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+        CardActionsRow(item = item, onCopy = onCopy, onEdit = onEdit, onDelete = onDelete)
     }
 }
 
-/** 列表卡片主体内容（站点名 / 副标题 / 模型 chip / 脱敏密钥 + 复制）。 */
+/** 卡片标题块：站点名 + 副标题 + 模型 chip。 */
 @Composable
-private fun SecretBody(item: VaultItem, onCopy: () -> Unit) {
+private fun SecretTitle(item: VaultItem) {
     Text(
         text = item.site.ifEmpty { "未命名" },
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
         color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -545,26 +881,32 @@ private fun SecretBody(item: VaultItem, onCopy: () -> Unit) {
         Spacer(modifier = Modifier.height(4.dp))
         ModelChip(item.model)
     }
-    Spacer(modifier = Modifier.height(4.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
+}
+
+/** 脱敏密钥容器：等宽字体 + surface 底小圆角。 */
+@Composable
+private fun KeyChip(key: String) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Text(
-            text = maskKey(item.key),
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            text = maskKey(key),
+            style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        TextButton(onClick = onCopy, enabled = item.key.isNotEmpty()) {
-            Text("复制")
-        }
     }
 }
 
+/** 模型 chip：secondaryContainer 底 + 小圆角。 */
 @Composable
 private fun ModelChip(model: String) {
     Surface(
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(6.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Text(
@@ -578,24 +920,84 @@ private fun ModelChip(model: String) {
     }
 }
 
+/** 卡片底部三动作（复制 / 编辑 / 删除）：小型图标 + 文字，muted 色，删除用 error。 */
 @Composable
-private fun CardActionIcons(onEdit: () -> Unit, onDelete: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.Filled.Edit, contentDescription = "编辑", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        }
-        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.Filled.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-        }
+private fun CardActionsRow(
+    item: VaultItem,
+    onCopy: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val danger = MaterialTheme.colorScheme.error
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ActionItem(
+            label = "复制",
+            painter = painterResource(R.drawable.ic_copy),
+            color = muted,
+            enabled = item.key.isNotEmpty(),
+            onClick = onCopy,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        ActionItem(
+            label = "编辑",
+            painter = rememberVectorPainter(Icons.Filled.Edit),
+            color = muted,
+            onClick = onEdit,
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        ActionItem(
+            label = "删除",
+            painter = rememberVectorPainter(Icons.Filled.Delete),
+            color = danger,
+            onClick = onDelete,
+        )
     }
 }
 
 @Composable
-private fun Badge(item: VaultItem) {
+private fun ActionItem(
+    label: String,
+    painter: Painter,
+    color: Color,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painter,
+            contentDescription = null,
+            tint = color.copy(alpha = if (enabled) 1f else 0.4f),
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = color.copy(alpha = if (enabled) 1f else 0.4f),
+            maxLines = 1,
+        )
+    }
+}
+
+/** 品牌徽章：站点首字，按分类语义色着色（LocalKbColors + M3 容器色轮换，9 皮肤自适应）。 */
+@Composable
+private fun Badge(item: VaultItem, size: Dp) {
     val (badgeBg, badgeFg) = badgeColors(item)
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(size)
             .background(badgeBg, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
@@ -603,6 +1005,7 @@ private fun Badge(item: VaultItem) {
             text = badgeChar(item),
             style = MaterialTheme.typography.titleMedium,
             color = badgeFg,
+            maxLines = 1,
         )
     }
 }
@@ -621,14 +1024,20 @@ private fun VaultItem.subtitle(): String {
 private fun badgeChar(item: VaultItem): String =
     item.site.trim().firstOrNull()?.uppercase() ?: "?"
 
-/** 分类着色：按分类（首个 tag，否则站点名）哈希从 M3 容器色轮换取色，颜色全走主题系统。 */
+/**
+ * 分类着色：按分类（首个 tag，否则站点名）哈希从「primary/success/warning/error/secondary」
+ * 容器色轮换取色（同分类同色、不同分类轮换）；success/warning 来自 LocalKbColors，9 皮肤自适应。
+ */
 @Composable
 private fun badgeColors(item: VaultItem): Pair<Color, Color> {
     val scheme = MaterialTheme.colorScheme
+    val kb = LocalKbColors.current
     val palette = listOf(
         scheme.primaryContainer to scheme.onPrimaryContainer,
+        kb.successContainer to kb.onSuccessContainer,
+        kb.warningContainer to kb.onWarningContainer,
+        scheme.errorContainer to scheme.onErrorContainer,
         scheme.secondaryContainer to scheme.onSecondaryContainer,
-        scheme.tertiaryContainer to scheme.onTertiaryContainer,
     )
     val category = item.tags.firstOrNull() ?: item.site
     val index = abs(category.hashCode()) % palette.size
