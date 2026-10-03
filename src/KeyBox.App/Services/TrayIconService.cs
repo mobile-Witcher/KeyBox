@@ -33,7 +33,10 @@ namespace KeyBox.App.Services;
 public sealed class TrayIconService : IDisposable
 {
     /// <summary>托盘图标资源：随输出目录复制（csproj 的 <c>Content Include="Assets\**"</c>）。</summary>
-    private const string IconRelativePath = @"Assets\keybox.png";
+    private const string IconIcoRelativePath = @"Assets\keybox.ico";
+
+    /// <summary>PNG 回退（ICO 缺失/损坏时使用）。</summary>
+    private const string IconPngRelativePath = @"Assets\keybox.png";
 
     /// <summary><see cref="Icon.FromHandle"/> 只借句柄不持有，取完副本后须自行释放，否则 GDI 句柄泄漏。</summary>
     [DllImport("user32.dll", SetLastError = true)]
@@ -63,7 +66,7 @@ public sealed class TrayIconService : IDisposable
 
             // 图标取不到就当作建档失败（宁可无托盘，也不要「托盘在但一片空白」的假成功）。
             Icon trayImage = LoadIconFromAsset()
-                ?? throw new InvalidOperationException($"托盘图标资源缺失：{Path.Combine(AppContext.BaseDirectory, IconRelativePath)}");
+                ?? throw new InvalidOperationException($"托盘图标资源缺失：{Path.Combine(AppContext.BaseDirectory, IconIcoRelativePath)} / {Path.Combine(AppContext.BaseDirectory, IconPngRelativePath)}");
 
             _icon = new TaskbarIcon
             {
@@ -88,11 +91,25 @@ public sealed class TrayIconService : IDisposable
     }
 
     /// <summary>
-    /// 同步读取随包 PNG 并转成 <see cref="Icon"/>。资源缺失/读失败即视为失败（不静默给空白占位）。
+    /// 同步取托盘图标：优先多尺寸 ICO（Shell 按 DPI 取合适帧，比 PNG 缩放更清晰），
+    /// ICO 缺失/损坏时回退到 PNG 转 HICON。两者都拿不到即视为失败（不静默给空白占位）。
     /// </summary>
     private static Icon? LoadIconFromAsset()
     {
-        string path = Path.Combine(AppContext.BaseDirectory, IconRelativePath);
+        string ico = Path.Combine(AppContext.BaseDirectory, IconIcoRelativePath);
+        if (File.Exists(ico))
+        {
+            try
+            {
+                return new Icon(ico, 32, 32);
+            }
+            catch
+            {
+                // ICO 损坏 → 走 PNG 回退
+            }
+        }
+
+        string path = Path.Combine(AppContext.BaseDirectory, IconPngRelativePath);
         if (!File.Exists(path))
         {
             return null;
