@@ -20,6 +20,7 @@ public sealed partial class VaultPage : Page
         ViewModel = new VaultViewModel(AppServices.VaultService, AppServices.SecurityService, AppServices.CurrentUid);
         ViewModel.LogoutRequested += OnLogoutRequested;
         InitializeComponent();
+        AddAppearanceButton();
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -278,4 +279,26 @@ public sealed partial class VaultPage : Page
     {
         AppServices.SignOutAndGoLogin();
     }
-}
+
+    /// <summary>
+    /// 顶栏「外观」入口（🎨）：弹出外观面板（9 皮肤色卡 + 三态明暗 + 跟随 Windows 强调色）。
+    /// 先用代码挂载；W7-F 重排顶栏时会移入 XAML 并并入账户区。
+    /// </summary>
+    private void AddAppearanceButton()
+    {
+        TopBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var button = new Button
+        {
+            Content = "🎨",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(8, 0, 0, 0),
+        };
+        ToolTipService.SetToolTip(button, "外观（皮肤 / 明暗）");
+        button.Click += (_, _) =>
+        {
+            var flyout = new Flyout { Content = new AppearancePanel() };
+            flyout.ShowAt(button);
+        };
+        Grid.SetColumn(button, TopBar.ColumnDefinitions.Count - 1);
+        TopBar.Children.Add(button);
+    }}

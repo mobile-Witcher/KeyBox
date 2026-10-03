@@ -15,6 +15,7 @@
 
         <!-- 顶栏：标题/计数 + 动作按钮 -->
         <Grid
+            x:Name="TopBar"
             Grid.Row="0"
             Padding="16,10"
             ColumnSpacing="8"
