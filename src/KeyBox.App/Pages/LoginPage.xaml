@@ -41,7 +41,7 @@
                     Grid.Column="1"
                     VerticalAlignment="Bottom"
                     Command="{x:Bind ViewModel.SendCodeCommand}"
-                    Content="{x:Bind ViewModel.SendCodeButtonText}" />
+                    Content="{x:Bind ViewModel.SendCodeButtonText, Mode=OneWay}" />
             </Grid>
 
             <Button
@@ -53,7 +53,7 @@
                 Width="28"
                 Height="28"
                 HorizontalAlignment="Center"
-                IsActive="{x:Bind ViewModel.IsBusy}"
+                IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
                 Visibility="{x:Bind ViewModel.ProgressVisibility, Mode=OneWay}" />
 
             <TextBlock

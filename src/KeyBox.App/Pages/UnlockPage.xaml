@@ -60,7 +60,7 @@
                 Width="28"
                 Height="28"
                 HorizontalAlignment="Center"
-                IsActive="{x:Bind ViewModel.IsBusy}"
+                IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
                 Visibility="{x:Bind ViewModel.BusyVisibility, Mode=OneWay}" />
 
             <TextBlock

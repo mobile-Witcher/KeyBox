@@ -68,7 +68,7 @@
 
         <!-- 用户列表 -->
         <Grid Grid.Row="3">
-            <ListView ItemsSource="{x:Bind ViewModel.Users}" SelectionMode="None" Padding="0,0,0,0">
+            <ListView ItemsSource="{x:Bind ViewModel.Users, Mode=OneWay}" SelectionMode="None" Padding="0,0,0,0">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -128,7 +128,7 @@
                 Height="32"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                IsActive="{x:Bind ViewModel.IsLoading}"
+                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
                 Visibility="{x:Bind ViewModel.LoadingVisibility, Mode=OneWay}" />
         </Grid>
 

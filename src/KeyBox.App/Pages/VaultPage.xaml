@@ -90,7 +90,7 @@
                 Grid.Column="1"
                 MinWidth="180"
                 PlaceholderText="分类"
-                ItemsSource="{x:Bind ViewModel.TagOptions}"
+                ItemsSource="{x:Bind ViewModel.TagOptions, Mode=OneWay}"
                 SelectedItem="{x:Bind ViewModel.SelectedTagOption, Mode=OneWay}"
                 SelectionChanged="OnTagSelectionChanged"
                 VerticalAlignment="Center" />
@@ -128,7 +128,7 @@
         <!-- 列表区 -->
         <Grid Grid.Row="3">
             <ListView
-                ItemsSource="{x:Bind ViewModel.VisibleItems}"
+                ItemsSource="{x:Bind ViewModel.VisibleItems, Mode=OneWay}"
                 SelectionMode="None"
                 Padding="12,4">
                 <ListView.ItemContainerStyle>
@@ -221,7 +221,7 @@
                 Height="36"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                IsActive="{x:Bind ViewModel.IsLoading}"
+                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
                 Visibility="{x:Bind ViewModel.LoadingVisibility, Mode=OneWay}" />
 
             <TextBlock
