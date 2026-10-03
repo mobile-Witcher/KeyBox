@@ -53,3 +53,14 @@ public sealed record BackupItem(
 
 /// <summary>解析导入文件的条目结果：合法条目 + 跳过条数。</summary>
 public sealed record ParsedBackup(List<SecretItem> Items, int Skipped);
+
+/// <summary>R12 管理员用户列表行（kb_admin_user_list 白名单字段，不含任何密文/敏感列）。</summary>
+public sealed record AdminUserRow(
+    string Uid,
+    string Username,
+    string Status,
+    string CreatedAt,
+    int ItemCount);
+
+/// <summary>R02 一次性邀请码（kbInviteCreate 返回）。</summary>
+public sealed record KbInvite(string Code, string CreatedAt);

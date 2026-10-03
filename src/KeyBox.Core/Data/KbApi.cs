@@ -165,6 +165,109 @@ public sealed class KbApi
         return GetString(data, "ackedAt");
     }
 
+    // -------------------------------------------------------------------------
+    // 管理后台（R02 邀请码 / R12 用户列表 / R13 停用启用 / R14 删除数据）。
+    // 照安卓 AdminRepository / Web admin.ts 同构：
+    //   列表走直连 RPC、停用走直连 RDB PATCH、邀请码与删除走云函数（删除是唯一 service_role 路径）。
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// R12：管理员读取用户列表（直连 RPC `kb_admin_user_list`；函数体内 is_admin() 自检）。
+    /// 非管理员调用被服务端拒绝（HTTP 非 2xx）→ 抛出、由调用方原样展示。
+    /// 仅保留白名单字段（uid / username / status / created_at / item_count），不含任何密文/敏感列。
+    /// </summary>
+    public async Task<List<AdminUserRow>> AdminListUsersAsync(CancellationToken ct = default)
+    {
+        string text = await SendAsync(HttpMethod.Post, "/v1/rdb/rest/rpc/kb_admin_user_list", "{}", ct).ConfigureAwait(false);
+        return ParseAdminUsers(text);
+    }
+
+    /// <summary>
+    /// R13：管理员改某用户 status（active=正常 / disabled=停用）。
+    /// ⚠️ 只提交 `{ status }` 一个字段（禁止整行对象）；**必须带 `uid=eq.&lt;uid&gt;`**（无过滤＝全表更新）。
+    /// 「不能停用自己」是 UI 防呆、不是权限（服务端 is_admin() + 管理员 RLS 策略兜底）。
+    /// </summary>
+    public async Task AdminSetUserStatusAsync(string uid, string status, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(uid)) throw new AuthApiException("MISSING_UID");
+        var body = JsonSerializer.Serialize(new { status }, JsonOptions);
+        await SendAsync(HttpMethod.Patch, "/v1/rdb/rest/kb_users?uid=eq." + Uri.EscapeDataString(uid), body, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>R02：管理员生成一次性邀请码（kbInviteCreate；展示一次，用一次即失效）。</summary>
+    public async Task<KbInvite> InviteCreateRemoteAsync(CancellationToken ct = default)
+    {
+        KbFnEnvelope env = await InvokeFunctionAsync("kbInviteCreate", "{}", ct).ConfigureAwait(false);
+        JsonElement data = RequireData(env, "生成邀请码失败：");
+        return new KbInvite(GetString(data, "code"), GetString(data, "createdAt"));
+    }
+
+    /// <summary>R02：管理员作废邀请码（kbInviteRevoke；仅 unused 可作废）。返回作废的 codeId。</summary>
+    public async Task<long> InviteRevokeRemoteAsync(string code, CancellationToken ct = default)
+    {
+        var body = JsonSerializer.Serialize(new { code }, JsonOptions);
+        KbFnEnvelope env = await InvokeFunctionAsync("kbInviteRevoke", body, ct).ConfigureAwait(false);
+        JsonElement data = RequireData(env, "作废邀请码失败（可能已被使用）：");
+        return GetLong(data, "codeId");
+    }
+
+    /// <summary>
+    /// R14：删除某用户全部密钥数据（kbAdminDeleteUserData，全项目唯一持 service_role 的云函数）。
+    /// 入参只接受一个 uid；返回体仅 { deletedCount }。
+    /// 服务端自检错误（如 CANNOT_DELETE_SELF）原样展示。
+    /// </summary>
+    public async Task<int> AdminDeleteUserDataRemoteAsync(string uid, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(uid)) throw new AuthApiException("MISSING_UID");
+        var body = JsonSerializer.Serialize(new { uid }, JsonOptions);
+        KbFnEnvelope env = await InvokeFunctionAsync("kbAdminDeleteUserData", body, ct).ConfigureAwait(false);
+        JsonElement data = RequireData(env, "");
+        return GetInt(data, "deletedCount");
+    }
+
+    /// <summary>解析 kb_admin_user_list 返回：容错数组直返或网关包装 { kb_admin_user_list: [...] }。</summary>
+    private static List<AdminUserRow> ParseAdminUsers(string text)
+    {
+        using JsonDocument doc = ParseDocument(text);
+        JsonElement root = doc.RootElement;
+        List<JsonElement> rows;
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            rows = root.EnumerateArray().ToList();
+        }
+        else if (root.ValueKind == JsonValueKind.Object)
+        {
+            // 网关可能包成 { kb_admin_user_list: [...] } 或含首个数组字段
+            JsonElement? found = null;
+            foreach (JsonProperty prop in root.EnumerateObject())
+            {
+                if (prop.Value.ValueKind == JsonValueKind.Array)
+                {
+                    found = prop.Value;
+                    break;
+                }
+            }
+            rows = found?.EnumerateArray().ToList() ?? new List<JsonElement>();
+        }
+        else
+        {
+            rows = new List<JsonElement>();
+        }
+
+        var outRows = new List<AdminUserRow>(rows.Count);
+        foreach (JsonElement row in rows)
+        {
+            if (row.ValueKind != JsonValueKind.Object) continue;
+            outRows.Add(new AdminUserRow(
+                Uid: GetString(row, "uid"),
+                Username: GetString(row, "username"),
+                Status: GetString(row, "status"),
+                CreatedAt: GetString(row, "created_at"),
+                ItemCount: GetInt(row, "item_count")));
+        }
+        return outRows;
+    }
+
     /// <summary>调用云函数并归一化返回体（含 result 包装解包）。</summary>
     private async Task<KbFnEnvelope> InvokeFunctionAsync(string name, string bodyJson, CancellationToken ct)
     {
