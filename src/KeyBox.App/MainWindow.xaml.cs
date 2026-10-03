@@ -102,6 +102,12 @@ public sealed partial class MainWindow : Window
         {
             return; // 用户关闭了「最小化到托盘」→ 真关闭
         }
+        if (_tray is not { Created: true })
+        {
+            return; // 托盘不可用（建档失败/资源缺失）→ 真关闭：绝不把窗口藏成一个没有入口的进程
+        }
+
+        // 不变式：要么有托盘能唤回，要么正常退出。
         args.Cancel = true;
         sender.Hide();
     }
