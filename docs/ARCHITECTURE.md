@@ -621,7 +621,7 @@ KeyBox/
 
 **敏感文件纪律（硬约束 4）**：CloudBase 环境 ID、publishable key、自定义登录私钥（`tcb_custom_login.json`）、keystore 口令**一律只放 `.env.local` / 云函数环境变量 / CI Secrets**；`.gitignore` 必须覆盖 `.env*`、`.env.local`、`*.json`（自定义登录私钥）、`*.keystore`、`*.jks`。`.env.example` 只写 `VITE_CLOUDBASE_ENV=` 这样的空壳。**仓库内任何文件都不得出现真实环境 ID**（文档中一律写 `<YOUR_ENV_ID>`）。
 
-**迁移脚本纪律（已实测）**：MCP 的 `applyMigration` 读取/校验"本地迁移文件"的位置是 **MCP 自己的 cwd**，**不是仓库目录 `F:\KeyBox`**。因此 `scripts/setup-cloud.js` **必须把完整 SQL 显式传给 `applyMigration(sql=...)`**，**不能依赖"本地文件匹配"**；`F:\KeyBox\cloudbase\migrations\` 才是**仓库权威副本**，脚本应与之一致（建议：脚本读取仓库内迁移文件后原样透传 SQL）。
+**迁移脚本纪律（已实测）**：MCP 的 `applyMigration` 读取/校验"本地迁移文件"的位置是 **MCP 自己的 cwd**，**不是仓库目录 `F:\project\keybox\KeyBox`**。因此 `scripts/setup-cloud.js` **必须把完整 SQL 显式传给 `applyMigration(sql=...)`**，**不能依赖"本地文件匹配"**；`F:\project\keybox\KeyBox\cloudbase\migrations\` 才是**仓库权威副本**，脚本应与之一致（建议：脚本读取仓库内迁移文件后原样透传 SQL）。
 
 ### 依赖顺序表
 

@@ -7,9 +7,9 @@
 
 | 来源 | 路径 | 用途 |
 |---|---|---|
-| 鸿蒙已验证实现 | `F:/KeyBox-harmony/entry/src/main/ets/pages/Admin.ets` | 直接移植的语义蓝本 |
-| Web 契约 | `F:/KeyBox/src/lib/admin.ts` + `src\lib\api.ts` | 接口入参/返回结构 |
-| Web 界面 | `F:/KeyBox/src/pages/AdminPage.tsx` | 交互与文案 |
+| 鸿蒙已验证实现 | `F:/project/keybox/KeyBox-harmony/entry/src/main/ets/pages/Admin.ets` | 直接移植的语义蓝本 |
+| Web 契约 | `F:/project/keybox/KeyBox/src/lib/admin.ts` + `src\lib\api.ts` | 接口入参/返回结构 |
+| Web 界面 | `F:/project/keybox/KeyBox/src/pages/AdminPage.tsx` | 交互与文案 |
 | 云函数通道 | 本仓库 `app/.../data/KbApi.kt` 的 `invokeFunction` | A5 已封装，直接复用 |
 
 ## 四项任务

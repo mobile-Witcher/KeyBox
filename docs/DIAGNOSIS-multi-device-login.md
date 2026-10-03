@@ -72,7 +72,7 @@
 
 ## 四、下一步：需要一次「实测」确认（10 分钟）
 
-代码已备好探针：`F:\KeyBox\tools\probe-refresh.mjs`
+代码已备好探针：`F:\project\keybox\KeyBox\tools\probe-refresh.mjs`
 方法：拿一份有效 refresh_token，**连续调两次** `/auth/v1/token`：
 - 第 2 次失败 → **轮换+单例**（方案 A/B 二选一）
 - 两次都成功且返回相同 token → 不轮换（那问题另有原因，继续查方案 3/4）

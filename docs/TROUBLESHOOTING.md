@@ -15,7 +15,7 @@
 
 ```
 npm error code 1
-npm error path F:\KeyBox\node_modules\esbuild
+npm error path F:\project\keybox\KeyBox\node_modules\esbuild
 npm error command failed
 npm error command C:\WINDOWS\system32\cmd.exe /d /s /c node install.js
 npm error <ref *1> Error: spawnSync ...\node.exe EBUSY

@@ -111,8 +111,8 @@
   > 若控制台的变量值输入框不接受多行，可看方式二。
 
 - **方式二：把私钥文件放进函数目录，用路径引用**
-  1. 把 `tcb_custom_login.json` 复制到**本机**的 `F:\KeyBox\cloudfunctions\kbLogin\` 与
-     `F:\KeyBox\cloudfunctions\kbRegister\` 两个目录里（与该目录下已有的 `index.js` 并排）。
+  1. 把 `tcb_custom_login.json` 复制到**本机**的 `F:\project\keybox\KeyBox\cloudfunctions\kbLogin\` 与
+     `F:\project\keybox\KeyBox\cloudfunctions\kbRegister\` 两个目录里（与该目录下已有的 `index.js` 并排）。
   2. 这样它会在**部署/上传函数时**一起上传到云端（注意：它仍在 `.gitignore` 保护下，不会被提交到仓库）。
   3. 给这两个函数加环境变量 `TCB_CUSTOM_LOGIN_KEY_FILE`，值填 `./tcb_custom_login.json`。
      （云函数会优先按这个路径找；找不到时会自动在**函数自己所在目录**找同名文件，所以方式二也稳。）
