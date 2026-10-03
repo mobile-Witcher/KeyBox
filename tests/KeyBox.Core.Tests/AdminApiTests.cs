@@ -71,7 +71,7 @@ public class AdminApiTests
         // 只提交 {status} 单列
         var body = JsonDocument.Parse(req.Body).RootElement;
         Assert.Equal("disabled", body.GetProperty("status").GetString());
-        Assert.Equal(1, body.EnumerateObject().Count());
+        Assert.Single(body.EnumerateObject()); // 只提交 {status} 单列
     }
 
     [Fact]

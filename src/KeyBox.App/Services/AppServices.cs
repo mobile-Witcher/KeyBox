@@ -1,3 +1,4 @@
+using KeyBox.Core.Admin;
 using KeyBox.Core.Auth;
 using KeyBox.Core.Data;
 using KeyBox.Core.Vault;
@@ -16,6 +17,7 @@ public static class AppServices
     public static UnlockService UnlockService { get; }
     public static VaultService VaultService { get; }
     public static SecurityService SecurityService { get; }
+    public static AdminService AdminService { get; }
     public static HelloWrapperStore HelloStore { get; }
     public static HelloAuthService HelloAuth { get; }
 
@@ -31,6 +33,7 @@ public static class AppServices
         UnlockService = new UnlockService(KbApi);
         VaultService = new VaultService(KbApi);
         SecurityService = new SecurityService(KbApi);
+        AdminService = new KeyBox.Core.Admin.AdminService(KbApi);
         HelloStore = new HelloWrapperStore();
         HelloAuth = new HelloAuthService(UnlockService, HelloStore);
     }

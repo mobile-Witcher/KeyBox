@@ -26,6 +26,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Spacing="2">
                 <TextBlock
@@ -60,6 +61,12 @@
                 VerticalAlignment="Center" />
             <Button
                 Grid.Column="5"
+                Content="👤 管理"
+                Click="OnAdminClick"
+                VerticalAlignment="Center"
+                Visibility="{x:Bind ViewModel.AdminEntryVisibility, Mode=OneWay}" />
+            <Button
+                Grid.Column="6"
                 Content="退出登录"
                 Command="{x:Bind ViewModel.LogoutCommand}"
                 VerticalAlignment="Center" />

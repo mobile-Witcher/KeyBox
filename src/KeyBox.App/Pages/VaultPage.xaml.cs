@@ -17,7 +17,7 @@ public sealed partial class VaultPage : Page
 
     public VaultPage()
     {
-        ViewModel = new VaultViewModel(AppServices.VaultService, AppServices.CurrentUid);
+        ViewModel = new VaultViewModel(AppServices.VaultService, AppServices.SecurityService, AppServices.CurrentUid);
         ViewModel.LogoutRequested += OnLogoutRequested;
         InitializeComponent();
     }
@@ -26,6 +26,7 @@ public sealed partial class VaultPage : Page
     {
         base.OnNavigatedTo(e);
         await ViewModel.LoadAsync();
+        await ViewModel.RefreshRoleAsync(); // 决定「管理」入口可见性（role=admin）
     }
 
     // ---- 卡片按钮 ----
@@ -100,6 +101,21 @@ public sealed partial class VaultPage : Page
             Title = "安全",
             CloseButtonText = "关闭",
             Content = new SecurityPanelControl(vm),
+        };
+        _ = vm.InitializeAsync();
+        await dialog.ShowAsync();
+    }
+
+    /// <summary>「管理」入口（仅 role=admin 可见）：ContentDialog 承载管理后台面板。</summary>
+    private async void OnAdminClick(object sender, RoutedEventArgs e)
+    {
+        var vm = new AdminViewModel(AppServices.AdminService, AppServices.CurrentUid);
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "管理",
+            CloseButtonText = "关闭",
+            Content = new AdminPanelControl(vm),
         };
         _ = vm.InitializeAsync();
         await dialog.ShowAsync();

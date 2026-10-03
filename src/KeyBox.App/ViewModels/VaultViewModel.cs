@@ -29,6 +29,7 @@ public partial class VaultViewModel : ObservableObject
         StringComparer.Create(CultureInfo.GetCultureInfo("zh-Hans-CN"), ignoreCase: false);
 
     private readonly VaultService _vault;
+    private readonly SecurityService? _security;
     private readonly string? _uid;
     private List<VaultItem> _allItems = new();
     private CancellationTokenSource? _copyCts;
@@ -58,6 +59,11 @@ public partial class VaultViewModel : ObservableObject
 
     [ObservableProperty]
     private string _uidText = "";
+
+    /// <summary>是否管理员（决定「管理」入口可见性；仅 role=admin 为 true）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AdminEntryVisibility))]
+    private bool _isAdmin;
 
     [ObservableProperty]
     private string _countText = "我的密钥";
@@ -149,11 +155,27 @@ public partial class VaultViewModel : ObservableObject
     [ObservableProperty]
     private bool _showConflictDialog;
 
-    public VaultViewModel(VaultService vault, string? uid)
+    public VaultViewModel(VaultService vault, SecurityService security, string? uid)
     {
         _vault = vault;
+        _security = security;
         _uid = uid;
         UidText = string.IsNullOrEmpty(uid) ? "" : uid;
+    }
+
+    /// <summary>读取本人角色（kbGetMyRole）；仅 role=admin 显示「管理」入口，失败/非 admin 不显示。</summary>
+    public async Task RefreshRoleAsync()
+    {
+        if (_security is null) return;
+        try
+        {
+            KbMyRole role = await _security.FetchMyRoleAsync();
+            IsAdmin = role.Role == "admin";
+        }
+        catch (Exception)
+        {
+            IsAdmin = false; // 拉取失败静默不显示
+        }
     }
 
     // ---- 展示辅助 ----
@@ -176,6 +198,9 @@ public partial class VaultViewModel : ObservableObject
 
     /// <summary>选中了某个分类时，才允许重命名/删除分类。</summary>
     public bool TagManageEnabled => ActiveTag is not null;
+
+    /// <summary>「管理」入口可见性（仅管理员）。</summary>
+    public Visibility AdminEntryVisibility => IsAdmin ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>搜索无匹配空态文案。</summary>
     public string NoMatchText =>
