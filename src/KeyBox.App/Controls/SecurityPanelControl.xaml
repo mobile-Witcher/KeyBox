@@ -84,6 +84,30 @@
 
             <Border Height="1" Background="Gray" Opacity="0.3" />
 
+            <!-- ── 应用设置（Windows 集成） ── -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="应用设置" FontWeight="SemiBold" FontSize="14" />
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="开机自动启动" FontSize="12" VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.StartupEnabled, Mode=TwoWay}" />
+                </Grid>
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="关闭窗口时最小化到托盘" FontSize="12" VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.MinimizeToTrayOnClose, Mode=TwoWay}" />
+                </Grid>
+                <TextBlock Text="全局快捷键 Ctrl+Shift+K 可从任意窗口唤起 KeyBox。" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Height="1" Background="Gray" Opacity="0.3" />
+
             <!-- ── R21 改主密码 ── -->
             <StackPanel Spacing="8">
                 <TextBlock Text="修改主密码（R21）" FontWeight="SemiBold" FontSize="14" />

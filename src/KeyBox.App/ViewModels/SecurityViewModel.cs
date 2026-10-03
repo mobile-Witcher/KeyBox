@@ -94,10 +94,39 @@ public partial class SecurityViewModel : ObservableObject
     [ObservableProperty]
     private int _pendingExportSkipped;
 
+    /// <summary>设置项初始化完成后才持久化（避免构造期回写）。</summary>
+    private bool _settingsReady;
+
+    [ObservableProperty]
+    private bool _startupEnabled;
+
+    [ObservableProperty]
+    private bool _minimizeToTrayOnClose;
+
+    partial void OnStartupEnabledChanged(bool value)
+    {
+        if (!_settingsReady) return;
+        // 注册表写入失败则回滚开关状态
+        if (!StartupService.SetEnabled(value))
+        {
+            StartupEnabled = StartupService.IsEnabled();
+        }
+    }
+
+    partial void OnMinimizeToTrayOnCloseChanged(bool value)
+    {
+        if (!_settingsReady) return;
+        new AppSettingsStore().Save(new AppSettings(value));
+    }
+
     public SecurityViewModel(SecurityService security, string? uid)
     {
         _security = security;
         _uid = uid;
+
+        StartupEnabled = StartupService.IsEnabled();
+        MinimizeToTrayOnClose = new AppSettingsStore().Load().MinimizeToTrayOnClose;
+        _settingsReady = true;
     }
 
     // ---- 展示辅助 ----

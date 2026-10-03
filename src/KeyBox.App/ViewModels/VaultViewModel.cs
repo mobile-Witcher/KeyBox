@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KeyBox.App.Services;
 using KeyBox.Core.Data;
 using KeyBox.Core.Vault;
 using Microsoft.UI.Xaml;
@@ -267,6 +268,16 @@ public partial class VaultViewModel : ObservableObject
             if (result.Pulled + result.Pushed > 0) msg += $" · {result.Pulled + result.Pushed} 条更新";
             if (result.Conflicts.Count > 0) msg += $" · {result.Conflicts.Count} 处冲突待处理";
             StatusMessage = msg;
+
+            // 原生通知：同步完成 / 有冲突待处理
+            if (result.Conflicts.Count > 0)
+            {
+                AppNotificationService.NotifyConflicts(result.Conflicts.Count);
+            }
+            else if (result.Pulled + result.Pushed > 0)
+            {
+                AppNotificationService.NotifySyncDone(result.Pulled + result.Pushed, 0);
+            }
 
             await FetchAsync(refreshing: true); // 重载以服务端为准（幂等）
         }
