@@ -89,6 +89,22 @@ public sealed partial class VaultPage : Page
         _ = ShowConflictDialogAsync();
     }
 
+    /// <summary>「安全」入口：ContentDialog 承载安全面板（每次新建实例；数据变化后刷新列表）。</summary>
+    private async void OnSecurityClick(object sender, RoutedEventArgs e)
+    {
+        var vm = new SecurityViewModel(AppServices.SecurityService, AppServices.CurrentUid);
+        vm.DataChanged += () => _ = ViewModel.LoadAsync();
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "安全",
+            CloseButtonText = "关闭",
+            Content = new SecurityPanelControl(vm),
+        };
+        _ = vm.InitializeAsync();
+        await dialog.ShowAsync();
+    }
+
     // ---- 对话框（每次新建实例） ----
 
     private async Task ShowEditorDialogAsync()

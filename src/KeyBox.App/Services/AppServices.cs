@@ -15,6 +15,7 @@ public static class AppServices
     public static KbApi KbApi { get; }
     public static UnlockService UnlockService { get; }
     public static VaultService VaultService { get; }
+    public static SecurityService SecurityService { get; }
     public static HelloWrapperStore HelloStore { get; }
     public static HelloAuthService HelloAuth { get; }
 
@@ -29,6 +30,7 @@ public static class AppServices
         KbApi = new KbApi(SessionManager.CreateAuthenticatedClient(), repository.ApiBase);
         UnlockService = new UnlockService(KbApi);
         VaultService = new VaultService(KbApi);
+        SecurityService = new SecurityService(KbApi);
         HelloStore = new HelloWrapperStore();
         HelloAuth = new HelloAuthService(UnlockService, HelloStore);
     }

@@ -25,6 +25,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Spacing="2">
                 <TextBlock
@@ -54,6 +55,11 @@
                 VerticalAlignment="Center" />
             <Button
                 Grid.Column="4"
+                Content="🛡 安全"
+                Click="OnSecurityClick"
+                VerticalAlignment="Center" />
+            <Button
+                Grid.Column="5"
                 Content="退出登录"
                 Command="{x:Bind ViewModel.LogoutCommand}"
                 VerticalAlignment="Center" />
