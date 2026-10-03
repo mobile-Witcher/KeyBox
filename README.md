@@ -9,7 +9,7 @@ KeyBox 四端（网页 / Windows / Android / HarmonyOS）端到端加密密钥�
 ## 加密互通（W1 核心交付物）
 
 加密层与 Web 端 `src/lib/crypto.ts` / 鸿蒙端（`@kit.CryptoArchitectureKit`）**逐字节一致**，官方互通向量见
-`F:\KeyBox\src\lib\harmonyInterop.test.ts`：
+`F:\project\keybox\KeyBox\src\lib\harmonyInterop.test.ts`：
 
 | 参数 | 值 |
 | --- | --- |

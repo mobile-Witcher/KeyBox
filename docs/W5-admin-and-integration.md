@@ -1,15 +1,15 @@
 # Windows W5 批施工图（管理后台 + Windows 系统集成 · 收官批）
 
 > 状态：待派工（W4 交付并验收后）
-> 仓库：`F:\KeyBox-Windows`（C# / .NET 8 / WinUI 3）
+> 仓库：`F:\project\keybox\KeyBox-Windows`（C# / .NET 8 / WinUI 3）
 
 ## 契约来源（唯一权威）
 
 | 来源 | 路径 | 用途 |
 |---|---|---|
-| 安卓已被验收的实现 | `F:\KeyBox-Android\app\src\main\java\com\keybox\app\ui\AdminScreen.kt` + `AdminViewModel.kt` | 直接移植的语义蓝本 |
-| Web 契约 | `F:\KeyBox\src\lib\admin.ts` + `src\lib\api.ts` | 接口入参/返回 |
-| Web 界面 | `F:\KeyBox\src\pages\AdminPage.tsx` | 交互与文案 |
+| 安卓已被验收的实现 | `F:\project\keybox\KeyBox-Android\app\src\main\java\com\keybox\app\ui\AdminScreen.kt` + `AdminViewModel.kt` | 直接移植的语义蓝本 |
+| Web 契约 | `F:\project\keybox\KeyBox\src\lib\admin.ts` + `src\lib\api.ts` | 接口入参/返回 |
+| Web 界面 | `F:\project\keybox\KeyBox\src\pages\AdminPage.tsx` | 交互与文案 |
 | 云函数通道 | W4 将封装的 invokeFunction（与安卓 KbApi 同形） | 复用 |
 
 ## A 部分：管理后台（仅管理员）
