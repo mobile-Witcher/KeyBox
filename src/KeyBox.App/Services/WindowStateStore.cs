@@ -59,7 +59,15 @@ public sealed class WindowStateStore
 }
 
 /// <summary>应用设置（%APPDATA%\KeyBox\settings.json）。</summary>
-public sealed record AppSettings(bool MinimizeToTrayOnClose = true);
+/// <remarks>
+/// 新增字段一律带默认值：旧 settings.json（只有 MinimizeToTrayOnClose）仍可正常反序列化。
+/// ThemeMode 存 "system"/"light"/"dark" 字符串（不用枚举，避免 JSON 里出现魔法数字）。
+/// </remarks>
+public sealed record AppSettings(
+    bool MinimizeToTrayOnClose = true,
+    string Skin = "default",
+    string ThemeMode = "system",
+    bool UseSystemAccent = false);
 
 /// <summary>应用设置的读写（当前仅「关闭窗口最小化到托盘」开关）。</summary>
 public sealed class AppSettingsStore

@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:KeyBox.App.ViewModels">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid Background="{ThemeResource KbBgBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -18,7 +18,7 @@
             Grid.Row="0"
             Padding="16,10"
             ColumnSpacing="8"
-            Background="{ThemeResource LayerFillColorDefaultBrush}">
+            Background="{ThemeResource KbSurface2Brush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -36,7 +36,7 @@
                 <TextBlock
                     Text="{x:Bind ViewModel.UidText, Mode=OneWay}"
                     FontSize="11"
-                    Foreground="Gray" />
+                    Foreground="{ThemeResource KbMutedBrush}" />
             </StackPanel>
             <Button
                 Grid.Column="1"
@@ -113,7 +113,7 @@
             Padding="12,8"
             HorizontalAlignment="Stretch"
             HorizontalContentAlignment="Left"
-            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+            Background="{ThemeResource KbWarningSoftBrush}"
             Click="OnConflictBannerClick"
             Visibility="{x:Bind ViewModel.ConflictBannerVisibility, Mode=OneWay}">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -140,8 +140,8 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="vm:VaultItemViewModel">
                         <Border
-                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            Background="{ThemeResource KbSurfaceBrush}"
+                            BorderBrush="{ThemeResource KbBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="8"
                             Padding="14,12">
@@ -158,18 +158,18 @@
                                     <TextBlock
                                         Text="{x:Bind Subtitle}"
                                         FontSize="12"
-                                        Foreground="Gray" />
+                                        Foreground="{ThemeResource KbMutedBrush}" />
                                     <TextBlock
                                         Text="{x:Bind ErrorText}"
                                         FontSize="12"
-                                        Foreground="OrangeRed"
+                                        Foreground="{ThemeResource KbDangerBrush}"
                                         TextWrapping="Wrap"
                                         Visibility="{x:Bind ErrorVisibility}" />
                                     <TextBlock
                                         Text="{x:Bind KeyDisplay}"
                                         FontSize="13"
                                         FontFamily="Consolas"
-                                        Foreground="DodgerBlue"
+                                        Foreground="{ThemeResource KbPrimaryBrush}"
                                         Visibility="{x:Bind KeyVisibility}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
@@ -198,8 +198,8 @@
                 VerticalAlignment="Center"
                 Spacing="8"
                 Visibility="{x:Bind ViewModel.EmptyListVisibility, Mode=OneWay}">
-                <TextBlock Text="暂无密钥" FontSize="16" Foreground="Gray" HorizontalAlignment="Center" />
-                <TextBlock Text="点击「＋ 新增密钥」添加第一条" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" />
+                <TextBlock Text="暂无密钥" FontSize="16" Foreground="{ThemeResource KbMutedBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="点击「＋ 新增密钥」添加第一条" FontSize="12" Foreground="{ThemeResource KbMutedBrush}" HorizontalAlignment="Center" />
             </StackPanel>
 
             <!-- 空态：搜索无匹配 -->
@@ -211,7 +211,7 @@
                 <TextBlock
                     Text="{x:Bind ViewModel.NoMatchText, Mode=OneWay}"
                     FontSize="14"
-                    Foreground="Gray"
+                    Foreground="{ThemeResource KbMutedBrush}"
                     HorizontalAlignment="Center" />
                 <Button Content="清除搜索" Command="{x:Bind ViewModel.ClearSearchCommand}" HorizontalAlignment="Center" />
             </StackPanel>
@@ -226,7 +226,7 @@
 
             <TextBlock
                 Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
-                Foreground="Gray"
+                Foreground="{ThemeResource KbMutedBrush}"
                 TextWrapping="Wrap"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"

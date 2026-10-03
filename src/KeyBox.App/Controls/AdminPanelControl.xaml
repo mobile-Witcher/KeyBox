@@ -34,7 +34,7 @@
         <!-- 满员提示条 -->
         <Border
             Grid.Row="1"
-            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+            Background="{ThemeResource KbWarningSoftBrush}"
             CornerRadius="6"
             Padding="10"
             Margin="0,0,0,8"
@@ -45,8 +45,8 @@
         <!-- 邀请码区（展示一次 + 复制 + 作废） -->
         <Border
             Grid.Row="2"
-            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            Background="{ThemeResource KbSurfaceBrush}"
+            BorderBrush="{ThemeResource KbBorderBrush}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="12"
@@ -78,8 +78,8 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="vm:AdminUserItem">
                         <Border
-                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            Background="{ThemeResource KbSurfaceBrush}"
+                            BorderBrush="{ThemeResource KbBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="8"
                             Padding="12,10">
@@ -108,8 +108,8 @@
                                         Text="{x:Bind Uid}"
                                         FontFamily="Consolas"
                                         FontSize="11"
-                                        Foreground="Gray" />
-                                    <TextBlock FontSize="12" Foreground="Gray">
+                                        Foreground="{ThemeResource KbMutedBrush}" />
+                                    <TextBlock FontSize="12" Foreground="{ThemeResource KbMutedBrush}">
                                         <Run Text="注册 " /><Run Text="{x:Bind CreatedAtText}" /><Run Text=" · 密钥 " /><Run Text="{x:Bind ItemCount}" />
                                     </TextBlock>
                                 </StackPanel>
@@ -135,7 +135,7 @@
         <!-- 内联二次确认（避免嵌套 ContentDialog） -->
         <Border
             Grid.Row="4"
-            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+            Background="{ThemeResource KbWarningSoftBrush}"
             CornerRadius="6"
             Padding="12"
             Margin="0,8,0,0"
@@ -162,7 +162,7 @@
             <TextBlock
                 Text="管理员看不到任何人的密钥内容，仅可停用与删除。"
                 FontSize="11"
-                Foreground="Gray"
+                Foreground="{ThemeResource KbMutedBrush}"
                 TextWrapping="Wrap" />
         </StackPanel>
     </Grid>

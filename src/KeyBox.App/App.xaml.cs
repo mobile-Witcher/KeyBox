@@ -1,4 +1,5 @@
 using KeyBox.App.Services;
+using KeyBox.App.Theme;
 using Microsoft.UI.Xaml;
 
 namespace KeyBox.App;
@@ -18,8 +19,14 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // 建窗口前先落主题（皮肤/明暗/强调色），避免首帧用默认色闪一下。
+        ThemeService.Initialize();
+
         _window = new MainWindow();
         AppServices.MainWindow = _window;
         _window.Activate();
+
+        // 窗口就绪后再把明暗落到根元素与标题栏（Initialize 阶段根元素尚不存在）。
+        ThemeService.Reapply();
     }
 }

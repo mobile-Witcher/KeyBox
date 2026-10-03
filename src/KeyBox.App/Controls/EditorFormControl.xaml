@@ -35,7 +35,7 @@
             Text="{x:Bind ViewModel.FormTagsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         <TextBlock
             Text="{x:Bind ViewModel.FormError, Mode=OneWay}"
-            Foreground="OrangeRed"
+            Foreground="{ThemeResource KbDangerBrush}"
             TextWrapping="Wrap" />
     </StackPanel>
 </UserControl>

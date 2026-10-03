@@ -33,7 +33,7 @@
                     Text="{x:Bind ViewModel.RecoveryStatusText, Mode=OneWay}"
                     FontSize="12"
                     TextWrapping="Wrap"
-                    Foreground="Gray" />
+                    Foreground="{ThemeResource KbMutedBrush}" />
                 <Button
                     Content="我已抄下并自行保管"
                     Click="OnAckRecoveryClick"
@@ -42,7 +42,7 @@
                     HorizontalAlignment="Stretch" />
             </StackPanel>
 
-            <Border Height="1" Background="Gray" Opacity="0.3" />
+            <Border Height="1" Background="{ThemeResource KbBorderBrush}" />
 
             <!-- ── R29 备份导出 / 导入 ── -->
             <StackPanel Spacing="8">
@@ -51,7 +51,7 @@
                     Text="导出为明文 JSON 文件（含全部密钥明文与接口地址），导入时逐条用当前主密钥重新加密上传。"
                     FontSize="12"
                     TextWrapping="Wrap"
-                    Foreground="Gray" />
+                    Foreground="{ThemeResource KbMutedBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Button
                         Content="导出备份"
@@ -65,7 +65,7 @@
 
                 <!-- 导出明文警告确认（内联，避免嵌套 ContentDialog） -->
                 <Border
-                    Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                    Background="{ThemeResource KbWarningSoftBrush}"
                     CornerRadius="6"
                     Padding="10"
                     Visibility="{x:Bind ViewModel.ExportConfirmVisibility, Mode=OneWay}">
@@ -82,7 +82,7 @@
                 </Border>
             </StackPanel>
 
-            <Border Height="1" Background="Gray" Opacity="0.3" />
+            <Border Height="1" Background="{ThemeResource KbBorderBrush}" />
 
             <!-- ── 应用设置（Windows 集成） ── -->
             <StackPanel Spacing="8">
@@ -103,10 +103,10 @@
                     <TextBlock Grid.Column="0" Text="关闭窗口时最小化到托盘" FontSize="12" VerticalAlignment="Center" />
                     <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.MinimizeToTrayOnClose, Mode=TwoWay}" />
                 </Grid>
-                <TextBlock Text="全局快捷键 Ctrl+Shift+K 可从任意窗口唤起 KeyBox。" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+                <TextBlock Text="全局快捷键 Ctrl+Shift+K 可从任意窗口唤起 KeyBox。" FontSize="11" Foreground="{ThemeResource KbMutedBrush}" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Border Height="1" Background="Gray" Opacity="0.3" />
+            <Border Height="1" Background="{ThemeResource KbBorderBrush}" />
 
             <!-- ── R21 改主密码 ── -->
             <StackPanel Spacing="8">
@@ -115,11 +115,11 @@
                     Text="本机会用原主密码逐条解密、用新主密码重加密后再整批提交；任何一条失败都会整体中止，不会产生「半新半旧」。"
                     FontSize="12"
                     TextWrapping="Wrap"
-                    Foreground="Gray" />
+                    Foreground="{ThemeResource KbMutedBrush}" />
                 <TextBlock
                     Text="{x:Bind ViewModel.ReloginWarning, Mode=OneWay}"
                     FontSize="12"
-                    Foreground="OrangeRed"
+                    Foreground="{ThemeResource KbDangerBrush}"
                     TextWrapping="Wrap" />
                 <PasswordBox
                     Header="原主密码"
@@ -146,7 +146,7 @@
 
                 <!-- 改主密码确认（内联，含硬约束文案） -->
                 <Border
-                    Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                    Background="{ThemeResource KbWarningSoftBrush}"
                     CornerRadius="6"
                     Padding="10"
                     Visibility="{x:Bind ViewModel.RotateConfirmVisibility, Mode=OneWay}">
@@ -158,7 +158,7 @@
                         <TextBlock
                             Text="{x:Bind ViewModel.ReloginConfirmLine, Mode=OneWay}"
                             FontSize="12"
-                            Foreground="OrangeRed"
+                            Foreground="{ThemeResource KbDangerBrush}"
                             TextWrapping="Wrap" />
                         <TextBlock Text="确认继续？" FontSize="12" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
