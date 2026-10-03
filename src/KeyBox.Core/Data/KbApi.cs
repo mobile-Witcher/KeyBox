@@ -103,6 +103,151 @@ public sealed class KbApi
         await SendAsync(HttpMethod.Delete, $"/v1/rdb/rest/kb_secrets?id=eq.{id}", null, ct).ConfigureAwait(false);
     }
 
+    // -------------------------------------------------------------------------
+    // 云函数调用（CloudBase HTTP API）：POST {API_BASE}/v1/functions/{name}，
+    // Authorization: Bearer <access_token>（拦截器附加），
+    // 返回体 { ok, data?, error? }；HTTP API 可能在体外再包一层 { result: <体> }，统一解包。
+    // 照安卓 KbApi.invokeFunction / 鸿蒙 invokeFunction。
+    // -------------------------------------------------------------------------
+
+    /// <summary>R11/R26：取本人 role/status/密钥参数/恢复码材料状态（kbGetMyRole，身份取自会话）。</summary>
+    public async Task<KbMyRole> FetchMyRoleAsync(CancellationToken ct = default)
+    {
+        KbFnEnvelope env = await InvokeFunctionAsync("kbGetMyRole", "{}", ct).ConfigureAwait(false);
+        JsonElement data = RequireData(env, "读取账号信息失败：");
+        return new KbMyRole(
+            Role: GetString(data, "role"),
+            Status: GetString(data, "status"),
+            KdfSalt: GetString(data, "kdfSalt"),
+            KdfVerifier: GetString(data, "kdfVerifier"),
+            KeyEpoch: GetInt(data, "keyEpoch"),
+            RecoverySalt: GetString(data, "recoverySalt"),
+            RecoveryBlob: GetString(data, "recoveryBlob"),
+            RecoveryAckAt: GetString(data, "recoveryAckAt"));
+    }
+
+    /// <summary>
+    /// R21：整批提交重加密后的全量密文（kbRotateMaster；key_epoch+1 由服务端完成）。
+    /// 只传密文与盐/校验串，主密钥与主密码绝不进入本请求。返回推进后的 key_epoch。
+    /// </summary>
+    public async Task<int> RotateMasterRemoteAsync(
+        string kdfSalt,
+        string kdfSaltPrev,
+        string kdfVerifier,
+        string recoveryBlob,
+        IReadOnlyList<KbRotateItem> items,
+        CancellationToken ct = default)
+    {
+        var body = JsonSerializer.Serialize(new
+        {
+            kdfSalt,
+            kdfSaltPrev,
+            kdfVerifier,
+            recoveryBlob,
+            items = items.Select(i => new { id = i.Id, payload = i.Payload }).ToList(),
+        }, JsonOptions);
+
+        KbFnEnvelope env = await InvokeFunctionAsync("kbRotateMaster", body, ct).ConfigureAwait(false);
+        JsonElement data = RequireData(env, "");
+        int keyEpoch = GetInt(data, "keyEpoch");
+        if (keyEpoch <= 0)
+        {
+            throw new AuthApiException("服务端未返回有效的密钥代数");
+        }
+        return keyEpoch;
+    }
+
+    /// <summary>R28：确认「已抄下恢复码」（kbAckRecovery，写 recovery_ack_at；幂等）。返回确认时间。</summary>
+    public async Task<string> AckRecoveryRemoteAsync(CancellationToken ct = default)
+    {
+        KbFnEnvelope env = await InvokeFunctionAsync("kbAckRecovery", "{}", ct).ConfigureAwait(false);
+        JsonElement data = RequireData(env, "确认失败：");
+        return GetString(data, "ackedAt");
+    }
+
+    /// <summary>调用云函数并归一化返回体（含 result 包装解包）。</summary>
+    private async Task<KbFnEnvelope> InvokeFunctionAsync(string name, string bodyJson, CancellationToken ct)
+    {
+        string text = await SendAsync(HttpMethod.Post, "/v1/functions/" + name, bodyJson, ct).ConfigureAwait(false);
+        return ParseEnvelope(text);
+    }
+
+    /// <summary>解析云函数返回体，解开至多两层 result 包装（对象或 JSON 字符串均可）。</summary>
+    private static KbFnEnvelope ParseEnvelope(string text)
+    {
+        JsonDocument? doc = null;
+        try
+        {
+            doc = JsonDocument.Parse(text);
+            JsonElement node = doc.RootElement;
+            for (int i = 0; i < 2; i++)
+            {
+                if (node.ValueKind != JsonValueKind.Object || !node.TryGetProperty("result", out JsonElement innerEl))
+                {
+                    break;
+                }
+                if (node.TryGetProperty("ok", out _))
+                {
+                    break;
+                }
+
+                JsonElement innerObj;
+                if (innerEl.ValueKind == JsonValueKind.Object)
+                {
+                    innerObj = innerEl;
+                }
+                else if (innerEl.ValueKind == JsonValueKind.String)
+                {
+                    string? innerStr = innerEl.GetString();
+                    try { innerObj = JsonDocument.Parse(innerStr ?? "").RootElement.Clone(); }
+                    catch (JsonException) { break; }
+                }
+                else
+                {
+                    break;
+                }
+
+                if (innerObj.ValueKind == JsonValueKind.Object && innerObj.TryGetProperty("ok", out _))
+                {
+                    node = innerObj.Clone();
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            bool ok = node.ValueKind == JsonValueKind.Object
+                && node.TryGetProperty("ok", out JsonElement okEl)
+                && okEl.ValueKind == JsonValueKind.True;
+            JsonElement? data = node.ValueKind == JsonValueKind.Object
+                && node.TryGetProperty("data", out JsonElement dataEl)
+                && dataEl.ValueKind != JsonValueKind.Null
+                ? dataEl.Clone()
+                : null;
+            string error = node.ValueKind == JsonValueKind.Object ? GetString(node, "error") : "";
+            return new KbFnEnvelope(ok, data, error);
+        }
+        catch (JsonException)
+        {
+            throw new AuthApiException("云函数响应不是合法 JSON：" + Truncate(text));
+        }
+        finally
+        {
+            doc?.Dispose();
+        }
+    }
+
+    private static JsonElement RequireData(KbFnEnvelope env, string errorPrefix)
+    {
+        if (!env.Ok || env.Data is not { } data)
+        {
+            string detail = string.IsNullOrEmpty(env.Error) ? "未知错误" : env.Error;
+            throw new AuthApiException(errorPrefix + detail);
+        }
+        return data;
+    }
+
     /// <summary>统一 GET（PostgREST 风格查询；Authorization 由拦截器附加）。</summary>
     private async Task<string> GetAsync(string path, CancellationToken ct)
         => await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
