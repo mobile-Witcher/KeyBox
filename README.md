@@ -64,7 +64,64 @@ dotnet test tests/KeyBox.Core.Tests/KeyBox.Core.Tests.csproj -c Release
 dotnet build KeyBox-Windows.sln -c Release -p:Platform=x64
 ```
 
-CI：`.github/workflows/build.yml`（windows-latest：restore → test → build）。
+CI：`.github/workflows/build.yml`（windows-latest：`build-and-test` 做 restore/test/build；`package-msix` 产出 MSIX 制品）。
+
+## 构建、测试与打包
+
+```bash
+# 测试 + 构建
+dotnet test tests/KeyBox.Core.Tests/KeyBox.Core.Tests.csproj -c Release
+dotnet build KeyBox-Windows.sln -c Release -p:Platform=x64
+
+# MSIX 打包（未签名 sideload 包）
+pwsh -File scripts/package-msix.ps1            # 产物：artifacts/KeyBox-0.1.0.0-x64.msix
+```
+
+> MSIX 打包用 Windows App SDK 单项目流程，`MakeAppx` / `SignTool` 来自
+> `Microsoft.Windows.SDK.BuildTools` NuGet 包，**无需预装 Windows SDK**。
+
+## 安装（未签名 sideload）
+
+CI 产出的 MSIX **未签名**（仓库不保存任何证书）。Windows 要求包必须签名才能安装，
+本地自签 + sideload 步骤：
+
+```powershell
+# 1) 创建自签证书（一次性；CN 必须与 Package.appxmanifest 的 Publisher=CN=KeyBox 一致）
+$pw = "CN=KeyBox"
+New-SelfSignedCertificate -Type Custom -Subject $pw -KeyUsage DigitalSignature `
+  -FriendlyName "KeyBox MSIX" -CertStoreLocation Cert:\CurrentUser\My
+
+# 2) 导出 .cer（安装端需信任同一证书）
+$cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq $pw } | Select-Object -First 1
+Export-Certificate -Cert $cert -FilePath .\KeyBox.cer
+
+# 3) 签名 MSIX（SignTool 来自 NuGet 包路径）
+& "$env:USERPROFILE\.nuget\packages\microsoft.windows.sdk.buildtools\10.0.22621.756\bin\10.0.22621.0\x64\signtool.exe" `
+  sign /fd SHA256 /a /f .\KeyBox.pfx /p <证书密码> .\artifacts\KeyBox-0.1.0.0-x64.msix
+
+# 4) 安装（先双击 .cer 装到「受信任的根证书颁发机构」并重启资源管理器/注销，再装 MSIX）
+Add-AppxPackage .\artifacts\KeyBox-0.1.0.0-x64.msix
+```
+
+不想折腾证书时，可直接跑未打包形态（功能等价，仅缺 MSIX 包身份）：
+
+```bash
+dotnet publish src/KeyBox.App/KeyBox.App.csproj -c Release -p:Platform=x64
+# 运行 publish 目录下的 KeyBox.App.exe
+```
+
+> 包身份差异：有 MSIX 身份时原生通知（同步/冲突提醒）可用；未打包形态通知静默降级，其余功能不受影响。
+
+## Windows 系统集成
+
+| 项 | 注册方式 | 验证方式 |
+| --- | --- | --- |
+| 系统托盘 | `H.NotifyIcon.WinUI` 2.0.131（MainWindow 构造时创建，菜单：显示/隐藏/立即锁定/退出） | 启动后任务栏托盘出现图标；关闭窗口不退出而是隐藏到托盘 |
+| 关闭窗口最小化到托盘 | `AppWindow.Closing` 拦截 + `Hide()`；设置面板可关（`settings.json`） | 关窗后进程仍在；托盘「显示」可恢复 |
+| 全局快捷键 Ctrl+Shift+K | Win32 `RegisterHotKey` + `SetWindowSubclass` 钩 `WM_HOTKEY`；退出时 `UnregisterHotKey` | 任意应用按 Ctrl+Shift+K 唤起窗口；托盘「退出」后失效 |
+| 开机自启 | 注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | 设置面板开关；`reg query` 该键可见 `KeyBox` 值 |
+| 原生通知 | `AppNotificationManager`（同步完成/冲突待处理） | 需 MSIX 包身份；未打包形态静默降级 |
+| 窗口状态记忆 | `%APPDATA%\KeyBox\window.json` | 移动/缩放窗口后重启，位置尺寸还原；拔掉副屏会自动夹回主屏 |
 
 ## 交付范围
 

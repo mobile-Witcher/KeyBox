@@ -31,9 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Assets\keybox.png" />
-    <!-- 托盘图标：随输出目录提供，供 ms-appx:///Assets/keybox.png 解析 -->
-    <Content Include="Assets\keybox.png">
+    <None Remove="Assets\**" />
+    <!-- 托盘图标与 MSIX 徽标：随输出目录提供，供 ms-appx:///Assets/... 与打包使用 -->
+    <Content Include="Assets\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
