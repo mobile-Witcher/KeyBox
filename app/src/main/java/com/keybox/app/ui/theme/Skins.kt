@@ -15,11 +15,11 @@ import kotlin.math.min
  * Skins.kt —— 外观（**皮肤 × 明暗**）在原生端的单一真相来源。
  *
  * 色值权威源（与 Web 端保持一致，未来可跨端同步）：
- *   - `F:\KeyBox\.skin-colors.json`：9 皮肤 × 深浅的 10 个关键色
+ *   - `F:\project\keybox\KeyBox\.skin-colors.json`：9 皮肤 × 深浅的 10 个关键色
  *     （bg / surface / surface-2 / primary / text / muted / border / danger / success / warning）
- *   - `F:\KeyBox\src\index.css`：补充 `--kb-border-strong`（→ outline）与
+ *   - `F:\project\keybox\KeyBox\src\index.css`：补充 `--kb-border-strong`（→ outline）与
  *     `--kb-primary-contrast`（→ onPrimary）
- *   - `F:\KeyBox\src\lib\theme.ts`：皮肤 id / 中文名（label）/ hint 文案
+ *   - `F:\project\keybox\KeyBox\src\lib\theme.ts`：皮肤 id / 中文名（label）/ hint 文案
  *
  * 映射规则（见 docs/UI-THEME-PLAN.md §2.2）：
  *   bg→background  surface→surface  surface-2→surfaceVariant
