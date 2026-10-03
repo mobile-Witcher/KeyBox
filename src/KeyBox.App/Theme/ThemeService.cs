@@ -46,6 +46,11 @@ public static class ThemeService
     public const string WarningSoft = "KbWarningSoftBrush";
     public const string DangerSoft = "KbDangerSoftBrush";
 
+    // ---- W7-E 新增：语义"软底色"（状态胶囊/空态/骨架屏用）----
+    public const string SuccessSoft = "KbSuccessSoftBrush";
+    public const string MutedSoft = "KbMutedSoftBrush";
+    public const string PrimarySoft = "KbPrimarySoftBrush";
+
     // ---- 形状/字体令牌键 ----
     public const string CornerRadius = "KbCornerRadius";
     public const string CardCornerRadius = "KbCardCornerRadius";
@@ -282,6 +287,10 @@ public static class ThemeService
         d[Warning] = Brush(warning);
         d[WarningSoft] = Brush(Mix(surface, warning, dark ? 0.22 : 0.14));
         d[DangerSoft] = Brush(Mix(surface, danger, dark ? 0.22 : 0.12));
+        // W7-E：语义软底色（状态胶囊/空态/骨架屏用）。深色下提高混合比，保证暗底上也能看出色块。
+        d[SuccessSoft] = Brush(Mix(surface, success, dark ? 0.24 : 0.14));
+        d[MutedSoft] = Brush(Mix(surface, muted, dark ? 0.20 : 0.10));
+        d[PrimarySoft] = Brush(Mix(surface, primary, dark ? 0.26 : 0.14));
 
         // 形状/字体令牌：圆角来自 index.css，字体族按平台映射后已存在生成物里。
         d[CornerRadius] = new CornerRadius(shape.Radius);

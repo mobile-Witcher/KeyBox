@@ -35,6 +35,14 @@ public partial class VaultViewModel : ObservableObject
     private List<VaultItem> _allItems = new();
     private CancellationTokenSource? _copyCts;
 
+    /// <summary>
+    /// W7-E「先显示才能复制密钥」：已展开的条目 id 集合。
+    /// 状态放父 VM（而非逐条 VM），配合整体替换集合 + Mode=OneWay 的既有架构。
+    /// 语义对齐 Web SecretTable：**跨刷新保留**（只在该页面生命周期内有效，离开页面即复位）；
+    /// 条目被删除后其 id 自然失效，不影响其它条目。
+    /// </summary>
+    private readonly HashSet<long> _revealedIds = new();
+
     /// <summary>退出登录请求（页面据此走 SignOutAndGoLogin）。</summary>
     public event Action? LogoutRequested;
 
@@ -71,6 +79,16 @@ public partial class VaultViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<VaultItemViewModel> _visibleItems = new();
+
+    /// <summary>
+    /// W7-E 宽屏多列：卡片最小宽度。绑到 ItemsRepeater 的 UniformGridLayout.MinItemWidth，
+    /// 由窗口尺寸变化驱动（窗口越宽，每行塞下的卡片越多）。窄屏回落单列。
+    /// </summary>
+    [ObservableProperty]
+    private double _cardMinWidth = 340;
+
+    /// <summary>卡片目标高度提示（供占位/骨架屏，避免加载时高度跳变）。</summary>
+    public double CardMinHeight => 168;
 
     // ---- 搜索 / 分类 ----
     [ObservableProperty]
@@ -384,7 +402,7 @@ public partial class VaultViewModel : ObservableObject
         }).ToList();
 
         VisibleItems = new ObservableCollection<VaultItemViewModel>(
-            visible.Select(i => new VaultItemViewModel(i)));
+            visible.Select(i => new VaultItemViewModel(i) { IsRevealed = _revealedIds.Contains(i.Id) }));
         CountText = $"我的密钥（{visible.Count}/{_allItems.Count}）";
 
         OnPropertyChanged(nameof(EmptyListVisibility));
@@ -622,12 +640,52 @@ public partial class VaultViewModel : ObservableObject
         }
     }
 
-    // ---- 复制护栏（R25，W2 保持） ----
+    // ---- 复制护栏（R25，W2 保持；W7-E 扩展为逐字段复制 + 「先显示才能复制密钥」） ----
 
+    /// <summary>
+    /// 切换某条密钥的显示/隐藏（W7-E：默认掩码，点「显示」才可复制）。
+    /// 走 RecomputeVisible 重建集合，让 OneWay 绑定取到新的 IsRevealed。
+    /// </summary>
+    public void ToggleReveal(VaultItemViewModel vm)
+    {
+        if (vm is null || !vm.IsRevealable) return;
+        if (!_revealedIds.Add(vm.Item.Id))
+        {
+            _revealedIds.Remove(vm.Item.Id);
+        }
+
+        RecomputeVisible();
+    }
+
+    /// <summary>
+    /// 逐字段复制（W7-E，照 Web copyField(item, field)）：
+    /// site / url / website / model / note 直接可复制；**key 必须已展开**（isRevealed）才放行。
+    /// 全部走 30 秒自动清空剪贴板护栏。
+    /// </summary>
+    public void CopyField(VaultItemViewModel vm, string field)
+    {
+        if (vm is null) return;
+
+        (string text, string label, bool allowed) = field switch
+        {
+            "site" => (vm.Item.Site, "站点名", vm.CanCopySite),
+            "url" => (vm.Item.Url, "接口地址", vm.CanCopyUrl),
+            "website" => (vm.Item.Website, "官网", vm.CanCopyWebsite),
+            "model" => (vm.Item.Model, "模型名", vm.CanCopyModel),
+            "note" => (vm.Item.Note, "备注", vm.CanCopyNote),
+            "key" => (vm.Item.Key, "密钥", vm.CanCopyKey),
+            _ => ("", "", false),
+        };
+
+        if (!allowed || string.IsNullOrEmpty(text)) return;
+        CopyProtected(text, label);
+    }
+
+    /// <summary>兼容 W2 的整条复制（等价于复制密钥，同样要求已展开）。</summary>
     [RelayCommand]
     private void CopyKey(VaultItemViewModel vm)
     {
-        if (vm is null || !vm.CanCopy) return;
+        if (vm is null || !vm.CanCopyKey) return;
         CopyProtected(vm.Item.Key, "密钥");
     }
 
