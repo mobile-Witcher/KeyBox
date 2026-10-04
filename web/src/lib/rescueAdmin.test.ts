@@ -22,7 +22,7 @@ import { describe, expect, it } from "vitest";
 
 const here = nodePath.dirname(fileURLToPath(import.meta.url)); // src/lib
 const SCRIPT_PATH = nodePath.resolve(here, "../../scripts/rescue-admin.js");
-const LIB_PATH = nodePath.resolve(here, "../../cloudfunctions/kbInviteCreate/lib.js");
+const LIB_PATH = nodePath.resolve(here, "../../../cloudfunctions/kbInviteCreate/lib.js");
 
 // ---------------------------------------------------------------------------
 // 类型：救援脚本的公开契约（仅测试所需）

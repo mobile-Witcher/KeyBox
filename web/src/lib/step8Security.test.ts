@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
 const SRC = resolve(REPO, "src");
-const CLOUD = resolve(REPO, "cloudfunctions");
+const CLOUD = resolve(REPO, "../cloudfunctions");   // 单仓后 cloudfunctions/ 位于 web/ 的上一级
 const MIGRATIONS = resolve(REPO, "cloudbase/migrations");
 
 /** 递归收集指定扩展名的文件（跳过 node_modules/dist/.git）。 */

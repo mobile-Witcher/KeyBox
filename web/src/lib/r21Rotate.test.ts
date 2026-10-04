@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
-const CLOUD_ROOT = resolve(REPO, "cloudfunctions");
+const CLOUD_ROOT = resolve(REPO, "../cloudfunctions");   // 单仓后 cloudfunctions/ 位于 web/ 的上一级
 const MIGRATIONS = resolve(REPO, "cloudbase/migrations");
 
 type Dict = Record<string, unknown>;

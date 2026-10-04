@@ -11,7 +11,7 @@ import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url)); // src/lib
-const FN_PATH = resolve(here, "../../cloudfunctions/kbAdminDeleteUserData/index.js");
+const FN_PATH = resolve(here, "../../../cloudfunctions/kbAdminDeleteUserData/index.js");
 
 interface PgCall {
   method: string;
