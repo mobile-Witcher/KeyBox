@@ -265,3 +265,26 @@ $hdc='C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\h
 - ✅ 建议的两个缓解手段（有证据）：① 客户端启动/回前台**主动续期一次**；
   ② 续期失败**弹窗让用户选择重登**，而不是静默踢回登录页。
 - 机制层原因尚无直接证据，不要在文档里断言。
+### 7.4 PowerShell 文本处理的三个真实事故（2026-10-04，均导致整段脚本失败或写坏文件）
+
+1. **here-string 的终止符必须独占一行**：把 `'@` 写在内容同一行，会让后续脚本文本被当成内容，
+   结果把整段 PowerShell 脚本尾巴写进了 `MainWindow.xaml.cs`，编译器报 [字符字面量中的字符太多] 与 [意外的字符]。
+   规避：优先用「单引号数组 + -join」构造多行文本，不用 here-string。
+2. **全角引号也是字符串定界符**：提交信息里写了中文全角引号，PowerShell 把 U+201C/U+201D 当引号，
+   直接解析失败、整段不执行。规避：脚本内的中文引号一律用「」，或写入临时文件时用数组拼接。
+3. **批量正则替换多文件必然出事**（见 7.2 第 6 条）：一次批量替换把 5 个测试文件改成加载即失败，
+   靠 git revert 挽回。规避：逐个文件、逐个编译/测试、一次只动一处。
+
+> 通用保命做法：**改完立刻编译**；**构建不通过就不提交**（本轮三次事故都是靠这条没把坏代码推上去）。
+
+### 7.5 多端会话的缓解手段：实现状态（2026-10-04）
+
+| 端 | ① 启动主动续期 | ② 失效不再静默登出 |
+|---|---|---|
+| 安卓 | 本就有（MainViewModel.restoreSession 启动即 refreshSession） | 已完成：MainViewModel.reloginNotice + KeyBoxApp 传递 + LoginScreen 展示 |
+| Windows | 已完成：MainWindow 启动调 AppServices.KickProactiveRefresh() | 已完成：AppServices.LoginNotice/NavigateToLoginWithNotice/ConsumeLoginNotice + LoginPage.NoticeText |
+| 鸿蒙 | 本就有（Index.ets aboutToAppear 即 refreshSession） | 已完成：restoreSession 的 catch 不再清空 status，改为给出说明并置警示色 |
+| 网页版 | 由 @cloudbase/js-sdk 托管（按需自动续期） | 由 SDK 托管；如需提示可在会话失效回调中加 |
+
+**尚未做**：用 `tools/kb-ab-deviceid.js` 复跑 A/B，验证 ① 是否真把失效概率压下去
+（做法：两组都在登录后**先各续期一次**，再交叉登录，观察先登录一方是否仍能续期）。
