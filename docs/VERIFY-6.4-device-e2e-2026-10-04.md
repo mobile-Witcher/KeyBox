@@ -111,3 +111,28 @@ $$;
 - **未做任何写操作**（未改 RLS、未改数据）——缺口 1/2 的修法已给出，等你批准。
 - **B/C/D 组**需设备与时间（30 分钟静置、安卓真机、DevEco）。
 - Android/iOS 之外的鸿蒙构建需本机 DevEco（交接书 §6.3 已注明）。
+
+---
+
+## 修复记录（2026-10-04，所有者授权后执行）
+
+> 所有者明确指示"你先修复"。执行前已 `dryRun` 校验（判定 `security_change`、未写库），并预留回滚脚本 `docs/SQL-rollback-6.4-gaps.sql`。
+
+| 缺口 | 修复 | 复核证据（只读 SQL） |
+|---|---|---|
+| **R13** 被停用用户仍可读写自己密钥 | 新增 `public.is_active_user()`（SECURITY DEFINER，判据 `uid=auth.uid() AND status='active'`）；`kb_secrets` 四条策略判据改为 `(owner_id = auth.uid()) AND is_active_user()` | `pg_policies`：四条策略 using/with_check 均为 `((owner_id = auth.uid()) AND is_active_user())` ✅ |
+| **R05** 20 人上限无数据库兜底 | 新增 `public.kb_enforce_user_cap()` + 触发器 `kb_users_cap_before_insert`（BEFORE INSERT，`count(*) WHERE status <> 'deleted' >= 20` 即 `RAISE EXCEPTION 'KB_USER_LIMIT_REACHED'`） | `pg_trigger`：触发器已存在且定义符合；`pg_proc`：函数存在（returns trigger）✅ |
+
+**未改动的部分**（有意保留）：
+- `kb_users.kb_users_select_self` 仍是 `uid = auth.uid()`（不加 status 校验）—— 让被停用用户仍能读到自己的状态，客户端可据此给出"账号已停用"的明确提示，而不是一律报错。
+- `is_admin()` / `kb_admin_user_list()` 未动。
+
+**行为变化与影响面**：
+- 停用用户**立即**（不再需要等 ≤1 分钟、也不再依赖客户端自觉）无法通过 API 读写 `kb_secrets`；其 JWT 虽未过期，数据层已拒绝。
+- 正常用户（`status='active'`）不受任何影响；`TO authenticated` 角色范围未变。
+- 第 21 个 `kb_users` 插入会被数据库拒绝（应用层需捕获并提示"用户数已达上限"）。
+
+**R13 / R05 结论更新**：由「❌ 需修复 / ⚠️ 机制未落库」→ **✅ 已在数据层修复（待真机复测确认体验）**。
+
+**执行路径说明（重要）**：`managePgDatabase(action=applyMigration)` **被拒**，原因是宿主把 MCP 的项目根设为 `C:\Users\29396\.dsh\profiles\desktop`（宿主配置目录），工具拒绝在该目录下落迁移文件。故改走工具在 `dryRun` 中建议的 `execute`（`confirm=true` + `allowDdlViaExecute=true`）。
+**遗留**：若后续还要用 `applyMigration` / `deployApply` 等项目级能力，需把 MCP 的 `WORKSPACE_FOLDER_PATHS` 指向 `F:\project\keybox`（本文件即等价迁移留档）。
