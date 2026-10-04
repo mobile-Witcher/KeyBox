@@ -111,6 +111,13 @@ export interface KbFnEnvelope {
   ok: boolean;
   data: Record<string, Object> | null;
   error: string;
+  /**
+   * 仅 kbGetMyRole 在"本账号尚未激活"时附带：
+   *   true  = 系统已有用户 → 引导去邀请码激活
+   *   false = 系统还没有任何用户 → 引导去首次初始化
+   * 其余情况为 true（无意义）。
+   */
+  initialized: boolean;
 }
 
 /** kbGetMyRole 返回（本人角色 + 密钥参数 + 恢复码材料状态；recovery_* 仅回本人）。 */
@@ -203,7 +210,9 @@ async function invokeFunction(name: string, bodyJson: string,
     const data = (dataRaw !== undefined && dataRaw !== null && typeof dataRaw === 'object')
       ? dataRaw as Record<string, Object> : null;
     const error = fnStr(node['error']);
-    return { ok: ok, data: data, error: error };
+    const initialized = typeof node['initialized'] === 'boolean'
+      ? node['initialized'] as boolean : true;
+    return { ok: ok, data: data, error: error, initialized: initialized };
   } catch (err) {
     const be = err as BusinessError;
     if (be.code !== undefined && (be.code as number) !== 2300000 &&
@@ -232,6 +241,60 @@ export async function fetchMyRole(accessToken: string): Promise<KbMyRole> {
     recoveryBlob: fnStr(env.data['recoveryBlob']),
     recoveryAckAt: fnStr(env.data['recoveryAckAt'])
   };
+}
+
+/** R01/R03 门禁探针结果。 */
+export interface ActivationProbe {
+  /** 已激活（ok 且 status === 'active'）。 */
+  activated: boolean;
+  /** 未激活时：true=系统已有用户（去邀请码激活）；false=系统还没有用户（去首次初始化）。 */
+  initialized: boolean;
+  /** 服务端返回的 kb_users.status（active/disabled/deleted；未激活时可能为空）。 */
+  status: string;
+  /** 失败原因（网络异常或服务端错误码）。 */
+  error: string;
+}
+
+/**
+ * R01/R03 门禁探针：登录后判断本账号是否可用（**不抛异常**，供登录后路由使用）。
+ * ⚠️ 判定必须看 status === 'active'：被软删/停用的账号在 kb_users 里**仍有行**，
+ *    kbGetMyRole 照样能返回 —— 只看 ok 会把这类账号误判为"已激活"（Windows 端真机踩过）。
+ */
+export async function probeActivation(accessToken: string): Promise<ActivationProbe> {
+  try {
+    const env = await invokeFunction('kbGetMyRole', '{}', accessToken);
+    const status = env.ok && env.data !== null ? fnStr(env.data['status']) : '';
+    return {
+      activated: env.ok && status === 'active',
+      initialized: env.initialized,
+      status: status,
+      error: env.error
+    };
+  } catch (e) {
+    // 网络/服务异常：按"未知"处理（initialized=true），交给调用方保守引导
+    return { activated: false, initialized: true, status: '', error: (e as Error).message };
+  }
+}
+
+/** R03：用一次性邀请码完成激活（kbRegister）。只上传盐与校验串，主密码与主密钥绝不出设备。 */
+export async function registerRemote(code: string, kdfSalt: string, kdfVerifier: string,
+  accessToken: string): Promise<KbFnEnvelope> {
+  const body: Record<string, string> = {
+    'code': code,
+    'kdfSalt': kdfSalt,
+    'kdfVerifier': kdfVerifier
+  };
+  return await invokeFunction('kbRegister', JSON.stringify(body), accessToken);
+}
+
+/** R01：首个管理员初始化（kbInitAdmin）。服务端守卫：kb_users 已有任意用户即 ALREADY_INITIALIZED。 */
+export async function initAdminRemote(kdfSalt: string, kdfVerifier: string,
+  accessToken: string): Promise<KbFnEnvelope> {
+  const body: Record<string, string> = {
+    'kdfSalt': kdfSalt,
+    'kdfVerifier': kdfVerifier
+  };
+  return await invokeFunction('kbInitAdmin', JSON.stringify(body), accessToken);
 }
 
 /**

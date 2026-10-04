@@ -3,6 +3,7 @@
     "pages/Index",
     "pages/Unlock",
     "pages/Vault",
-    "pages/Admin"
+    "pages/Admin",
+    "pages/Register"
   ]
 }

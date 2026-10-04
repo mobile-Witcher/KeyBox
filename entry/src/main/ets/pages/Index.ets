@@ -8,6 +8,7 @@ import { sendVerification, verifyCode, signIn, refreshSession } from '../lib/aut
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { loadTokens, saveTokens, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
+import { probeActivation } from '../lib/kbapi';
 
 const TAG: string = 'KeyBoxIndex';
 
@@ -45,6 +46,18 @@ struct Index {
       AppStorage.setOrCreate('accessToken', session.accessToken);
       await saveTokens(session.accessToken, session.refreshToken, session.uid);
       this.uid = session.uid;
+      const probe = await probeActivation(session.accessToken);
+      if (!probe.activated) {
+        // R01/R03 门禁：平台手机号登录成功 ≠ 已开户。停用/已删除由服务端语义决定：
+        //   disabled → 明确提示；其余（含 deleted 重新开户、从未注册）→ 引导去注册页
+        this.status = probe.status === 'disabled'
+          ? '该账号已被管理员停用，请联系管理员。'
+          : '本账号尚未注册（或未完成激活），请点击下方「注册」完成邀请码激活。';
+        this.statusColor = this.c().danger;
+        hilog.info(0x0000, TAG, 'not activated: status=%{public}s initialized=%{public}s',
+          probe.status, String(probe.initialized));
+        return;
+      }
       router.replaceUrl({ url: 'pages/Unlock' });
     } catch (e) {
       // refresh 失效：清掉旧登录态，留在登录页重新走验证码
@@ -98,6 +111,18 @@ struct Index {
       AppStorage.setOrCreate('accessToken', session.accessToken);
       await saveTokens(session.accessToken, session.refreshToken, session.uid);
       this.uid = session.uid;
+      const probe = await probeActivation(session.accessToken);
+      if (!probe.activated) {
+        // R01/R03 门禁：平台手机号登录成功 ≠ 已开户。停用/已删除由服务端语义决定：
+        //   disabled → 明确提示；其余（含 deleted 重新开户、从未注册）→ 引导去注册页
+        this.status = probe.status === 'disabled'
+          ? '该账号已被管理员停用，请联系管理员。'
+          : '本账号尚未注册（或未完成激活），请点击下方「注册」完成邀请码激活。';
+        this.statusColor = this.c().danger;
+        hilog.info(0x0000, TAG, 'not activated: status=%{public}s initialized=%{public}s',
+          probe.status, String(probe.initialized));
+        return;
+      }
       this.status = '登录成功，正在进入…';
       this.statusColor = this.c().success;
       hilog.info(0x0000, TAG, 'login ok, uid=%{public}s', session.uid);
@@ -175,6 +200,16 @@ struct Index {
         .alignItems(HorizontalAlign.Start)
         .width('100%')
       }
+
+      Button('没有账号？注册')
+        .width('100%')
+        .height(44)
+        .backgroundColor(this.c().surface)
+        .fontColor(this.c().text)
+        .enabled(!this.busy)
+        .onClick(() => {
+          router.replaceUrl({ url: 'pages/Register' });
+        })
 
       if (this.status !== '') {
         Text(this.status)
