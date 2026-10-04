@@ -1,5 +1,7 @@
 using KeyBox.App.Controls;
 using KeyBox.App.Services;
+using KeyBox.App.Theme;
+using Microsoft.UI.Xaml.Media;
 using KeyBox.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -63,7 +65,23 @@ public sealed partial class VaultPage : Page
     /// <summary>W7-F：顶栏「外观」按钮（已从代码挂载移入 XAML）——弹出皮肤/明暗面板。</summary>
     private void OnAppearanceClick(object sender, RoutedEventArgs e)
     {
-        var flyout = new Flyout { Content = new AppearancePanel() };
+        var panel = new AppearancePanel();
+        var flyout = new Flyout { Content = panel };
+
+        // 弹层（Flyout/Dialog）不会继承内容根的 RequestedTheme：直接给面板本体设主题，
+        // 并同步自身底色。订阅主题变化做实时同步，关闭时退订（避免事件泄漏）。
+        void SyncPanelTheme()
+        {
+            panel.RequestedTheme = ThemeService.CurrentElementTheme;
+            if (Application.Current?.Resources[ThemeService.Surface] is Brush surface)
+            {
+                panel.Background = surface;
+            }
+        }
+
+        ThemeService.Changed += SyncPanelTheme;
+        flyout.Closed += (_, _) => ThemeService.Changed -= SyncPanelTheme;
+        SyncPanelTheme();
         flyout.ShowAt((FrameworkElement)sender);
     }
 
@@ -149,6 +167,8 @@ public sealed partial class VaultPage : Page
     {
         var dialog = new ContentDialog
         {
+            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            RequestedTheme = ThemeService.CurrentElementTheme,
             XamlRoot = XamlRoot,
             Title = ViewModel.EditorTitle,
             PrimaryButtonText = "保存",
@@ -181,6 +201,8 @@ public sealed partial class VaultPage : Page
         if (ViewModel.DeleteTarget is not { } target) return;
         var dialog = new ContentDialog
         {
+            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            RequestedTheme = ThemeService.CurrentElementTheme,
             XamlRoot = XamlRoot,
             Title = "删除密钥",
             Content = $"确定删除「{target.Site}」吗？此操作不可恢复。",
@@ -210,6 +232,8 @@ public sealed partial class VaultPage : Page
         };
         var dialog = new ContentDialog
         {
+            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            RequestedTheme = ThemeService.CurrentElementTheme,
             XamlRoot = XamlRoot,
             Title = "重命名分类",
             Content = textBox,
@@ -234,6 +258,8 @@ public sealed partial class VaultPage : Page
         if (ViewModel.TagDeleteName is not { } name) return;
         var dialog = new ContentDialog
         {
+            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            RequestedTheme = ThemeService.CurrentElementTheme,
             XamlRoot = XamlRoot,
             Title = "删除分类",
             Content = $"将从 {ViewModel.TagDeleteCount} 条密钥的分类中移除「{name}」。（分类为空时整键省略）",
@@ -273,6 +299,8 @@ public sealed partial class VaultPage : Page
 
         var dialog = new ContentDialog
         {
+            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            RequestedTheme = ThemeService.CurrentElementTheme,
             XamlRoot = XamlRoot,
             Title = "同步冲突",
             Content = stack,

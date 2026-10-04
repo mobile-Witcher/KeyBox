@@ -74,6 +74,13 @@ public static class ThemeService
     /// <summary>当前实际生效的明暗（System 模式下解析为系统值）。</summary>
     public static bool IsDarkEffective { get; private set; }
 
+    /// <summary>
+    /// 当前生效的 WinUI 元素主题。主窗口内容根由 ApplyRootTheme 负责，
+    /// 但 **ContentDialog / Flyout 挂在 XamlRoot 的弹出层**，不会继承内容根的 RequestedTheme，
+    /// 必须由创建方显式赋给它们的 RequestedTheme（否则会出现"页面深色、弹窗浅色"）。
+    /// </summary>
+    public static ElementTheme CurrentElementTheme => IsDarkEffective ? ElementTheme.Dark : ElementTheme.Light;
+
     /// <summary>皮肤或明暗变化后触发（供外观面板刷新选中态）。</summary>
     public static event Action? Changed;
 
