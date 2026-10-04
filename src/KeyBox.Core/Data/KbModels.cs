@@ -12,10 +12,13 @@ public sealed record KbFnEnvelope(bool Ok, System.Text.Json.JsonElement? Data, s
 public sealed record ActivationProbe(bool Activated, bool? Initialized, string Status, string Error)
 {
     /// <summary>行存在但被停用/软删：不能放进解锁页，应给出明确提示。</summary>
-    public bool IsBlocked => Status is "deleted" or "disabled"
-        || Error.Contains("DISABLED", StringComparison.OrdinalIgnoreCase)
-        || Error.Contains("DELETED", StringComparison.OrdinalIgnoreCase)
-        || Error.Contains("NOT_ACTIVE", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// 是否属于"不可自助恢复"（只有管理员能处理）。
+    /// 注意 **deleted 不算**：软删账号名额已释放、允许用新邀请码重新开户（服务端 kbRegister 已按 status 分流），
+    /// 只有 disabled（管理员主动停用）才拦。
+    /// </summary>
+    public bool IsBlocked => Status == "disabled"
+        || Error.Contains("DISABLED", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>kb_users 的密钥参数行（解锁校验用；照安卓 KbUserInfo）。</summary>

@@ -48,6 +48,7 @@ public sealed class ActivationService
         "INVALID_CODE" => "邀请码无效或已被使用，请向管理员索取新的邀请码",
         "LIMIT_REACHED" => "已达 20 人开户上限，请联系管理员",
         "ALREADY_INITIALIZED" => "系统已有用户，请改用邀请码激活",
+        "ACCOUNT_DISABLED" => "该账号已被管理员停用，请联系管理员",
         "MISSING_RECOVERY_PARAMS" => "恢复码参数不完整，请重试",
         "" => "激活失败，请稍后重试",
         _ => "激活失败：" + code,
