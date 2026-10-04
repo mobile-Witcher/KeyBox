@@ -28,9 +28,12 @@ public sealed partial class MainWindow : Window
         Title = "KeyBox — 密钥保管箱";
         AppServices.MainWindow = this;
         SetupTitleBar();
-        NavigateToInitial();
 
+        // 顺序很重要：**先**按记忆恢复窗口尺寸，**再**导航。
+        // 反过来的话页面会按创建时的默认尺寸布局，窗口缩小后内容不重新测量，
+        // 表现为"内容按更宽视口居中、右侧被裁掉一大截"（真机在小窗口下踩到）。
         RestoreWindowState();
+        NavigateToInitial();
         AppWindow.Closing += OnAppWindowClosing;
         SetupTray();
         SetupHotKey();

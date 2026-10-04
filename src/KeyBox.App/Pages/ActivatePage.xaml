@@ -11,11 +11,11 @@
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Auto">
             <StackPanel
-                MaxWidth="380"
+                MaxWidth="420"
                 Spacing="12"
-                Padding="20"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
+                Padding="24"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
 
                 <TextBlock
                     Text="{x:Bind ViewModel.Title}"
