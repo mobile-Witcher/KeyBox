@@ -99,14 +99,14 @@ export async function clearTokens(): Promise<void> {
     hilog.warn(0x0000, TAG, 'clearTokens failed: %{public}s', (e as Error).message);
   }
 }
-
 /**
- * 设备 id（R95）：平台用 x-device-id 区分"登录账号数"，缺失会被视作同一设备/会话，
- * 导致多端互相顶掉。首次运行生成随机值并持久化，之后每次请求都带上，保证：
- *   1) 四端各自独立（不同设备不同 id）
- *   2) 同一端重启后仍是同一 id（不会被平台当成新设备）
+ * 设备 id（R95）：平台用 x-device-id 区分"登录账号数"（官方文档原话）。
+ * 缺失时多端登录会被视作同一设备/会话而互相顶掉，即"两端不能同时登录"的真因。
+ * 首次运行生成随机值并持久化（复用 initSession 打开的 sessionPrefs）：
+ * 四端各自独立，同一端重启后仍是同一 id。
  */
 let deviceIdCache: string = '';
+
 export function getDeviceId(): string {
   if (deviceIdCache.length === 0) {
     deviceIdCache = 'ohos-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
@@ -114,17 +114,22 @@ export function getDeviceId(): string {
   }
   return deviceIdCache;
 }
-async function persistDeviceId(id: string): Promise<void> {
-  try {
-    const p: preferences.Preferences = await initPromise;
-    await p.put('deviceId', id);
-    await p.flush();
-  } catch (e) { /* 首次初始化前失败可忽略：下次请求会重试持久化 */ }
-}
+
 export async function initDeviceId(): Promise<void> {
   try {
-    const p: preferences.Preferences = await initPromise;
+    const p = sessionPrefs;
+    if (p === null) { return; }
     const saved = await p.get('deviceId', '') as string;
-    if (saved.length > 0) { deviceIdCache = saved; } else { getDeviceId(); }
-  } catch (e) { getDeviceId(); }
+    if (saved.length > 0) { deviceIdCache = saved; }
+    else if (deviceIdCache.length > 0) { await persistDeviceId(deviceIdCache); }
+  } catch (e) { /* 读失败时保持内存值，下一次请求会重试持久化 */ }
+}
+
+async function persistDeviceId(id: string): Promise<void> {
+  try {
+    const p = sessionPrefs;
+    if (p === null) { return; }
+    await p.put('deviceId', id);
+    await p.flush();
+  } catch (e) { /* 忽略：持久化失败不应阻塞请求 */ }
 }
