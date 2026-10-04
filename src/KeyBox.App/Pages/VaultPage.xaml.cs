@@ -131,35 +131,16 @@ public sealed partial class VaultPage : Page
         _ = ShowConflictDialogAsync();
     }
 
-    /// <summary>「安全」入口：ContentDialog 承载安全面板（每次新建实例；数据变化后刷新列表）。</summary>
-    private async void OnSecurityClick(object sender, RoutedEventArgs e)
+    /// <summary>W7-F：「安全」入口改为**独立页面**（原为 ContentDialog；返回时本页会重新 LoadAsync）。</summary>
+    private void OnSecurityClick(object sender, RoutedEventArgs e)
     {
-        var vm = new SecurityViewModel(AppServices.SecurityService, AppServices.CurrentUid);
-        vm.DataChanged += () => _ = ViewModel.LoadAsync();
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot,
-            Title = "安全",
-            CloseButtonText = "关闭",
-            Content = new SecurityPanelControl(vm),
-        };
-        _ = vm.InitializeAsync();
-        await dialog.ShowAsync();
+        Frame.Navigate(typeof(PanelPage), "security");
     }
 
-    /// <summary>「管理」入口（仅 role=admin 可见）：ContentDialog 承载管理后台面板。</summary>
-    private async void OnAdminClick(object sender, RoutedEventArgs e)
+    /// <summary>W7-F：「管理」入口（仅 role=admin）改为**独立页面**。</summary>
+    private void OnAdminClick(object sender, RoutedEventArgs e)
     {
-        var vm = new AdminViewModel(AppServices.AdminService, AppServices.CurrentUid);
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot,
-            Title = "管理",
-            CloseButtonText = "关闭",
-            Content = new AdminPanelControl(vm),
-        };
-        _ = vm.InitializeAsync();
-        await dialog.ShowAsync();
+        Frame.Navigate(typeof(PanelPage), "admin");
     }
 
     // ---- 对话框（每次新建实例） ----

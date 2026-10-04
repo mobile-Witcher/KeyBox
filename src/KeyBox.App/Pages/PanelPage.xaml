@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="KeyBox.App.Pages.PanelPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="{ThemeResource KbBgBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 顶栏：返回 + 标题（W7-F：安全/管理从 ContentDialog 升为独立页面） -->
+        <Grid
+            Grid.Row="0"
+            Padding="16,10"
+            ColumnSpacing="10"
+            Background="{ThemeResource KbSurface2Brush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button
+                Grid.Column="0"
+                Content="&#xE72B;"
+                Click="OnBackClick"
+                FontFamily="Segoe Fluent Icons"
+                FontSize="14"
+                VerticalAlignment="Center"
+                ToolTipService.ToolTip="返回" />
+            <TextBlock
+                x:Name="TitleText"
+                Grid.Column="1"
+                Text="安全"
+                FontSize="20"
+                FontWeight="Bold"
+                VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- 面板宿主：控件在代码里构造（构造函数需要注入 ViewModel） -->
+        <Grid
+            x:Name="Host"
+            Grid.Row="1"
+            Padding="16,12" />
+    </Grid>
+</Page>
