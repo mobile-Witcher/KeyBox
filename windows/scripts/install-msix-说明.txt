@@ -1,11 +1,19 @@
 ﻿KeyBox Windows 安装（一键）
 
-双击「双击这里-一键安装.cmd」→ 弹出 UAC 时点【是】→ 看到“安装成功”即完成。
-之后在开始菜单搜索 KeyBox 启动。
+双击 Install-KeyBox.cmd
+  → 弹出 UAC 时点【是】（必须，原因见下）
+  → 看到绿色 “安装成功！” 后，在开始菜单搜索 KeyBox 启动
 
-为什么需要管理员：Windows 要求 MSIX 的签名根证书装在【本机】受信任区，
-这一步无法绕过（自签名证书必须被本机信任，系统才允许侧载安装）。
-脚本做的事：导入随附的 .cer 到 本机\受信任发布者 + 本机\受信任根 → 移除旧版本 → 安装 MSIX。
-全程离线，不联网；证书可随时用 certlm.msc 删除。
+为什么必须管理员：Windows 要求 MSIX 的签名根证书装在【本机】受信任区，
+只装到当前用户无效（实测报 0x800B0109 根证书必须是受信任的证书）。
+脚本做的事：导入随附 .cer 到 本机\受信任发布者 + 本机\受信任根 → 移除旧版本 → 安装 MSIX。
+全程离线；不再需要时用 certlm.msc 删除证书即可。
 
-如果安装失败：把窗口里的红色报错截图发给维护者。
+如果双击仍然没反应：改用下面任一方式（能看到报错）——
+  1) 右键 Install-KeyBox.ps1 → 使用 PowerShell 运行
+  2) 开一个 PowerShell 窗口，粘贴执行：
+     powershell -NoProfile -ExecutionPolicy Bypass -File "
+C:\Users\29396\Desktop\KeyBox-Windows-安装\Install-KeyBox.ps1
+"
+
+安装失败时请把窗口里的红色文字截图发给维护者。
