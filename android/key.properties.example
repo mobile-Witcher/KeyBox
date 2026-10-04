@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# KeyBox 原生端 Release 签名配置模板
+#
+# 用法：复制本文件为 key.properties，填入真实值（key.properties 已 gitignore，绝不入库）。
+#       keystore 文件默认放在仓库根目录（与 storeFile 的相对路径对应）。
+#
+# 说明：key.properties 不存在或字段缺失时，构建会【优雅降级为不签名】——
+#       assembleDebug / assembleRelease 仍可跑通（产出未签名包），仅不可正式分发。
+#
+# 生成 keystore（示例）：
+#   keytool -genkeypair -v -keystore keybox-release.jks -alias keybox \
+#     -keyalg RSA -keysize 2048 -validity 10000
+#
+# CI：由 .github/workflows/build.yml 从 GitHub Secrets 解码生成本文件，
+#     对应 secrets 为 ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD /
+#     ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD（与 Web 端 build-android.yml 同一套）。
+# ─────────────────────────────────────────────────────────────────────────────
+storeFile=keybox-release.jks
+storePassword=your-store-password
+keyAlias=keybox
+keyPassword=your-key-password
