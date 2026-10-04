@@ -108,6 +108,8 @@ public partial class AdminViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IdleEnabled))]
+    [NotifyPropertyChangedFor(nameof(CanGenerateInvite))]
+    [NotifyPropertyChangedFor(nameof(CanRevokeInvite))]
     private bool _isBusy;
 
     [ObservableProperty]
