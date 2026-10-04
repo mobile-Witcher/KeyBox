@@ -294,3 +294,21 @@ $hdc='C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\h
 > 平台侧属服务端行为（MaxDevice=5 不是限制因素），需要时向 CloudBase 提工单确认。
 > **工单草稿**：`docs/ISSUE-cloudbase-refresh-rotation.md`（含环境信息、自查排除项、三组实验数据、
 > 可直接复现的最小 curl 序列、明确诉求），需要向 CloudBase 反馈时直接粘贴即可。
+### 7.6 【2026-10-04 事故】发布前必须验「配置已编入产物」，不能只验签名
+
+**事故**：本地 `assembleRelease` 时 `android/keys.properties` 缺失（它被 .gitignore，一直是本地文件），
+gradle 优雅降级为空串 ⇒ `BuildConfig.ENV_ID = ""` ⇒ `AuthRepository.apiBase()` 拼出
+`https://.api.tcloudbasegateway.com`，用户装机后一点【发送验证码】就报 `Invalid URL host`。
+**v0.5.0 发布出去的 Android APK 就是坏的**（CI 的包没事，因为它从 GitHub Secrets 注入；坏的是本地出的包）。
+已修：补 `keys.properties` + 重出包 + 替换 Release 资产 + 桌面副本；并加了 gradle 防呆（Release 时 ENV_ID 为空直接构建失败）。
+
+**教训（推广到四端）**：签名只证明「包可信」，不证明「包能用」。发布前必须逐端确认敏感配置**非空且已编入产物**：
+
+| 端 | 配置来源（均不入库） | 发布前检查 |
+|---|---|---|
+| 安卓 | `android/keys.properties`（`ENV_ID` / `PUBLISHABLE_KEY`）或 CI 的 `KEYBOX_ENV_ID`/`KEYBOX_PUBLISHABLE_KEY` | 解包后 `findstr /M /C:"<envId>" classes*.dex` 必须命中 |
+| 鸿蒙 | `harmony/entry/src/main/ets/lib/config.private.ets`（`.example` 有模板） | 缺失时**编译会直接失败**（`Cannot find module ./config.private`）⇒ 天然防呆 ✔ |
+| 网页版 | `web/.env.local`（`VITE_*`） | `npm run build` 前确认文件存在、且产物里能搜到非空环境值 |
+| Windows | 环境 ID / 端点写在代码常量里（无本地配置） | 无此类风险；但仍应实测一次「发送验证码」走通 |
+
+**一句话**：发布前跑一遍「**装到设备上点一次【发送验证码】/【登录】**」——这是唯一能同时验出签名、配置、网络三件事的动作。
