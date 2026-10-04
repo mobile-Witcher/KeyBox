@@ -57,12 +57,24 @@ exports.main = async (event) => {
     const hasRecoveryBlob = recoveryBlob.length > 0;
     if (hasRecoverySalt !== hasRecoveryBlob) return fail("MISSING_RECOVERY_PARAMS");
 
-    // ② 幂等：该平台账号已激活则直接返回既有身份（重复提交不报错，也不覆盖加密材料）
+    // ② 按 status 分流（2026-10-04 修复）
+    //    原实现只看"行是否存在"就返回 alreadyActivated，导致：
+    //      · deleted 账号被判为"已激活" ⇒ 客户端以为注册成功、解锁必然失败；
+    //      · disabled 账号也能自助"恢复"（停用是管理员决定，不该被绕过）。
+    //    active   → 幂等成功（不覆盖既有加密材料）
+    //    disabled → 明确拒绝
+    //    deleted  → 允许重新开户：清掉旧密文后复用该行（名额已在 ③ 因 deleted 被释放）
     const already = await pgRequest("GET", "kb_users", {
       query: { select: "uid,role,status", uid: `eq.${uid}` },
     });
+    let reRegistering = false;
     if (Array.isArray(already) && already.length > 0) {
-      return ok({ uid, role: already[0].role, alreadyActivated: true });
+      const existingStatus = String(already[0].status || "");
+      if (existingStatus === "disabled") return fail("ACCOUNT_DISABLED");
+      if (existingStatus !== "deleted") {
+        return ok({ uid, role: already[0].role, alreadyActivated: true });
+      }
+      reRegistering = true;
     }
 
     // ③ 20 人上限（R22/R26）：统计 status <> 'deleted' 的用户数
@@ -80,28 +92,42 @@ exports.main = async (event) => {
 
     const username = await resolveDisplayName(uid);
 
-    // ⑤ 建立用户记录（不含主密码任何字段；role 固定 user；login_hash 为哨兵）
+    // ⑤ 建立/复用用户记录（不含主密码任何字段；role 固定 user；login_hash 为哨兵）
+    const userRow = {
+      username,
+      login_hash: PASSWORD_LOGIN_DISABLED,
+      role: "user",
+      status: "active",
+      kdf_salt: kdfSalt,
+      kdf_verifier: kdfVerifier,
+      key_epoch: 0,
+      // R28：显式写恢复材料（绝不为空时依赖 DB 默认；service_role 无用户 JWT，DEFAULT 亦不可靠）。
+      //   未提供恢复码时显式写 null（允许先开户、稍后补设）；recovery_ack_at 显式写 null 表示
+      //   “尚未确认”，待用户勾选“我已抄下并自行保管”后由 kbAckRecovery 写入时间戳。
+      recovery_salt: hasRecoverySalt ? recoverySalt : null,
+      recovery_blob: hasRecoveryBlob ? recoveryBlob : null,
+      recovery_created_at: hasRecoveryBlob ? new Date().toISOString() : null,
+      recovery_ack_at: null,
+    };
     try {
-      await pgRequest("POST", "kb_users", {
-        prefer: "return=minimal",
-        body: {
-          uid,
-          username,
-          login_hash: PASSWORD_LOGIN_DISABLED,
-          role: "user",
-          status: "active",
-          kdf_salt: kdfSalt,
-          kdf_verifier: kdfVerifier,
-          key_epoch: 0,
-          // R28：显式写恢复材料（绝不为空时依赖 DB 默认；service_role 无用户 JWT，DEFAULT 亦不可靠）。
-          //   未提供恢复码时显式写 null（允许先开户、稍后补设）；recovery_ack_at 显式写 null 表示
-          //   “尚未确认”，待用户勾选“我已抄下并自行保管”后由 kbAckRecovery 写入时间戳。
-          recovery_salt: hasRecoverySalt ? recoverySalt : null,
-          recovery_blob: hasRecoveryBlob ? recoveryBlob : null,
-          recovery_created_at: hasRecoveryBlob ? new Date().toISOString() : null,
-          recovery_ack_at: null,
-        },
-      });
+      if (reRegistering) {
+        // 重新开户：先清掉该 uid 的旧密文（落实 R14「删除用户数据」的语义，绝不复活旧内容），
+        // 再用新邀请码对应的材料复用这一行（uid 是主键，无法 INSERT）。
+        await pgRequest("DELETE", "kb_secrets", {
+          query: { owner_id: `eq.${uid}` },
+          prefer: "return=minimal",
+        });
+        await pgRequest("PATCH", "kb_users", {
+          query: { uid: `eq.${uid}` },
+          prefer: "return=minimal",
+          body: userRow,
+        });
+      } else {
+        await pgRequest("POST", "kb_users", {
+          prefer: "return=minimal",
+          body: Object.assign({ uid }, userRow),
+        });
+      }
     } catch (insertError) {
       // 插入失败（如并发同 uid）→ 尽力把邀请码还原，避免用户白消耗一个码
       try {
