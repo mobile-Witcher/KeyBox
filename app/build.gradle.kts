@@ -59,8 +59,8 @@ android {
         minSdk = 26
         targetSdk = 35
         // 原生端独立版本线（与 Web/Capacitor 端 0.2.0 不冲突，二者为不同产物）。
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
 
         buildConfigField("String", "ENV_ID", "\"$envId\"")
         buildConfigField("String", "PUBLISHABLE_KEY", "\"$publishableKey\"")
