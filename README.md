@@ -1,4 +1,6 @@
 # KeyBox
+> 📘 在**另一台电脑**上安装/信任/构建签名包：见 [`docs/SIGNING-AND-TRUST.md`](docs/SIGNING-AND-TRUST.md)（含公开证书 `docs/certs/keybox-codesign.cer`）
+
 
 ![KeyBox](docs/assets/keybox-banner-light.png)
 
