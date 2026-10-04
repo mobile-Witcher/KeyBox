@@ -68,6 +68,39 @@ public sealed partial class RegisterPage : Page
         }
     }
 
+    /// <summary>
+    /// 服务端错误码 → 用户可读文案（与网页版 / 安卓 / 鸿蒙口径一致）。
+    /// 云函数 kbRegister 满员时返回 LIMIT_REACHED，DB 触发器兜底抛 KB_USER_LIMIT_REACHED。
+    /// </summary>
+    private static string DescribeRegisterError(string error)
+    {
+        if (string.IsNullOrWhiteSpace(error))
+        {
+            return "注册失败，请稍后重试。";
+        }
+        if (error.Contains("LIMIT_REACHED") || error.Contains("KB_USER_LIMIT_REACHED"))
+        {
+            return "已达 20 人开户上限，无法再开户。如需腾出名额，请让管理员「删除数据」软删某个用户。";
+        }
+        if (error.Contains("INVALID_CODE"))
+        {
+            return "邀请码无效或已被使用，请向管理员索取新的邀请码。";
+        }
+        if (error.Contains("ALREADY_INITIALIZED"))
+        {
+            return "系统已有用户，请改用邀请码激活。";
+        }
+        if (error.Contains("ACCOUNT_DISABLED"))
+        {
+            return "该账号已被管理员停用，请联系管理员。";
+        }
+        if (error.Contains("MISSING_KDF_PARAMS") || error.Contains("MISSING_RECOVERY_PARAMS"))
+        {
+            return "主密码材料不完整，请重试。";
+        }
+        return "注册失败：" + error;
+    }
+
     private void OnPasswordChanged(object sender, RoutedEventArgs e) => UpdateSubmitState();
 
     private void OnConfirmChanged(object sender, RoutedEventArgs e) => UpdateSubmitState();
@@ -90,7 +123,7 @@ public sealed partial class RegisterPage : Page
                 _needsInviteCode ? InviteBox.Text : null, PwdBox.Password);
             if (error.Length > 0)
             {
-                StatusText.Text = error;
+                StatusText.Text = DescribeRegisterError(error);
                 return;
             }
 
