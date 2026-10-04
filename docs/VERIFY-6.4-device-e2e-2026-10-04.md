@@ -136,3 +136,16 @@ $$;
 
 **执行路径说明（重要）**：`managePgDatabase(action=applyMigration)` **被拒**，原因是宿主把 MCP 的项目根设为 `C:\Users\29396\.dsh\profiles\desktop`（宿主配置目录），工具拒绝在该目录下落迁移文件。故改走工具在 `dryRun` 中建议的 `execute`（`confirm=true` + `allowDdlViaExecute=true`）。
 **遗留**：若后续还要用 `applyMigration` / `deployApply` 等项目级能力，需把 MCP 的 `WORKSPACE_FOLDER_PATHS` 指向 `F:\project\keybox`（本文件即等价迁移留档）。
+---
+
+## 真机走查基线（2026-10-04 14:40，只读 SQL）
+
+| 对象 | 值 | 说明 |
+|---|---|---|
+| 管理员 | uid `2104798134914781184` / `user_781184` / role=admin / status=**active** / 2026-09-29 13:07 | ⇒ **R01 已成立**（首个管理员初始化历史上已完成，本次复核 role+status 正常） |
+| 已删用户 | uid `2104803029013233664` / `user_233664` / role=user / status=**deleted** / 2026-09-29 13:19 | ⇒ **R14 机制成立**（删除=置 `deleted`，且 `kb_admin_user_list()` 会过滤掉它） |
+| 邀请码 | id=1 / code_len=9 / status=**used** / used_by=`2104803029013233664` / 2026-09-29 13:16 | ⇒ **R03 机制成立**（码被一次性消费并记录消费者）；**"复用同码应被拒"仍需实测** |
+
+> 说明：邀请码明文未打印（属凭据，不落对话）。用户表只取 uid/username/role/status/created_at，未取 login_hash / kdf_* 等敏感列。
+
+**由此确定的走查重点**：R03（复用拒绝）、R04（作废）、R12（管理页字段）、R13（停用 → 数据层拒绝 + Windows 端提示）、R22（非管理员越权）、E 组回归（W7/W8 后）。
