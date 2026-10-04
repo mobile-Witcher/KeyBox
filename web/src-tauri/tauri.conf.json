@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "KeyBox",
   "version": "0.2.0",
-  "identifier": "com.jidongzhanshi.keybox",
+  "identifier": "com.mobilewitcher.keybox",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",

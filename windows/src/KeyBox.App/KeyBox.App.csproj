@@ -17,6 +17,8 @@
     <!-- exe / 任务栏 / 资源管理器 图标：多尺寸 ICO（16~256 帧，全 32bpp DIB，兼容性最稳）
          图标源：本项目的安卓（Web 打包）版 mipmap-xxxhdpi/ic_launcher_foreground.png(432px) -->
     <ApplicationIcon>Assets\keybox.ico</ApplicationIcon>
+    <Company>mobile-Witcher</Company>
+    <Copyright>© 2026 mobile-Witcher</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>

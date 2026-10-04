@@ -55,7 +55,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.keybox.app"
+        applicationId = "com.mobilewitcher.keybox"
         minSdk = 26
         targetSdk = 35
         // 原生端独立版本线（与 Web/Capacitor 端 0.2.0 不冲突，二者为不同产物）。
