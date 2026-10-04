@@ -1,5 +1,8 @@
 # KeyBox-Windows
 
+![KeyBox](docs/assets/keybox-banner-light.png)
+
+
 KeyBox 四端（网页 / Windows / Android / HarmonyOS）端到端加密密钥保管箱的 **Windows 原生端**（替代原 Tauri 壳）。
 
 - 语言 / 框架：C# / .NET 8 / **WinUI 3（Windows App SDK 1.5）**，MVVM（CommunityToolkit.Mvvm）
