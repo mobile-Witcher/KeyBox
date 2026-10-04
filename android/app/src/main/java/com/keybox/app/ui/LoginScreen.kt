@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
     onRegister: () -> Unit,
+    notice: String? = null,
+    onNoticeShown: () -> Unit = {},
     viewModel: LoginViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -123,6 +126,16 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("没有账号？注册")
+        }
+
+        notice?.let { message ->
+            LaunchedEffect(message) { onNoticeShown() }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
         }
 
         state.error?.let { message ->

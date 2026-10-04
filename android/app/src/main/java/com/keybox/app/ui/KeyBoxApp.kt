@@ -84,6 +84,9 @@ fun KeyBoxRoot(viewModel: MainViewModel = viewModel()) {
 fun KeyBoxApp(viewModel: MainViewModel = viewModel()) {
     val state by viewModel.state.collectAsState()
 
+    // R95②：会话失效的说明文案（由 MainViewModel 在"需重新登录"时给出）
+    val notice by viewModel.reloginNotice.collectAsState()
+
     Surface(modifier = Modifier.fillMaxSize()) {
         when (val current = state) {
             MainUiState.Loading -> Box(
@@ -96,6 +99,8 @@ fun KeyBoxApp(viewModel: MainViewModel = viewModel()) {
             MainUiState.NeedsLogin -> LoginScreen(
                 onLoginSuccess = viewModel::onLoginSuccess,
                 onRegister = viewModel::beginRegister,
+                notice = notice,
+                onNoticeShown = viewModel::consumeReloginNotice,
             )
 
             MainUiState.NeedsRegister -> RegisterScreen(

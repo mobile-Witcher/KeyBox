@@ -40,6 +40,14 @@ sealed interface MainUiState {
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow<MainUiState>(MainUiState.Loading)
+
+    /**
+     * R95②：会话失效的**说明**（而非静默跳回登录页）。
+     * 平台侧只保留"已续期过"的会话：若本端从未续期过而另一台设备登录，
+     * refresh_token 会永久失效且重试无效 ⇒ 必须让用户知道"为什么被要求重新登录"。
+     */
+    private val _reloginNotice = MutableStateFlow<String?>(null)
+    val reloginNotice: StateFlow<String?> = _reloginNotice.asStateFlow()
     val state: StateFlow<MainUiState> = _state.asStateFlow()
 
     init {
@@ -64,6 +72,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: AuthException) {
                 if (e.recoverableByRelogin) {
                     store.clear()
+                    _reloginNotice.value = "该账号的登录态已在其他设备上失效（同一账号只有已续期过的会话能长期保持），请重新登录。"
                     _state.value = MainUiState.NeedsLogin
                 }
                 // 非鉴权类失败（网络抖动/服务端 5xx）：保持解锁页，等数据请求时拦截器兜底
@@ -74,7 +83,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onLoginSuccess(uid: String) {
+        _reloginNotice.value = null
         _state.value = MainUiState.Locked(uid)
+    }
+
+    /** 用户已看到提示后清除（避免下次无故出现）。 */
+    fun consumeReloginNotice() {
+        _reloginNotice.value = null
     }
 
     /** R01/R03：进入独立注册页（登录页「没有账号？注册」）。 */
