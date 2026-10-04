@@ -12,12 +12,13 @@
  *   - 迁移静态断言：kb_rotate_master 函数存在、单事务整批 UPDATE、EXECUTE 收口、role 护栏 fail-closed。
  */
 import { readFileSync, readdirSync } from "node:fs";
+import { repoRoot } from "./testRepoRoot";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = resolve(HERE, "../..");
+const REPO = repoRoot();
 const CLOUD_ROOT = resolve(REPO, "cloudfunctions");
 const MIGRATIONS = resolve(REPO, "cloudbase/migrations");
 

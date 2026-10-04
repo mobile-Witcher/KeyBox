@@ -12,12 +12,13 @@
  * 只读断言，不修改任何生产文件。
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
+import { repoRoot } from "./testRepoRoot";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = resolve(HERE, "../..");
+const REPO = repoRoot();
 const SRC = resolve(REPO, "src");
 const CLOUD = resolve(REPO, "cloudfunctions");
 const MIGRATIONS = resolve(REPO, "cloudbase/migrations");

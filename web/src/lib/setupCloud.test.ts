@@ -11,12 +11,13 @@
  *   `import.meta.url === pathToFileURL(process.argv[1])` 守卫，被 import 时无副作用。
  */
 import * as nodeFs from "node:fs";
+import { repoRoot } from "./testRepoRoot";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url)); // src/lib
-const PROJECT_ROOT = resolve(here, "../..");
+const PROJECT_ROOT = repoRoot();
 const SCRIPT_PATH = resolve(PROJECT_ROOT, "scripts/setup-cloud.js");
 
 interface Migration {
