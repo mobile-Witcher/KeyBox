@@ -38,6 +38,22 @@ public sealed partial class LoginPage : Page
         _countdownTimer.Start();
     }
 
+    /// <summary>
+    /// 注册入口（R03）：未注册的手机号**也能**完成平台验证码登录，
+    /// 登录后会由门禁自动进入邀请码激活页——所以本按钮在已登录时直达注册页；
+    /// 未登录时说明流程并引导先登录（kbRegister 的 uid 取自平台会话，无法先注册后登录）。
+    /// </summary>
+    private void OnRegisterClick(object sender, RoutedEventArgs e)
+    {
+        if (AppServices.SessionManager.Current is not null)
+        {
+            AppServices.NavigateToActivate(true);
+            return;
+        }
+
+        ViewModel.StatusMessage = "注册流程：先用手机号验证码登录（未注册的号码也能登录），登录后会自动进入「邀请码激活」页填写邀请码与主密码。";
+    }
+
     private async void OnLoginSucceeded()
     {
         _countdownTimer.Stop();

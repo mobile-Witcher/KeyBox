@@ -49,6 +49,13 @@
                 Command="{x:Bind ViewModel.LoginCommand}"
                 Content="登录" />
 
+            <!-- 注册入口（R03）：注册 = 手机号验证码登录 + 邀请码激活，
+                 云函数 kbRegister 的身份取自平台会话，故必须先登录。 -->
+            <Button
+                HorizontalAlignment="Stretch"
+                Click="OnRegisterClick"
+                Content="没有账号？注册" />
+
             <ProgressRing
                 Width="28"
                 Height="28"
