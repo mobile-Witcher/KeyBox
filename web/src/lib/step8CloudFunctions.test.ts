@@ -12,13 +12,26 @@
  *          返回体只含 {deletedCount}；用户软删 status='deleted'。
  *   - R22/R26：kbRegister 上限统计用 status<>'deleted'（软删释放名额；disabled 不释放）。
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const CLOUD_ROOT = resolve(HERE, "../../cloudfunctions");
+/**
+ * 单仓锚定：从本文件向上寻找同时含 cloudfunctions/ 与 .github/ 的目录作为仓库根。
+ * 合并单仓后目录层级会变（原先 web 根就是仓库根，现在多了一层），写死层级极易再次踩坑。
+ */
+const CLOUD_ROOT = (() => {
+  let dir = HERE;
+  for (let i = 0; i < 8; i += 1) {
+    if (existsSync(dir + "/cloudfunctions") && existsSync(dir + "/.github")) {
+      return dir + "/cloudfunctions";
+    }
+    dir = resolve(dir, "..");
+  }
+  throw new Error("找不到仓库根（应含 cloudfunctions/ 与 .github/）");
+})();
 
 type Dict = Record<string, unknown>;
 type CloudResult = { ok: boolean; data?: Dict | null; error?: string };

@@ -30,7 +30,9 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # 注意：package-lock.json 在 Windows 生成，npm ci 在 Linux 上不会补平台专属可选依赖
+        # （npm/cli#4828：Cannot find module @rollup/rollup-linux-x64-gnu）⇒ 用 npm install 重新解析
+        run: npm install --no-audit --no-fund
 
       - name: Unit tests (云函数契约 / 加密向量 / 上限用例)
         run: npx vitest run
