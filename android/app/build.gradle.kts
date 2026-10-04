@@ -21,14 +21,19 @@ val secretProps = Properties().apply {
 val envId: String = (System.getenv("KEYBOX_ENV_ID") ?: "") .ifEmpty { secretProps.getProperty("ENV_ID", "") }
 val publishableKey: String = (System.getenv("KEYBOX_PUBLISHABLE_KEY") ?: "") .ifEmpty { secretProps.getProperty("PUBLISHABLE_KEY", "") }
 
-// R95-3 防呆：本地或 CI 忘了配 keys.properties 时，构建仍会成功，但产出的包在运行时报
-// Invalid URL host: .api.tcloudbasegateway.com（ENV_ID 为空串）。Release 构建直接失败更安全。
+// R95-3 防呆：本地忘了配 keys.properties 时，构建仍会成功，但产物运行时报
+//   Invalid URL host: .api.tcloudbasegateway.com（ENV_ID 为空串）。
+// 规则：**本地** Release 构建直接失败；**CI**（CI=true，其 env secrets 可能未配置）只告警，
+//       保留工作流既有的「仅供编译验证」语义，避免把 CI 弄红。
 val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
 if (envId.isBlank() && isReleaseBuild) {
-    throw GradleException(
-        "缺少 ENV_ID：请复制 android/keys.properties.example 为 android/keys.properties 并填入真实值" +
-            "（CI 请配置 secrets：KEYBOX_ENV_ID / KEYBOX_PUBLISHABLE_KEY）"
-    )
+    val hint = "缺少 ENV_ID：请复制 android/keys.properties.example 为 android/keys.properties 并填入真实值" +
+        "（CI 请配置 secrets：KEYBOX_ENV_ID / KEYBOX_PUBLISHABLE_KEY）"
+    if (!System.getenv("CI").isNullOrBlank()) {
+        logger.warn("[KeyBox] " + hint + " —— CI 环境：产物将无法联网，仅供编译验证")
+    } else {
+        throw GradleException(hint)
+    }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
