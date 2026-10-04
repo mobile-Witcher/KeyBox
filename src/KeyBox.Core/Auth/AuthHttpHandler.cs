@@ -39,7 +39,18 @@ public sealed class AuthHttpHandler : DelegatingHandler
         {
             response.Dispose();
 
-            Session refreshed = await _manager.RefreshAsync(cancellationToken).ConfigureAwait(false);
+            // R95 加固：平台侧偶发续期竞态（invalid_grant 4026）可能让首次续期失败；
+                // 先重试一次，仍失败才判会话失效（recoverableByRelogin），避免把用户误登出。
+                Session refreshed;
+                try
+                {
+                    refreshed = await _manager.RefreshAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    await Task.Delay(600, cancellationToken).ConfigureAwait(false);
+                    refreshed = await _manager.RefreshAsync(cancellationToken).ConfigureAwait(false);
+                }
             using HttpRequestMessage retry = await CloneRequestAsync(request, cancellationToken).ConfigureAwait(false);
             retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
             return await base.SendAsync(retry, cancellationToken).ConfigureAwait(false);
