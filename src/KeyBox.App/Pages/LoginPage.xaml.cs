@@ -52,6 +52,14 @@ public sealed partial class LoginPage : Page
             return;
         }
 
+        if (probe.IsBlocked)
+        {
+            AppServices.NavigateToBlocked(probe.Status == "deleted"
+                ? "该账号已被删除，无法继续使用，请联系管理员。"
+                : "该账号已被停用，请联系管理员。");
+            return;
+        }
+
         // initialized=false → 系统还没有任何用户 → 首次初始化；其余（true/未知）→ 邀请码激活
         AppServices.NavigateToActivate(probe.Initialized ?? true);
     }

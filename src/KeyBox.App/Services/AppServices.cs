@@ -25,6 +25,9 @@ public static class AppServices
     /// <summary>登录页探到"本账号未激活"后传给激活页：true=系统已有用户（需邀请码），false=系统还没有用户（首次初始化）。</summary>
     public static bool PendingSystemHasUsers { get; set; } = true;
 
+    /// <summary>非空时激活页处于"拦截"态：只展示提示 + 返回登录页（账号被停用/删除）。</summary>
+    public static string PendingNotice { get; set; } = "";
+
     public static MainWindow? MainWindow { get; set; }
 
     static AppServices()
@@ -56,6 +59,14 @@ public static class AppServices
     public static void NavigateToActivate(bool systemHasUsers)
     {
         PendingSystemHasUsers = systemHasUsers;
+        PendingNotice = "";
+        MainWindow?.NavigateToActivate();
+    }
+
+    /// <summary>账号被停用/删除：进激活页的"拦截"态，给出明确原因并回登录页。</summary>
+    public static void NavigateToBlocked(string notice)
+    {
+        PendingNotice = notice;
         MainWindow?.NavigateToActivate();
     }
 

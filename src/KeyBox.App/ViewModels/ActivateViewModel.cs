@@ -15,20 +15,32 @@ public partial class ActivateViewModel : ObservableObject
 {
     private readonly ActivationService _activation;
 
-    public ActivateViewModel(ActivationService activation, bool systemHasUsers)
+    public ActivateViewModel(ActivationService activation, bool systemHasUsers, string notice)
     {
         _activation = activation;
         SystemHasUsers = systemHasUsers;
+        BlockedNotice = notice ?? "";
     }
+
+    /// <summary>非空 = 拦截态（账号被停用/删除）：只展示提示，不显示表单。</summary>
+    public string BlockedNotice { get; }
+
+    public bool IsBlocked => BlockedNotice.Length > 0;
+
+    public Visibility FormVisibility => IsBlocked ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility BlockedVisibility => IsBlocked ? Visibility.Visible : Visibility.Collapsed;
+
+    public void GoLogin() => Services.AppServices.SignOutAndGoLogin();
 
     /// <summary>true=系统已有用户（必须填邀请码）；false=系统还没有用户（首次初始化）。</summary>
     public bool SystemHasUsers { get; }
 
     public bool NeedsInviteCode => SystemHasUsers;
 
-    public string Title => SystemHasUsers ? "邀请码激活" : "首次初始化";
+    public string Title => IsBlocked ? "账号不可用" : SystemHasUsers ? "邀请码激活" : "首次初始化";
 
-    public string Hint => SystemHasUsers
+    public string Hint => IsBlocked ? BlockedNotice : SystemHasUsers
         ? "请向管理员索取一次性邀请码（用一次即失效）。激活后请用刚设置的主密码解锁。"
         : "系统尚无任何用户，你将成为首位管理员。主密码用于派生密钥、忘记无法找回，请妥善保存。";
 

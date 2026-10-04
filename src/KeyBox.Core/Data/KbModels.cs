@@ -9,7 +9,14 @@ public sealed record KbFnEnvelope(bool Ok, System.Text.Json.JsonElement? Data, s
 ///   Initialized = false：系统还没有任何用户 → 前端应引导「首次初始化」（kbInitAdmin）
 ///   Initialized = true ：系统已有用户但本账号未激活 → 前端应引导「邀请码激活」（kbRegister）
 /// </summary>
-public sealed record ActivationProbe(bool Activated, bool? Initialized, string Error);
+public sealed record ActivationProbe(bool Activated, bool? Initialized, string Status, string Error)
+{
+    /// <summary>行存在但被停用/软删：不能放进解锁页，应给出明确提示。</summary>
+    public bool IsBlocked => Status is "deleted" or "disabled"
+        || Error.Contains("DISABLED", StringComparison.OrdinalIgnoreCase)
+        || Error.Contains("DELETED", StringComparison.OrdinalIgnoreCase)
+        || Error.Contains("NOT_ACTIVE", StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>kb_users 的密钥参数行（解锁校验用；照安卓 KbUserInfo）。</summary>
 public sealed record KbUserInfo(

@@ -22,7 +22,14 @@
                 Text="{x:Bind ViewModel.Hint}"
                 TextWrapping="Wrap"
                 FontSize="12"
-                Foreground="{ThemeResource KbMutedBrush}" />
+                Foreground="{ThemeResource KbMutedBrush}"
+                Visibility="{x:Bind ViewModel.FormVisibility}" />
+
+            <Button
+                Content="返回登录页"
+                HorizontalAlignment="Stretch"
+                Click="OnGoLoginClick"
+                Visibility="{x:Bind ViewModel.BlockedVisibility}" />
 
             <TextBox
                 Header="一次性邀请码"

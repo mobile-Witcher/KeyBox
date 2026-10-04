@@ -14,7 +14,7 @@ public sealed partial class ActivatePage : Page
 
     public ActivatePage()
     {
-        ViewModel = new ActivateViewModel(AppServices.ActivationService, AppServices.PendingSystemHasUsers);
+        ViewModel = new ActivateViewModel(AppServices.ActivationService, AppServices.PendingSystemHasUsers, AppServices.PendingNotice);
         ViewModel.Activated += OnActivated;
         InitializeComponent();
     }
@@ -33,6 +33,11 @@ public sealed partial class ActivatePage : Page
         {
             ViewModel.Confirm = box.Password;
         }
+    }
+
+    private void OnGoLoginClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.GoLogin();
     }
 
     private void OnActivated()

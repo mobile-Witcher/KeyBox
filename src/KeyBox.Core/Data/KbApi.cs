@@ -165,9 +165,21 @@ public sealed class KbApi
                 root = inner;
             }
 
-            bool activated = root.ValueKind == JsonValueKind.Object
+            bool ok = root.ValueKind == JsonValueKind.Object
                 && root.TryGetProperty("ok", out JsonElement okEl)
                 && okEl.ValueKind == JsonValueKind.True;
+
+            // 注意：被软删/停用的账号在 kb_users 里**仍有行**，kbGetMyRole 照样能返回，
+            // 所以「已激活」必须看 status == active，不能只看 ok。
+            string status = "";
+            if (root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("data", out JsonElement dataEl)
+                && dataEl.ValueKind == JsonValueKind.Object
+                && dataEl.TryGetProperty("status", out JsonElement stEl)
+                && stEl.ValueKind == JsonValueKind.String)
+            {
+                status = stEl.GetString() ?? "";
+            }
 
             bool? initialized = null;
             if (root.ValueKind == JsonValueKind.Object
@@ -183,11 +195,12 @@ public sealed class KbApi
                     ? errEl.GetString() ?? ""
                     : "";
 
-            return new ActivationProbe(activated, initialized, error);
+            bool activated = ok && string.Equals(status, "active", StringComparison.OrdinalIgnoreCase);
+            return new ActivationProbe(activated, initialized, status, error);
         }
         catch (Exception ex)
         {
-            return new ActivationProbe(false, null, ex.Message);
+            return new ActivationProbe(false, null, "", ex.Message);
         }
     }
 
