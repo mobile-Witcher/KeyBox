@@ -5,7 +5,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Grid Background="{ThemeResource KbBgBrush}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+        <ScrollViewer
+            HorizontalScrollBarVisibility="Disabled"
+            HorizontalScrollMode="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
             <StackPanel
                 MaxWidth="380"
                 Spacing="12"
