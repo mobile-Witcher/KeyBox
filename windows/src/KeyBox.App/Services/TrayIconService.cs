@@ -45,8 +45,34 @@ public sealed class TrayIconService : IDisposable
 
     private readonly TaskbarIcon? _icon;
 
+    /// <summary>保存引用：纯代码创建的 TaskbarIcon 不在视觉树里，其菜单需要外部补 XamlRoot（见 AttachXamlRoot）。</summary>
+    private readonly MenuFlyout? _flyout;
+
     /// <summary>托盘是否真的建出来了（外部据此决定关窗行为，必须真实）。</summary>
     public bool Created { get; }
+
+    /// <summary>
+    /// 把主窗口的 XamlRoot 补到托盘菜单上。
+    /// 背景：本项目的 TaskbarIcon 是纯代码 new 出来、从不入视觉树，其 ContextFlyout 因此拿不到
+    /// XamlRoot，WinUI 3 无法实现该 Flyout —— 表现为「托盘图标在，但菜单点了全都没反应」。
+    /// 窗口内容就绪后由 MainWindow 调用本方法补上即可。
+    /// </summary>
+    public void AttachXamlRoot(Microsoft.UI.Xaml.XamlRoot? root)
+    {
+        if (_flyout is null || root is null) { return; }
+        try
+        {
+            _flyout.XamlRoot = root;
+            foreach (var item in _flyout.Items)
+            {
+                if (item is Microsoft.UI.Xaml.UIElement el && el.XamlRoot is null) { el.XamlRoot = root; }
+            }
+        }
+        catch
+        {
+            // 补 XamlRoot 失败不影响主功能（最坏情况仍是无托盘菜单）
+        }
+    }
 
     public TrayIconService(
         string toolTip,
@@ -58,6 +84,7 @@ public sealed class TrayIconService : IDisposable
         try
         {
             var flyout = new MenuFlyout();
+            _flyout = flyout;
             flyout.Items.Add(MenuItem("显示 KeyBox", showWindow));
             flyout.Items.Add(MenuItem("隐藏窗口", hideWindow));
             flyout.Items.Add(MenuItem("立即锁定", lockNow));
@@ -131,8 +158,15 @@ public sealed class TrayIconService : IDisposable
 
     private static MenuFlyoutItem MenuItem(string text, Action action)
     {
-        var item = new MenuFlyoutItem { Text = text, Icon = new SymbolIcon(Symbol.Setting) };
-        item.Click += (_, _) => action();
+        // 关键（H.NotifyIcon + WinUI 的坑）：本库默认走「Win32 PopupMenu 转换」模式，
+        // 原生弹窗只会调用 MenuFlyoutItem 的 **Command**，**不会**触发 WinUI 的 Click 事件。
+        // 此前只挂 Click ⇒ 菜单能弹出但点任何一项都没反应。这里改用 Command。
+        var item = new MenuFlyoutItem
+        {
+            Text = text,
+            Icon = new SymbolIcon(Symbol.Setting),
+            Command = new CommunityToolkit.Mvvm.Input.RelayCommand(action),
+        };
         return item;
     }
 

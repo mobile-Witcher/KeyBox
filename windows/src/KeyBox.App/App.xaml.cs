@@ -35,6 +35,9 @@ public partial class App : Application
             __step("MainWindow 构造完成（XAML 已加载）");
             AppServices.MainWindow = _window;
             _window.Activate();
+            // 窗口内容就绪后再把 XamlRoot 交给托盘菜单：TaskbarIcon 不在视觉树里，
+            // 其 ContextFlyout 拿不到 XamlRoot 会导致「托盘菜单点了全都没反应」。
+            _window.AttachTrayXamlRoot();
             __step("Activate 完成");
 
             // 窗口就绪后再把明暗落到根元素与标题栏（Initialize 阶段根元素尚不存在）。

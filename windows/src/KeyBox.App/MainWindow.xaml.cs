@@ -175,6 +175,12 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>窗口内容就绪后把 XamlRoot 交给托盘菜单（否则托盘菜单点了没反应）。</summary>
+    public void AttachTrayXamlRoot()
+    {
+        try { _tray?.AttachXamlRoot(Content.XamlRoot); } catch { /* 忽略 */ }
+    }
+
     private void ShowMainWindow()
     {
         try
