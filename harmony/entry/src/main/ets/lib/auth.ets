@@ -21,6 +21,7 @@
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { API_BASE, PUBLISHABLE_KEY, ENV_ID } from './config';
+import { getDeviceId } from './session';
 
 const SDK_VERSION: string = '@cloudbase/js-sdk/3.10.1';
 
@@ -50,6 +51,7 @@ async function post(path: string, body: VerificationBody | VerifyBody | SignInBo
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ' + bearer,
+    'x-device-id': getDeviceId(),
     'X-SDK-Version': SDK_VERSION
   };
   const req = http.createHttp();

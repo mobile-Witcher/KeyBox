@@ -34,12 +34,14 @@ object ServiceLocator {
         synchronized(this) {
             if (initialized) return
             val store = SessionStore(context.applicationContext)
+        val deviceIdStore = DeviceIdStore(context.applicationContext)
             // 仓库先占位后赋值，拦截器通过 provider 延迟取用，避免构造顺序环
             var repositoryRef: AuthRepository? = null
             val client = OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
                 .addInterceptor(AuthInterceptor(store) { repositoryRef!! })
+                .addInterceptor(DeviceIdInterceptor(deviceIdStore))
                 .build()
             val repository = AuthRepository(client)
             repositoryRef = repository

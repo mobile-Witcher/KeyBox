@@ -14,6 +14,34 @@ public sealed class AuthHttpHandler : DelegatingHandler
     /// <summary>标记请求跳过认证（刷新端点契约：不得带任何 Authorization 头）。</summary>
     public static readonly HttpRequestOptionsKey<bool> SkipAuthKey = new("KeyBox.SkipAuth");
 
+    private static readonly Lazy<string> _deviceId = new(LoadOrCreateDeviceId);
+
+    /// <summary>本机设备 id（%APPDATA%\KeyBox\device.id，首次生成后持久化）。</summary>
+    internal static string DeviceId => _deviceId.Value;
+
+    private static string LoadOrCreateDeviceId()
+    {
+        try
+        {
+            string dir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "KeyBox");
+            System.IO.Directory.CreateDirectory(dir);
+            string file = System.IO.Path.Combine(dir, "device.id");
+            if (System.IO.File.Exists(file))
+            {
+                string saved = System.IO.File.ReadAllText(file).Trim();
+                if (saved.Length > 0) { return saved; }
+            }
+            string gen = "win-" + Guid.NewGuid().ToString("N");
+            System.IO.File.WriteAllText(file, gen);
+            return gen;
+        }
+        catch
+        {
+            return "win-" + Guid.NewGuid().ToString("N");   // 落盘失败也不能阻塞请求
+        }
+    }
+
     private readonly SessionManager _manager;
 
     public AuthHttpHandler(SessionManager manager)
@@ -25,6 +53,10 @@ public sealed class AuthHttpHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+        // R95：每台设备一个稳定随机 id。平台用 x-device-id 区分"登录账号数"，
+        // 缺失时会把多端登录当作同一设备/会话而互相顶掉。
+        request.Headers.TryAddWithoutValidation("x-device-id", DeviceId);
+
         bool skipAuth = request.Options.TryGetValue(SkipAuthKey, out bool skip) && skip;
         bool hasAuth = request.Headers.Authorization is not null;
 

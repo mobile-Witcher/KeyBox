@@ -8,6 +8,7 @@
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { API_BASE } from './config';
+import { getDeviceId } from './session';
 
 /** kb_secrets 一行（只取渲染所需列）。 */
 export interface KbSecretRow {
@@ -30,7 +31,8 @@ async function request(method: string, path: string, body: string | null,
   accessToken: string): Promise<string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + accessToken
+    'Authorization': 'Bearer ' + accessToken,
+    'x-device-id': getDeviceId()
   };
   const req = http.createHttp();
   try {
@@ -162,7 +164,8 @@ async function invokeFunction(name: string, bodyJson: string,
   accessToken: string): Promise<KbFnEnvelope> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + accessToken
+    'Authorization': 'Bearer ' + accessToken,
+    'x-device-id': getDeviceId()
   };
   const req = http.createHttp();
   try {
