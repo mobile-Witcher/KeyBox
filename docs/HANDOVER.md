@@ -292,3 +292,5 @@ $hdc='C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\h
 > （X=1/4 vs Y=0/4，n=4，不具统计意义）⇒ 保留但**不得当作多端并存的解法**；
 > **② 才是有效缓解**（已四端实现）。详见 docs/DIAGNOSIS-multi-device-login.md §6.5。
 > 平台侧属服务端行为（MaxDevice=5 不是限制因素），需要时向 CloudBase 提工单确认。
+> **工单草稿**：`docs/ISSUE-cloudbase-refresh-rotation.md`（含环境信息、自查排除项、三组实验数据、
+> 可直接复现的最小 curl 序列、明确诉求），需要向 CloudBase 反馈时直接粘贴即可。
