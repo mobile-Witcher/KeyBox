@@ -170,6 +170,8 @@
             <!-- 卡片列表：自适应多列（ListView + ItemsWrapGrid；宽屏按 380 宽自动增列）
                  注意：不要用 ItemsRepeater —— 本机 WindowsAppSDK 1.5 下它会让 XamlCompiler Pass1 静默失败（exit 1、零诊断） -->
             <ListView
+                x:Name="CardList"
+                SizeChanged="OnCardListSizeChanged"
                 ItemsSource="{x:Bind ViewModel.VisibleItems, Mode=OneWay}"
                 SelectionMode="None"
                 Padding="12,4">
@@ -183,11 +185,12 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="380" ItemHeight="280" />
+                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="380" ItemHeight="294" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel><ListView.ItemTemplate>
                     <DataTemplate x:DataType="vm:VaultItemViewModel">
                         <Border
+                            Margin="7"
                             Background="{ThemeResource KbSurfaceBrush}"
                             BorderBrush="{ThemeResource KbBorderBrush}"
                             BorderThickness="1"

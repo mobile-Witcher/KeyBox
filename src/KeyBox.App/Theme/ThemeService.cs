@@ -267,30 +267,32 @@ public static class ThemeService
         Color warning = ParseHex(c.Warning);
 
         var d = new ResourceDictionary();
-        d[Bg] = Brush(bg);
-        d[Surface] = Brush(surface);
-        d[Surface2] = Brush(surface2);
-        d[Text] = Brush(text);
-        d[Muted] = Brush(muted);
-        d[Border] = Brush(border);
-        d[BorderStrong] = Brush(borderStrong);
-        d[Primary] = Brush(primary);
+        // W8 修复①：画刷**实例永久复用、只原地改 Color**。
+        // 原实现每次都 new 一整套 SolidColorBrush，已加载的视觉树仍持有旧实例 ⇒ 换肤后主界面不重绘。
+        d[Bg] = Brush(Bg, bg);
+        d[Surface] = Brush(Surface, surface);
+        d[Surface2] = Brush(Surface2, surface2);
+        d[Text] = Brush(Text, text);
+        d[Muted] = Brush(Muted, muted);
+        d[Border] = Brush(Border, border);
+        d[BorderStrong] = Brush(BorderStrong, borderStrong);
+        d[Primary] = Brush(Primary, primary);
         // hover 由主色向黑白方向微调（WinUI 3 无 Colors 静态类，直接构造以免命名空间歧义）
         Color hoverToward = dark
             ? Color.FromArgb(255, 255, 255, 255)
             : Color.FromArgb(255, 0, 0, 0);
-        d[PrimaryHover] = Brush(Mix(primary, hoverToward, 0.12));
-        d[OnPrimary] = Brush(onPrimary);
-        d[Ring] = Brush(WithAlpha(primary, 0.55));
-        d[Danger] = Brush(danger);
-        d[Success] = Brush(success);
-        d[Warning] = Brush(warning);
-        d[WarningSoft] = Brush(Mix(surface, warning, dark ? 0.22 : 0.14));
-        d[DangerSoft] = Brush(Mix(surface, danger, dark ? 0.22 : 0.12));
+        d[PrimaryHover] = Brush(PrimaryHover, Mix(primary, hoverToward, 0.12));
+        d[OnPrimary] = Brush(OnPrimary, onPrimary);
+        d[Ring] = Brush(Ring, WithAlpha(primary, 0.55));
+        d[Danger] = Brush(Danger, danger);
+        d[Success] = Brush(Success, success);
+        d[Warning] = Brush(Warning, warning);
+        d[WarningSoft] = Brush(WarningSoft, Mix(surface, warning, dark ? 0.22 : 0.14));
+        d[DangerSoft] = Brush(DangerSoft, Mix(surface, danger, dark ? 0.22 : 0.12));
         // W7-E：语义软底色（状态胶囊/空态/骨架屏用）。深色下提高混合比，保证暗底上也能看出色块。
-        d[SuccessSoft] = Brush(Mix(surface, success, dark ? 0.24 : 0.14));
-        d[MutedSoft] = Brush(Mix(surface, muted, dark ? 0.20 : 0.10));
-        d[PrimarySoft] = Brush(Mix(surface, primary, dark ? 0.26 : 0.14));
+        d[SuccessSoft] = Brush(SuccessSoft, Mix(surface, success, dark ? 0.24 : 0.14));
+        d[MutedSoft] = Brush(MutedSoft, Mix(surface, muted, dark ? 0.20 : 0.10));
+        d[PrimarySoft] = Brush(PrimarySoft, Mix(surface, primary, dark ? 0.26 : 0.14));
 
         // 形状/字体令牌：圆角来自 index.css，字体族按平台映射后已存在生成物里。
         d[CornerRadius] = new CornerRadius(shape.Radius);
@@ -301,7 +303,24 @@ public static class ThemeService
         return d;
     }
 
-    private static SolidColorBrush Brush(Color c) => new(c);
+    /// <summary>画刷实例池：key → 唯一实例。换肤时**原地改 Color**，保证已加载的 UI 立即重绘（W8 修复①）。</summary>
+    private static readonly Dictionary<string, SolidColorBrush> LiveBrushes = new();
+
+    private static SolidColorBrush Brush(string key, Color c)
+    {
+        if (LiveBrushes.TryGetValue(key, out SolidColorBrush? existing))
+        {
+            if (existing.Color != c)
+            {
+                existing.Color = c;
+            }
+            return existing;
+        }
+
+        var created = new SolidColorBrush(c);
+        LiveBrushes[key] = created;
+        return created;
+    }
 
     /// <summary>Windows 强调色（用户可关的第 10 选项）。</summary>
     private static Color SystemAccent()

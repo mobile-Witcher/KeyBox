@@ -19,7 +19,7 @@
         Background="{ThemeResource KbMutedSoftBrush}"
         BorderBrush="{ThemeResource KbBorderBrush}"
         BorderThickness="1"
-        CornerRadius="999"
+        CornerRadius="6"
         Padding="8,2"
         VerticalAlignment="Center">
         <TextBlock

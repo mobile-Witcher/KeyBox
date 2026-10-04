@@ -301,5 +301,29 @@ public sealed partial class VaultPage : Page
         AppServices.SignOutAndGoLogin();
     }
 
+    /// <summary>
+    /// ② 卡片列宽自适应：让每行列数按可用宽度算，并让卡片**填满整行**
+    /// （原先固定 ItemWidth=380，窗口宽度不是 380 的整数倍时右侧会留一大截空白）。
+    /// 卡片自身有 Margin=7，所以可视间距 = 14，槽宽按 avail/cols 均分即可严丝合缝。
+    /// </summary>
+    private void OnCardListSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is not ListView { ItemsPanelRoot: ItemsWrapGrid grid })
+        {
+            return;
+        }
+
+        const double minCard = 336; // 卡片最小可用宽度（≈ 380 槽 − 14 边距 − 内边距余量）
+        const double gap = 14;      // 卡片左右外边距合计
+        double avail = Math.Max(minCard, e.NewSize.Width - 24); // 减去 ListView 左右 Padding 各 12
+
+        int cols = Math.Max(1, (int)Math.Floor((avail + gap) / (minCard + gap)));
+        double slot = Math.Floor(avail / cols);
+        if (Math.Abs(grid.ItemWidth - slot) > 0.5)
+        {
+            grid.ItemWidth = slot;
+        }
+    }
+
     // W7-F/G：顶栏改用 XAML 声明（外观按钮 + 账户菜单），不再用代码挂载按钮。
 }

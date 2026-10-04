@@ -104,7 +104,7 @@ public partial class AdminViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LoadingVisibility))]
-    private bool _isLoading = true;
+    private bool _isLoading;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IdleEnabled))]
@@ -188,6 +188,7 @@ public partial class AdminViewModel : ObservableObject
     public async Task ReloadAsync()
     {
         IsBusy = true;
+        IsLoading = true;
         StatusMessage = "";
         try
         {
