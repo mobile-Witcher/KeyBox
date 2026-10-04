@@ -45,7 +45,15 @@ class AuthInterceptor(
             } else {
                 // OkHttp 拦截器运行在自身线程池（非主线程），runBlocking 桥接挂起的续期调用
                 runBlocking {
-                    repositoryProvider().refreshSession(session.refreshToken)
+                    // R95 加固：平台侧偶发续期竞态（invalid_grant 4026 "may has been refreshed by
+                    // other process"）可能让首次续期失败；先重试一次，仍失败才判定会话失效，
+                    // 避免把用户误登出（30 分钟静置多端实测中观察到 1/3 概率的首次失败）。
+                    try {
+                        repositoryProvider().refreshSession(session.refreshToken)
+                    } catch (e: Exception) {
+                        kotlinx.coroutines.delay(600)
+                        repositoryProvider().refreshSession(session.refreshToken)
+                    }
                 }.also {
                     sessionStore.save(it)
                 }
