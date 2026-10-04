@@ -14,8 +14,8 @@
                 MaxWidth="420"
                 Spacing="12"
                 Padding="24"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch">
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
 
                 <TextBlock
                     Text="{x:Bind ViewModel.Title}"
