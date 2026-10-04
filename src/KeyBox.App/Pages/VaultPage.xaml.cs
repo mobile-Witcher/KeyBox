@@ -325,5 +325,32 @@ public sealed partial class VaultPage : Page
         }
     }
 
+    /// <summary>
+    /// 图一：分类下拉菜单。每次点击按当前 TagOptions（含条目数）重建 MenuFlyout，
+    /// 选中项用 ToggleMenuFlyoutItem 打勾；条目本身复用 OnTagChipClick（Tag=null 即「全部」）。
+    /// </summary>
+    private void OnTagDropdownClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not DropDownButton button)
+        {
+            return;
+        }
+
+        var flyout = new MenuFlyout();
+        foreach (TagOption option in ViewModel.TagOptions)
+        {
+            var item = new ToggleMenuFlyoutItem
+            {
+                Text = option.Display,
+                IsChecked = string.Equals(option.Tag, ViewModel.ActiveTag, StringComparison.Ordinal),
+                Tag = option.Tag,
+            };
+            item.Click += OnTagChipClick;
+            flyout.Items.Add(item);
+        }
+
+        flyout.ShowAt(button);
+    }
+
     // W7-F/G：顶栏改用 XAML 声明（外观按钮 + 账户菜单），不再用代码挂载按钮。
 }
