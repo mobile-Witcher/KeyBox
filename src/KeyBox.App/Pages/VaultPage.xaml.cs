@@ -40,6 +40,27 @@ public sealed partial class VaultPage : Page
         }
     }
 
+    /// <summary>W7-E：密钥「显示 / 隐藏」。先显示才放行复制（VM 会重建集合，让 OneWay 绑定刷新文案与可用性）。</summary>
+    private void OnRevealClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: VaultItemViewModel vm })
+        {
+            ViewModel.ToggleReveal(vm);
+        }
+    }
+
+    /// <summary>
+    /// W7-E：逐字段复制。按钮 Tag 传字段名（site / url / website / model / note / key），
+    /// 由 VM.CopyField 统一做可用性判据 + 30 秒剪贴板护栏（照 Web copyField）。
+    /// </summary>
+    private void OnCopyFieldClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: VaultItemViewModel vm, Tag: string field })
+        {
+            ViewModel.CopyField(vm, field);
+        }
+    }
+
     private void OnEditClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: VaultItemViewModel vm })

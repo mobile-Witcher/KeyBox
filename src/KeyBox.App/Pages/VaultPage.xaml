@@ -128,6 +128,8 @@
 
         <!-- 列表区 -->
         <Grid Grid.Row="3">
+            <!-- 卡片列表：自适应多列（ListView + ItemsWrapGrid；宽屏按 380 宽自动增列）
+                 注意：不要用 ItemsRepeater —— 本机 WindowsAppSDK 1.5 下它会让 XamlCompiler Pass1 静默失败（exit 1、零诊断） -->
             <ListView
                 ItemsSource="{x:Bind ViewModel.VisibleItems, Mode=OneWay}"
                 SelectionMode="None"
@@ -135,62 +137,192 @@
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
                         <Setter Property="Padding" Value="0,4" />
+                        <Setter Property="Margin" Value="0" />
                     </Style>
                 </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="380" ItemHeight="228" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel><ListView.ItemTemplate>
                     <DataTemplate x:DataType="vm:VaultItemViewModel">
                         <Border
                             Background="{ThemeResource KbSurfaceBrush}"
                             BorderBrush="{ThemeResource KbBorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="8"
+                            CornerRadius="{ThemeResource KbCardCornerRadius}"
                             Padding="14,12">
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock
-                                        Text="{x:Bind Site}"
-                                        FontSize="16"
-                                        FontWeight="SemiBold" />
-                                    <TextBlock
-                                        Text="{x:Bind Subtitle}"
-                                        FontSize="12"
-                                        Foreground="{ThemeResource KbMutedBrush}" />
-                                    <TextBlock
-                                        Text="{x:Bind ErrorText}"
-                                        FontSize="12"
-                                        Foreground="{ThemeResource KbDangerBrush}"
-                                        TextWrapping="Wrap"
-                                        Visibility="{x:Bind ErrorVisibility}" />
-                                    <TextBlock
-                                        Text="{x:Bind KeyDisplay}"
-                                        FontSize="13"
-                                        FontFamily="Consolas"
-                                        Foreground="{ThemeResource KbPrimaryBrush}"
-                                        Visibility="{x:Bind KeyVisibility}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                            <Grid RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- ① 头部：站点徽章（按分类稳定取色）+ 标题/副标题 + 「复制站点」 -->
+                                <Grid Grid.Row="0" ColumnSpacing="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="36" Height="36" VerticalAlignment="Center">
+                                        <Border Background="{ThemeResource KbPrimarySoftBrush}" CornerRadius="10" Visibility="{x:Bind TonePrimaryVisibility}" />
+                                        <Border Background="{ThemeResource KbSuccessSoftBrush}" CornerRadius="10" Visibility="{x:Bind ToneSuccessVisibility}" />
+                                        <Border Background="{ThemeResource KbWarningSoftBrush}" CornerRadius="10" Visibility="{x:Bind ToneWarningVisibility}" />
+                                        <Border Background="{ThemeResource KbDangerSoftBrush}" CornerRadius="10" Visibility="{x:Bind ToneDangerVisibility}" />
+                                        <TextBlock
+                                            Text="{x:Bind Initials}"
+                                            FontSize="14"
+                                            FontWeight="SemiBold"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" />
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock
+                                            Text="{x:Bind Site}"
+                                            FontSize="16"
+                                            FontWeight="SemiBold"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            Text="{x:Bind Subtitle}"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource KbMutedBrush}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
                                     <Button
+                                        Grid.Column="2"
+                                        Content="复制站点"
+                                        Click="OnCopyFieldClick"
+                                        Tag="site"
+                                        FontSize="11"
+                                        Padding="8,3"
+                                        VerticalAlignment="Top"
+                                        IsEnabled="{x:Bind CanCopySite}" />
+                                </Grid>
+
+                                <!-- ② 分类胶囊（无标签时该行自然收起） -->
+                                <ItemsControl Grid.Row="1" ItemsSource="{x:Bind ChipTags}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border
+                                                Background="{ThemeResource KbSurface2Brush}"
+                                                BorderBrush="{ThemeResource KbBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="999"
+                                                Padding="8,2">
+                                                <TextBlock Text="{Binding}" FontSize="11" Foreground="{ThemeResource KbMutedBrush}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- ③ 逐字段：站点 / 接口地址 / 模型名（各自可复制） -->
+                                <Grid Grid.Row="2" RowSpacing="4" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="站点" FontSize="12" Foreground="{ThemeResource KbMutedBrush}" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{x:Bind Item.Site}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Button Grid.Row="0" Grid.Column="2" Content="复制" Click="OnCopyFieldClick" Tag="site" FontSize="11" Padding="8,2" IsEnabled="{x:Bind CanCopySite}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="接口地址" FontSize="12" Foreground="{ThemeResource KbMutedBrush}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind Item.Url}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Button Grid.Row="1" Grid.Column="2" Content="复制" Click="OnCopyFieldClick" Tag="url" FontSize="11" Padding="8,2" IsEnabled="{x:Bind CanCopyUrl}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="模型名" FontSize="12" Foreground="{ThemeResource KbMutedBrush}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{x:Bind Item.Model}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Button Grid.Row="2" Grid.Column="2" Content="复制" Click="OnCopyFieldClick" Tag="model" FontSize="11" Padding="8,2" IsEnabled="{x:Bind CanCopyModel}" />
+                                </Grid>
+
+                                <!-- ④ 密钥行：默认掩码，「显示」后才放行复制（30 秒剪贴板护栏在 VM 内） -->
+                                <Grid Grid.Row="3" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="密钥" FontSize="12" Foreground="{ThemeResource KbMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{x:Bind KeyDisplay}"
+                                        FontFamily="Consolas"
+                                        FontSize="13"
+                                        Foreground="{ThemeResource KbPrimaryBrush}"
+                                        TextTrimming="CharacterEllipsis"
+                                        VerticalAlignment="Center" />
+                                    <Button
+                                        Grid.Column="2"
+                                        Content="{x:Bind RevealActionText}"
+                                        Click="OnRevealClick"
+                                        IsEnabled="{x:Bind IsRevealable}"
+                                        FontSize="11"
+                                        Padding="8,2" />
+                                    <Button
+                                        Grid.Column="3"
                                         Content="复制"
                                         Click="OnCopyClick"
-                                        Visibility="{x:Bind CopyButtonVisibility}" />
+                                        IsEnabled="{x:Bind CanCopyKey}"
+                                        FontSize="11"
+                                        Padding="8,2" />
+                                </Grid>
+
+                                <!-- ⑤ 解密错误（正常条目自动隐藏） -->
+                                <TextBlock
+                                    Grid.Row="4"
+                                    Text="{x:Bind ErrorText}"
+                                    FontSize="12"
+                                    Foreground="{ThemeResource KbDangerBrush}"
+                                    TextWrapping="Wrap"
+                                    Visibility="{x:Bind ErrorVisibility}" />
+
+                                <!-- ⑥ 底部：分隔线 + 编辑（浅底）/ 删除（危险实心） -->
+                                <Grid Grid.Row="5" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Height="1" Background="{ThemeResource KbBorderBrush}" VerticalAlignment="Center" />
                                     <Button
+                                        Grid.Column="1"
                                         Content="编辑"
                                         Click="OnEditClick"
-                                        Visibility="{x:Bind EditButtonVisibility}" />
+                                        Visibility="{x:Bind EditButtonVisibility}"
+                                        FontSize="12"
+                                        Padding="12,3" />
                                     <Button
+                                        Grid.Column="2"
                                         Content="删除"
                                         Click="OnDeleteClick"
-                                        Visibility="{x:Bind DeleteButtonVisibility}" />
-                                </StackPanel>
+                                        Visibility="{x:Bind DeleteButtonVisibility}"
+                                        Background="{ThemeResource KbDangerBrush}"
+                                        Foreground="{ThemeResource KbOnPrimaryBrush}"
+                                        BorderThickness="0"
+                                        FontSize="12"
+                                        Padding="12,3" />
+                                </Grid>
                             </Grid>
                         </Border>
                     </DataTemplate>
                 </ListView.ItemTemplate>
+                
             </ListView>
 
             <!-- 空态：无任何密钥 -->

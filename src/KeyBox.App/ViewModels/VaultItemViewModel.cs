@@ -172,7 +172,4 @@ public sealed class VaultItemViewModel
     public Visibility ToneWarningVisibility => ToneIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility ToneDangerVisibility => ToneIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
-
-    // ---- W7-E 兼容保留（HEAD 版 XAML 仍绑定；W7-E 2/2 接入新卡片 XAML 后移除）----
-    public Visibility CopyButtonVisibility => CanCopy ? Visibility.Visible : Visibility.Collapsed;
 }
