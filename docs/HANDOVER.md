@@ -428,3 +428,46 @@ MSIX 路线会在 4 个位置各留 2 张自签名证书（`CurrentUser` / `Loca
 - 数据：`%APPDATA%\\KeyBox\\`（会话/设置）；`C:\\Users\\<user>\\KeyBox\\` 是程序本体。
 - 更新：整目录替换（数据在 `%APPDATA%`，不丢）；卸载：删目录。
 - **不要把 exe 单独拖出来运行**。
+### 7.9 【2026-10-04 事故】自建 HTTP 的注册/登录必须走 /auth/v1/signup（SDK 会自动建号，自建不会）
+
+**现象**：朋友在安卓注册向导第 1 步输入**未注册**手机号 + 验证码后报
+```
+HTTP 404 {"code":"NOT_FOUND","error":"not_found","error_code":5,
+          "error_description":"User not exist.","requestId":"..."}
+```
+
+**根因**：注册向导第 1 步与登录页共用 `AuthRepository.signIn()` → `POST /auth/v1/signin`，
+而 `signin` 对**未注册号码**必然返回 404 `User not exist`。
+**网页版没有这个问题**：它用 `@cloudbase/js-sdk` 的 `auth.signInWithOtp()`，
+校验验证码时**平台会自动创建用户**；四端里只有自建 HTTP 的客户端要自己补这一步。
+
+**正确契约**（官方 HTTP API）：
+```
+POST /auth/v1/signup
+{ "phone_number": "+86 15800000000", "verification_token": "<②校验返回>",
+  "username": "可选", "password": "可选" }
+→ 200 { token_type, access_token, refresh_token, expires_in, sub }
+```
+
+**本仓库的修复**（`android/.../data/AuthRepository.kt` + 两个 ViewModel）：
+```kotlin
+suspend fun signUp(verificationToken: String, phone: String): Session   // POST /auth/v1/signup
+
+val session = try {
+    repository.signUp(verificationToken, current.phone)      // 未注册：走注册
+} catch (e: Exception) {
+    if (e.message?.contains("exist", ignoreCase = true) == true)
+        repository.signIn(verificationToken)                 // 已注册：退回登录
+    else throw e
+}
+```
+- 注册向导（`RegisterViewModel`）与登录页（`LoginViewModel`）**都**改成 signup 优先，
+  与网页版行为对齐；未激活的账号仍会被 `kb_users` 激活门禁拦下并引导去填邀请码。
+- 判定依据：`AuthRepository.post()` 在非 2xx 时抛 `AuthException("HTTP <code>：" + body)`，
+  错误正文里带 `exist` 即可识别"号码已注册"。
+
+**发布记录**：安卓 0.5.1（仅注册向导）→ **0.5.2**（注册向导 + 登录页，`versionCode 7`）；
+Release 资产同步替换，旧包下架避免误装。
+
+**验收方法**（无需真机也能验一半）：解包 APK 后
+`findstr /M /C:"/auth/v1/signup" classes*.dex` 必须命中（本轮已命中 ✔）。

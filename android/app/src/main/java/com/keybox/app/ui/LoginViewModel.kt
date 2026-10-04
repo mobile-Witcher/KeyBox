@@ -81,7 +81,17 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val repository = ServiceLocator.authRepository
                 val verificationToken = repository.verifyCode(verificationId, current.code.trim())
-                val session = repository.signIn(verificationToken)
+                // 未注册号码：/auth/v1/signin 会 404 User not exist ⇒ 先走 signup（与网页版 SDK 的自动建号一致，
+                // 之后仍会被 kb_users 激活门禁拦下并引导去注册页填邀请码）；已注册号码 signup 会报 exist ⇒ 退回 signin。
+                val session = try {
+                    repository.signUp(verificationToken, current.phone)
+                } catch (e: Exception) {
+                    if (e.message?.contains("exist", ignoreCase = true) == true) {
+                        repository.signIn(verificationToken)
+                    } else {
+                        throw e
+                    }
+                }
                 ServiceLocator.sessionStore.save(session)
 
                 // R01/R03 门禁：平台手机号登录成功 ≠ 已开户。
