@@ -315,3 +315,55 @@ gradle 优雅降级为空串 ⇒ `BuildConfig.ENV_ID = ""` ⇒ `AuthRepository.a
 | Windows | 环境 ID / 端点写在代码常量里（无本地配置） | 无此类风险；但仍应实测一次「发送验证码」走通 |
 
 **一句话**：发布前跑一遍「**装到设备上点一次【发送验证码】/【登录】**」——这是唯一能同时验出签名、配置、网络三件事的动作。
+### 7.7 【2026-10-04 事故】Windows 端 GUI 从未真正启动过：WinUI 静默崩溃的定位法与四端配置之雷
+
+**事故**：Windows 端此前所有「完成」结论都只依据「编译 0 警告 0 错误 + 单元测试 125/125」，
+**从未运行过窗口**。实际双击 exe 立即退出（退出码 0xC000027B），打包版（MSIX）同样崩，
+事件日志只给出「Faulting module: Microsoft.ui.xaml.dll」——毫无用处。
+
+**定位手段（务必照抄）**：在 `App.OnLaunched` 加逐步骤日志 + try/catch，写
+`%TEMP%\\keybox-startup.log`（WinUI 的 UI 线程异常会变成 stowed exception 静默杀进程，不写日志就无从查起）。
+本次日志立刻给出真相：
+```
+OnLaunched 进入
+ThemeService.Initialize 完成
+!!! TypeInitializationException : KeyBox.App.Services.AppServices 抛异常
+    Inner: TypeInitializationException : KeyBox.Core.Config.BuildConfig 抛异常
+```
+
+**真因**：`KeyBox.Core.Config.BuildConfig` 的**静态构造在缺 `ENV_ID` / `PUBLISHABLE_KEY` 时直接 throw**。
+这与安卓端 `BuildConfig.ENV_ID` 为空串导致 `Invalid URL host` **是同一类坑**：四端都有「配置缺失」的雷，
+只是表现不同（安卓=能装不能用；Windows=启动即崩且无提示）。
+
+**修复**：写入 `%APPDATA%\\KeyBox\\keys.json`（`BuildConfig` 的 2 号来源，另支持环境变量与向上查找）；
+键值备份在 `secrets/windows-keys.json`（不入库）。修复后实机启动成功并弹出 Windows Hello 解锁框
+（截图 `design/windows-launch-ok.png`）。
+
+**顺带清掉的隐患**：XAML 中引用了 15 个 `Kb*` 资源键共 300+ 处，而全仓**没有任何定义**（主题字典文件从未存在）
+⇒ 新建 `windows/src/KeyBox.App/Themes/KeyBoxTheme.xaml`（Light/Dark/Default 三套）并在 `App.xaml` 合并。
+注意：**不要把主题字典内联进 `App.xaml`**——XAML 编译器会直接报错（实测）。
+
+**四端配置来源对照（发布前必须逐项确认非空）**
+
+| 端 | 配置来源（均不入库） | 缺失时的表现 |
+|---|---|---|
+| 安卓 | `android/keys.properties`（或 CI 的 KEYBOX_* secrets） | 能装但报 `Invalid URL host`（已加固：本地 Release 构建直接失败） |
+| Windows | `%APPDATA%\\KeyBox\\keys.json`，或环境变量，或 exe 同目录/上层的 `keys.json` | **启动即崩**（0xC000027B，无任何提示） |
+| 鸿蒙 | `entry/src/main/ets/lib/config.private.ets` | 编译失败（天然防呆） |
+| 网页版 | `web/.env.local` | 构建产物连不上云环境 |
+
+**Windows 文件编码铁律（本轮两次踩到，各让脚本"毫无反应"）**
+
+1. `.cmd` **绝不能带 UTF-8 BOM** —— cmd.exe 会把 BOM 当命令执行 ⇒ 双击瞬间退出、零提示。
+2. `.ps1` **必须带 UTF-8 BOM** —— PowerShell 5.1 否则按 GBK 解析，中文全乱码、脚本不可执行。
+3. `%~dp0` 结尾**自带反斜杠**，拼路径要写成 `"%~dp0xxx.ps1"`，否则会去找 `...\\1xxx.ps1`。
+
+**Windows 分发方式（定稿）**
+
+- **首选：压缩包版** `KeyBox-0.5.0-win-x64-portable.zip`（自包含 .NET 与 Windows App SDK 运行时 + 内置 `keys.json`）
+  ⇒ 解压双击即用，零前置安装、零证书、零管理员。**必须整目录启动**（同目录的 resources.pri / Assets / keys.json 都要在）。
+- 备选：MSIX + `windows/scripts/install-msix.ps1`（自我提权导证书到本机受信任区再安装）。
+  注意：MSIX 版**同样需要 `%APPDATA%\\KeyBox\\keys.json`**，否则一样启动即崩。
+
+**方法论一条**：本轮的教训是「编译通过 + 单测通过」**不等于**「应用能跑」。
+涉及 GUI 的改动，完成标准必须是**实际启动并看到窗口**（截图留档）。
