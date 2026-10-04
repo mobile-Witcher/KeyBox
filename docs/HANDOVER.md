@@ -288,3 +288,7 @@ $hdc='C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\h
 
 **尚未做**：用 `tools/kb-ab-deviceid.js` 复跑 A/B，验证 ① 是否真把失效概率压下去
 （做法：两组都在登录后**先各续期一次**，再交叉登录，观察先登录一方是否仍能续期）。
+> **7.5 补充（2026-10-04 验证后）**：① 启动主动续期经对照实验证明**收益很小**
+> （X=1/4 vs Y=0/4，n=4，不具统计意义）⇒ 保留但**不得当作多端并存的解法**；
+> **② 才是有效缓解**（已四端实现）。详见 docs/DIAGNOSIS-multi-device-login.md §6.5。
+> 平台侧属服务端行为（MaxDevice=5 不是限制因素），需要时向 CloudBase 提工单确认。
