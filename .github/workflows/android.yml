@@ -81,13 +81,13 @@ jobs:
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk \
-             dist/KeyBox-android-native-0.1.0-debug.apk
+             dist/KeyBox-android-native-debug.apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: dist/KeyBox-android-native-0.1.0-debug.apk
+          path: android/dist/*-debug.apk
           if-no-files-found: error
 
       # ── Release（签名）：无 secrets 时优雅跳过，不影响 debug artifact ──────────
@@ -122,12 +122,12 @@ jobs:
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk \
-             dist/KeyBox-android-native-0.1.0.apk
+             dist/KeyBox-android-native-release.apk
 
       - name: Upload release APK
         if: steps.signing.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: dist/KeyBox-android-native-0.1.0.apk
+          path: android/dist/*-release.apk
           if-no-files-found: error

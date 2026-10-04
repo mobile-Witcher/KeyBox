@@ -224,3 +224,28 @@ $hdc='C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\h
 - 签名/安装手册：`docs/SIGNING-AND-TRUST.md`
 - 数据库迁移归档：`docs/db-migrations/`
 - 云环境控制台：腾讯云 CloudBase → 环境 `weichi-d4gfw5uo1334e0ffb`
+
+### 7.1 单仓 CI 专项（2026-10-04 实修记录）
+
+合并为单仓后 CI 连挂四次，根因与正确写法：
+
+1. **`defaults.run.working-directory` 只作用于 `run:` 步骤**，对 `uses:` 步骤（`actions/upload-artifact`、
+   `actions/checkout` 等）**无效** —— 这类步骤的 `path` 一律相对**仓库根**。
+   本项目就因此出现"打包步骤成功、上传却报 No files were found"：
+   产物实际在 `windows/artifacts/`、`android/dist/`，而上传在根目录找 `artifacts/*.msix`、`dist/*.apk`。
+   ⇒ 正确写法：`path: windows/artifacts/*.msix`、`path: android/dist/*-debug.apk`。
+2. **产物路径/文件名不要硬编码版本号**（曾写死 `KeyBox-android-native-0.1.0-debug.apk`，
+   版本升到 0.5.0 后必然找不到）。用通配符 `*-debug.apk` / `artifacts/*.msix`。
+3. **`package-lock.json` 在 Windows 生成时，Linux CI 装不出平台专属可选依赖**
+   （`npm ci` 与 `npm install` 都会照 lock 解析）⇒ CI 内 `rm -f package-lock.json && npm install`；
+   仓库里的 lock 不动。（否则报 `Cannot find module @rollup/rollup-linux-x64-gnu`，npm/cli#4828）
+4. 工作流 `name:` 不要重复（曾两个都叫 `build`，日志与通知里分不清），建议 `windows` / `android` / `web`。
+
+### 7.2 测试路径与"勿批量重命名式改代码"
+
+5. 单仓后 `cloudfunctions/`、`cloudbase/` 等**不再位于 web 根**：网页版测试里凡
+   `resolve(here, "../../cloudfunctions")` 之类固定层级写法都会 ENOENT。
+   ⇒ 建议统一锚定：向上寻找同时含 `cloudfunctions/` 与 `.github/` 的目录；或明确"相对 web 根"再上跳一层。
+   本项目当前采用后者（`resolve(REPO, "../cloudfunctions")`，REPO 仍指向 `web/`，以免影响对 `src/` 的扫描）。
+6. **不要用正则批量替换多文件**：本次一次批量替换把 5 个测试文件改成"加载即失败（0 test）"，
+   靠 `git revert` 才挽回。正确做法：逐个文件改、逐个跑测试、一次只动一处。
