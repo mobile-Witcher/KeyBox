@@ -14,13 +14,12 @@
  *   用 `new Function` 注入受控假 `require("./lib")`，不触碰真实 SDK / 网络 / 数据库。
  */
 import { readFileSync, readdirSync } from "node:fs";
-import { repoRoot } from "./testRepoRoot";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = repoRoot();
+const REPO = resolve(HERE, "../..");
 const CLOUD_ROOT = resolve(REPO, "cloudfunctions");
 const MIGRATIONS = resolve(REPO, "cloudbase/migrations");
 const SRC = resolve(REPO, "src");
