@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KeyBox 主题资源：XAML 中所有 Kb* 资源键的唯一来源。
+     2026-10-04 事故修复：此前本文件缺失，导致 MainWindow.xaml 解析时
+     ThemeResource 找不到 KbBgBrush 等键，Microsoft.ui.xaml.dll 抛 0xC000027B，应用启动即崩。 -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="KbBgBrush" Color="#F7F8F7" />
+            <SolidColorBrush x:Key="KbSurfaceBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="KbSurface2Brush" Color="#F1F3F1" />
+            <SolidColorBrush x:Key="KbBorderBrush" Color="#DDE1DD" />
+            <SolidColorBrush x:Key="KbTextBrush" Color="#1F2421" />
+            <SolidColorBrush x:Key="KbMutedBrush" Color="#6B746E" />
+            <SolidColorBrush x:Key="KbMutedSoftBrush" Color="#EDF0ED" />
+            <SolidColorBrush x:Key="KbPrimaryBrush" Color="#6F8F73" />
+            <SolidColorBrush x:Key="KbPrimarySoftBrush" Color="#E4EDE5" />
+            <SolidColorBrush x:Key="KbOnPrimaryBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="KbDangerBrush" Color="#B4453C" />
+            <SolidColorBrush x:Key="KbDangerSoftBrush" Color="#F7E4E2" />
+            <SolidColorBrush x:Key="KbWarningSoftBrush" Color="#FBF0DC" />
+            <SolidColorBrush x:Key="KbSuccessSoftBrush" Color="#E2F0E5" />
+            <CornerRadius x:Key="KbCardCornerRadius">12</CornerRadius>
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="KbBgBrush" Color="#161917" />
+            <SolidColorBrush x:Key="KbSurfaceBrush" Color="#1E2320" />
+            <SolidColorBrush x:Key="KbSurface2Brush" Color="#262C28" />
+            <SolidColorBrush x:Key="KbBorderBrush" Color="#3A423C" />
+            <SolidColorBrush x:Key="KbTextBrush" Color="#ECEFEC" />
+            <SolidColorBrush x:Key="KbMutedBrush" Color="#9AA69E" />
+            <SolidColorBrush x:Key="KbMutedSoftBrush" Color="#2C332E" />
+            <SolidColorBrush x:Key="KbPrimaryBrush" Color="#8FB394" />
+            <SolidColorBrush x:Key="KbPrimarySoftBrush" Color="#2A362C" />
+            <SolidColorBrush x:Key="KbOnPrimaryBrush" Color="#10140F" />
+            <SolidColorBrush x:Key="KbDangerBrush" Color="#E08A82" />
+            <SolidColorBrush x:Key="KbDangerSoftBrush" Color="#3A2725" />
+            <SolidColorBrush x:Key="KbWarningSoftBrush" Color="#3A3222" />
+            <SolidColorBrush x:Key="KbSuccessSoftBrush" Color="#26362A" />
+            <CornerRadius x:Key="KbCardCornerRadius">12</CornerRadius>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>
