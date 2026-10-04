@@ -300,7 +300,10 @@ $hdc='C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\h
 gradle 优雅降级为空串 ⇒ `BuildConfig.ENV_ID = ""` ⇒ `AuthRepository.apiBase()` 拼出
 `https://.api.tcloudbasegateway.com`，用户装机后一点【发送验证码】就报 `Invalid URL host`。
 **v0.5.0 发布出去的 Android APK 就是坏的**（CI 的包没事，因为它从 GitHub Secrets 注入；坏的是本地出的包）。
-已修：补 `keys.properties` + 重出包 + 替换 Release 资产 + 桌面副本；并加了 gradle 防呆（Release 时 ENV_ID 为空直接构建失败）。
+已修：补 `keys.properties` + 重出包 + 替换 Release 资产 + 桌面副本；并加了 gradle 防呆——
+**本地** Release 构建在 ENV_ID 为空时**直接失败**并给出配置指引；**CI**（存在 `CI` 环境变量、
+而它的 env secrets 可能未配置）只 `logger.warn`，保留工作流既有的「仅供编译验证」语义，避免把 CI 弄红。
+（第一版防呆没区分环境，直接把 android 工作流弄红了，已返工修正：`dd35e39`。）
 
 **教训（推广到四端）**：签名只证明「包可信」，不证明「包能用」。发布前必须逐端确认敏感配置**非空且已编入产物**：
 
