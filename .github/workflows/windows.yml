@@ -61,7 +61,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KeyBox-0.5.0.0-x64-msix
+          # 注意：defaults.run.working-directory 只作用于 run: 步骤，
+          # uses: 步骤（含 upload-artifact）的 path 一律相对【仓库根】，故这里必须带 windows/ 前缀。
           path: |
-            artifacts/*.msix
-            src/KeyBox.App/bin/x64/Release/**/AppPackages/**/*.msix
+            windows/artifacts/*.msix
+            windows/src/KeyBox.App/bin/**/AppPackages/**/*.msix
           if-no-files-found: error
