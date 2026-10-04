@@ -55,22 +55,48 @@
                 Content="刷新"
                 Command="{x:Bind ViewModel.RefreshCommand}"
                 VerticalAlignment="Center" />
+            <!-- W7-F：外观入口 + 账户菜单（原「安全 / 管理 / 退出登录」三个按钮已并入账户菜单）-->
             <Button
                 Grid.Column="4"
-                Content="🛡 安全"
-                Click="OnSecurityClick"
-                VerticalAlignment="Center" />
+                Content="&#xE790;"
+                Click="OnAppearanceClick"
+                FontFamily="Segoe Fluent Icons"
+                FontSize="15"
+                VerticalAlignment="Center"
+                ToolTipService.ToolTip="外观（皮肤 / 明暗）" />
             <Button
                 Grid.Column="5"
-                Content="👤 管理"
-                Click="OnAdminClick"
+                FontFamily="Segoe Fluent Icons"
+                FontSize="16"
+                Content="&#xE77B;"
                 VerticalAlignment="Center"
-                Visibility="{x:Bind ViewModel.AdminEntryVisibility, Mode=OneWay}" />
-            <Button
-                Grid.Column="6"
-                Content="退出登录"
-                Command="{x:Bind ViewModel.LogoutCommand}"
-                VerticalAlignment="Center" />
+                ToolTipService.ToolTip="账户">
+                <Button.Flyout>
+                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.UidText, Mode=OneWay}" IsEnabled="False" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="安全" Click="OnSecurityClick">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE72E;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Text="管理"
+                            Click="OnAdminClick"
+                            Visibility="{x:Bind ViewModel.AdminEntryVisibility, Mode=OneWay}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE713;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="退出登录" Command="{x:Bind ViewModel.LogoutCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xF3B1;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
         </Grid>
 
         <!-- 搜索 + 分类过滤 -->
@@ -87,14 +113,27 @@
                 Grid.Column="0"
                 PlaceholderText="搜索站点、接口地址、模型名…"
                 Text="{x:Bind ViewModel.SearchKw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <ComboBox
+            <!-- W7-F：分类 Chip（替代原下拉框；Tag 为 null 的「全部」也走同一处理器）-->
+            <ItemsControl
                 Grid.Column="1"
-                MinWidth="180"
-                PlaceholderText="分类"
                 ItemsSource="{x:Bind ViewModel.TagOptions, Mode=OneWay}"
-                SelectedItem="{x:Bind ViewModel.SelectedTagOption, Mode=OneWay}"
-                SelectionChanged="OnTagSelectionChanged"
-                VerticalAlignment="Center" />
+                VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button
+                            Content="{Binding Display}"
+                            Click="OnTagChipClick"
+                            Tag="{Binding Tag}"
+                            Padding="10,4"
+                            FontSize="12" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                 <Button
                     Content="重命名分类"

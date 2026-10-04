@@ -20,7 +20,6 @@ public sealed partial class VaultPage : Page
         ViewModel = new VaultViewModel(AppServices.VaultService, AppServices.SecurityService, AppServices.CurrentUid);
         ViewModel.LogoutRequested += OnLogoutRequested;
         InitializeComponent();
-        AddAppearanceButton();
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -58,6 +57,26 @@ public sealed partial class VaultPage : Page
         if (sender is FrameworkElement { DataContext: VaultItemViewModel vm, Tag: string field })
         {
             ViewModel.CopyField(vm, field);
+        }
+    }
+
+    /// <summary>W7-F：顶栏「外观」按钮（已从代码挂载移入 XAML）——弹出皮肤/明暗面板。</summary>
+    private void OnAppearanceClick(object sender, RoutedEventArgs e)
+    {
+        var flyout = new Flyout { Content = new AppearancePanel() };
+        flyout.ShowAt((FrameworkElement)sender);
+    }
+
+    /// <summary>W7-F：分类 Chip（替代原下拉框）。Tag 为 null 表示「全部」。</summary>
+    private void OnTagChipClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string tag })
+        {
+            ViewModel.SelectTag(tag);
+        }
+        else
+        {
+            ViewModel.SelectTag(null);
         }
     }
 
@@ -301,25 +320,5 @@ public sealed partial class VaultPage : Page
         AppServices.SignOutAndGoLogin();
     }
 
-    /// <summary>
-    /// 顶栏「外观」入口（🎨）：弹出外观面板（9 皮肤色卡 + 三态明暗 + 跟随 Windows 强调色）。
-    /// 先用代码挂载；W7-F 重排顶栏时会移入 XAML 并并入账户区。
-    /// </summary>
-    private void AddAppearanceButton()
-    {
-        TopBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var button = new Button
-        {
-            Content = "🎨",
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(8, 0, 0, 0),
-        };
-        ToolTipService.SetToolTip(button, "外观（皮肤 / 明暗）");
-        button.Click += (_, _) =>
-        {
-            var flyout = new Flyout { Content = new AppearancePanel() };
-            flyout.ShowAt(button);
-        };
-        Grid.SetColumn(button, TopBar.ColumnDefinitions.Count - 1);
-        TopBar.Children.Add(button);
-    }}
+    // W7-F/G：顶栏改用 XAML 声明（外观按钮 + 账户菜单），不再用代码挂载按钮。
+}
