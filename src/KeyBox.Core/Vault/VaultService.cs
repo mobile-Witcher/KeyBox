@@ -69,6 +69,13 @@ public sealed class VaultService
         return items;
     }
 
+    /// <summary>
+    /// 读取本人账号状态（kb_users.status）。§6.4 R13：数据层在停用后会立刻拒绝密钥读写，
+    /// 客户端据此给出「账号已停用」的明确提示，而不是显示成「暂无密钥」。
+    /// </summary>
+    public Task<string> FetchMyStatusAsync(string uid, CancellationToken ct = default)
+        => _api.FetchMyStatusAsync(uid, ct);
+
     // -------------------------------------------------------------------------
     // CRUD（W3）：serialize → EncryptToKb1 → RDB 写
     // -------------------------------------------------------------------------

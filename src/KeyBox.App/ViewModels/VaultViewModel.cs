@@ -252,6 +252,20 @@ public partial class VaultViewModel : ObservableObject
         StatusMessage = "";
         try
         {
+            // §6.4 R13：先确认账号仍是 active。管理员停用后数据层（kb_secrets 的 RLS 已要求
+            // is_active_user()）会立刻拒绝读写——与其让用户看到"暂无密钥"这种误导文案，
+            // 不如明确提示账号状态，并清空列表。
+            string status = await _vault.FetchMyStatusAsync(_uid);
+            if (status != "active")
+            {
+                _allItems = new List<VaultItem>();
+                RecomputeVisible();
+                StatusMessage = status == "deleted"
+                    ? "账号已删除，请联系管理员"
+                    : "账号已停用，请联系管理员";
+                return;
+            }
+
             _allItems = await _vault.FetchAndDecryptAsync(_uid);
             RecomputeVisible();
             StatusMessage = _allItems.Count == 0 ? "暂无密钥" : "";

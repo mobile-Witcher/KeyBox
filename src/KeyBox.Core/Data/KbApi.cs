@@ -49,6 +49,27 @@ public sealed class KbApi
             KeyEpoch: GetInt(row, "key_epoch"));
     }
 
+    /// <summary>
+    /// 读取本人的账号状态（kb_users.status）。§6.4 R13 收口：
+    /// 数据层（kb_secrets 的 RLS 已要求 is_active_user()）在停用后会立刻拒绝读写密钥，
+    /// 客户端据此提前给出「账号已停用」的明确提示，而不是把它显示成「暂无密钥」。
+    /// 返回 active / disabled / deleted 等；行不可见时按 deleted 处理。
+    /// </summary>
+    public async Task<string> FetchMyStatusAsync(string uid, CancellationToken ct = default)
+    {
+        string path = "/v1/rdb/rest/kb_users?select=status&uid=eq." + Uri.EscapeDataString(uid);
+        string text = await GetAsync(path, ct).ConfigureAwait(false);
+
+        using JsonDocument doc = ParseDocument(text);
+        List<JsonElement> rows = ReadArray(doc);
+        if (rows.Count == 0)
+        {
+            return "deleted";
+        }
+
+        return GetString(rows[0], "status");
+    }
+
     /// <summary>拉取本人全部密文（按更新时间降序，最新在前）。</summary>
     public async Task<List<KbSecretRow>> FetchSecretRowsAsync(string uid, CancellationToken ct = default)
     {
