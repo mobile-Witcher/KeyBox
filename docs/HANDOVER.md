@@ -367,3 +367,64 @@ ThemeService.Initialize 完成
 
 **方法论一条**：本轮的教训是「编译通过 + 单测通过」**不等于**「应用能跑」。
 涉及 GUI 的改动，完成标准必须是**实际启动并看到窗口**（截图留档）。
+### 7.8 【2026-10-04 事故】托盘菜单点不动 + 构建产物误入仓库 + 便携版交付纪律
+
+#### A. H.NotifyIcon + WinUI 3：托盘菜单「能弹出但点谁都没反应」
+
+**根因（依 H.NotifyIcon.WinUI 2.0.131 的 README）**：WinUI 下默认模式是把 `MenuFlyout` 转成
+**Win32 PopupMenu**，原生弹窗**只会调用 `MenuFlyoutItem.Command`，不会触发 WinUI 的 `Click` 事件**。
+原实现只挂 `item.Click += (_, _) => action();` ⇒ 表现为「菜单能弹出，四项点哪个都没反应」。
+
+**正确写法**（`windows/src/KeyBox.App/Services/TrayIconService.cs`）：
+```csharp
+var item = new MenuFlyoutItem
+{
+    Text = text,
+    Icon = new SymbolIcon(Symbol.Setting),
+    Command = new CommunityToolkit.Mvvm.Input.RelayCommand(action),   // 原生菜单唯一会调用的入口
+};
+```
+- **只挂 `Command`，不要同时挂 `Click`**（两种模式都生效时会重复执行，如"显示/隐藏"互相抵消）。
+- 另有一个独立坑：本项目 `TaskbarIcon` 是纯代码 `new`、**不入视觉树** ⇒ 其 `ContextFlyout` 拿不到
+  `XamlRoot`。已提供 `TrayIconService.AttachXamlRoot(XamlRoot)`，由 `App.OnLaunched` 在
+  `_window.Activate()` 之后调用补上。
+- 库文档还列出另两种模式（在窗口角落渲染 / `ContextMenuMode="SecondWindow"`），当前未使用。
+
+#### B. 构建产物绝不能进仓库
+
+`git add -A` 会把 `windows/**/bin|obj`、`windows/portable*/`、`windows/artifacts/` 一并提交
+（本次两个提交共出库约 1400 个文件，仓库里曾躺着 100+ MB 的 DLL）。
+现已在 `.gitignore` 覆盖：`/windows/portable*/`、`/windows/artifacts/`、`/windows/**/bin/`、
+`/windows/**/obj/`、`/harmony/**/build/`、`/harmony/**/oh_modules/`、`*.dmp`。
+**纪律**：任何 publish/build 之后先 `git status --porcelain` 确认没有产物混入再提交。
+
+#### C. 便携版（ZIP）交付纪律 —— 别拿旧包当新版发
+
+本次真实失误：我用「修复**之前**打的 ZIP」解压给用户，导致用户反馈「又不行了」。
+便携版发布必须按顺序做完：
+
+1. 确认源码含目标修复（例如 `Select-String ... RelayCommand` 能看到那一行）；
+2. `dotnet publish -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:WindowsAppSDKSelfContained=true`；
+3. **先在发布目录里跑一次，看到窗口**（`Start-Process -WorkingDirectory <发布目录>`），再打包；
+4. 三处同步：固定目录（如 `C:\\Users\\<user>\\KeyBox`）、桌面 ZIP、GitHub Release 资产（比对远端 size == 本地 size）；
+5. 便携版三要素缺一不可：**整目录启动**（`resources.pri` / `Assets` / `keys.json` 同目录）、自包含运行时、
+   `%APPDATA%\\KeyBox\\keys.json` 提供 `ENV_ID` + `PUBLISHABLE_KEY`。
+
+**分发形态（定稿）**：Windows 以**压缩包版**为主（零前置、免证书、免管理员）；MSIX 为备选，
+但需一次 UAC 导证书，且**同样需要 keys.json**。
+
+#### D. MSIX 证书的清理（改用压缩包版后）
+
+MSIX 路线会在 4 个位置各留 2 张自签名证书（`CurrentUser` / `LocalMachine` × `TrustedPeople` / `Root`）。
+删除要点：`CurrentUser` 下的**也需要提权**（实测直接 `Remove` 报 `Access is denied`）；
+`LocalMachine` 必须管理员。已提供一键脚本（自动提权、删完自动打印 4 行计数），
+仓库副本：`windows/scripts/install-msix.ps1` 同目录思路可复用。
+本机已于 2026-10-04 清理完毕（4 处均为 0）。
+
+#### E. 便携版的日常工作流（交付给用户的口径）
+
+- 启动：桌面/开始菜单快捷方式（快捷方式的「起始位置」必须指向程序目录，否则找不到 `resources.pri`）。
+- 退出：**托盘右键 → 退出**；关窗口只是隐藏到托盘（设计如此）。
+- 数据：`%APPDATA%\\KeyBox\\`（会话/设置）；`C:\\Users\\<user>\\KeyBox\\` 是程序本体。
+- 更新：整目录替换（数据在 `%APPDATA%`，不丢）；卸载：删目录。
+- **不要把 exe 单独拖出来运行**。
