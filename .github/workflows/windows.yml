@@ -1,4 +1,4 @@
-name: build
+name: windows
 
 on:
   push:
@@ -55,11 +55,13 @@ jobs:
 
       - name: Package MSIX (unsigned, sideload)
         shell: pwsh
-        run: ./scripts/package-msix.ps1 -Version 0.1.0.0 -Platform x64
+        run: ./scripts/package-msix.ps1 -Version 0.5.0.0 -Platform x64
 
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KeyBox-0.1.0-x64-msix
-          path: artifacts/*.msix
+          name: KeyBox-0.5.0.0-x64-msix
+          path: |
+            artifacts/*.msix
+            src/KeyBox.App/bin/x64/Release/**/AppPackages/**/*.msix
           if-no-files-found: error

@@ -20,7 +20,7 @@
 # 敏感配置不入库：CI 从 secrets（KEYBOX_ENV_ID / KEYBOX_PUBLISHABLE_KEY）生成 keys.properties
 # 供 BuildConfig 注入；未配置时为空串（编译通过但运行时无法联网，会提示 Invalid URL host）。
 # ─────────────────────────────────────────────────────────────────────────────
-name: build
+name: android
 
 on:
   push:
