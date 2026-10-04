@@ -21,6 +21,16 @@ val secretProps = Properties().apply {
 val envId: String = (System.getenv("KEYBOX_ENV_ID") ?: "") .ifEmpty { secretProps.getProperty("ENV_ID", "") }
 val publishableKey: String = (System.getenv("KEYBOX_PUBLISHABLE_KEY") ?: "") .ifEmpty { secretProps.getProperty("PUBLISHABLE_KEY", "") }
 
+// R95-3 防呆：本地或 CI 忘了配 keys.properties 时，构建仍会成功，但产出的包在运行时报
+// Invalid URL host: .api.tcloudbasegateway.com（ENV_ID 为空串）。Release 构建直接失败更安全。
+val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+if (envId.isBlank() && isReleaseBuild) {
+    throw GradleException(
+        "缺少 ENV_ID：请复制 android/keys.properties.example 为 android/keys.properties 并填入真实值" +
+            "（CI 请配置 secrets：KEYBOX_ENV_ID / KEYBOX_PUBLISHABLE_KEY）"
+    )
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Release 签名配置：从 key.properties 读取（依次尝试仓库根目录 → app 模块目录）。
 // 该文件由本地手工填写或 CI 从 GitHub Secrets 解码生成，均已 gitignore，绝不入库。
