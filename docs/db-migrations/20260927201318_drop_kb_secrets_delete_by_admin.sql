@@ -1,0 +1,21 @@
+-- KeyBox R14 收口迁移（migrationVersion=20260927201318，migrationName=drop_kb_secrets_delete_by_admin）
+-- 目标环境：CloudBase PostgreSQL（envId 属受保护信息，只放 .env.local，不进仓库）
+-- 下发方式：managePgDatabase(action="applyMigration")；文件名与 migrationVersion 必须一致。
+--
+-- 背景（架构 §5.4 / §5.6 / §7.1）：
+--   R14「删除某用户全部数据」已收口到云函数 kbAdminDeleteUserData —— 它持 service_role，
+--   入参只接受一个 uid，函数内先 is_admin() 自检，再执行 `DELETE FROM kb_secrets WHERE owner_id=$1`，
+--   且不 RETURNING 任何行内容、只返回 { deletedCount }。
+--   而原策略 kb_secrets_delete_by_admin 的 `USING (is_admin())` 对【全表所有行】为真 ——
+--   一旦有人直连（app.rdb().from('kb_secrets').delete()）并漏写 `.eq('owner_id', ...)`，
+--   就是“无范围删除”，会误删全库密文且不可恢复。删除既已收口到按 uid 的云函数，这条
+--   “直连批量删除”敞口就应堵掉。
+--
+-- 影响：
+--   - 删除后 kb_secrets 仅剩 4 条策略（select/insert/update/delete 各自的 *_own）；
+--   - 全库策略总数 7 → 6（kb_users 2 条 + kb_secrets 4 条 + kb_invites 0 条）；
+--   - 管理员“删除他人数据”改由云函数（service_role）完成，不再依赖本条策略；
+--   - “不可读”不变：kb_secrets 的 SELECT 策略本就【不含】is_admin()，管理员用自己的会话读不到他人密文。
+--
+-- 幂等：DROP POLICY 加 IF EXISTS，可重复执行，结果一致。
+DROP POLICY IF EXISTS kb_secrets_delete_by_admin ON public.kb_secrets;
