@@ -3,5 +3,40 @@
     x:Class="KeyBox.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Frame x:Name="RootFrame" />
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--
+            W8 自定义标题栏：整窗 extend into title bar，本 Grid 作为系统拖拽区。
+            底色走皮肤令牌（KbSurface2Brush），图标/文字左对齐（右侧天然留给系统窗口按钮）。
+            不支持自定义标题栏的平台会在 MainWindow.SetupTitleBar 里隐藏本行并退回系统标题栏。
+        -->
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            Height="32"
+            Background="{ThemeResource KbSurface2Brush}">
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="8"
+                Margin="12,0,0,0"
+                VerticalAlignment="Center">
+                <Image
+                    Source="ms-appx:///Assets/keybox.png"
+                    Width="16"
+                    Height="16" />
+                <TextBlock
+                    Text="KeyBox — 密钥保管箱"
+                    FontSize="12"
+                    Foreground="{ThemeResource KbMutedBrush}"
+                    VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <Frame x:Name="RootFrame" Grid.Row="1" />
+    </Grid>
 </Window>

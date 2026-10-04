@@ -27,12 +27,38 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "KeyBox — 密钥保管箱";
         AppServices.MainWindow = this;
+        SetupTitleBar();
         NavigateToInitial();
 
         RestoreWindowState();
         AppWindow.Closing += OnAppWindowClosing;
         SetupTray();
         SetupHotKey();
+    }
+
+    /// <summary>
+    /// W8 自定义标题栏：把标题栏扩展进客户区，并把 <c>AppTitleBar</c> 指定为系统拖拽区。
+    /// 不支持自定义标题栏的平台（旧系统/某些远程会话）→ 隐藏自绘标题栏并退回系统标题栏，功能不受影响。
+    /// 标题文案与底色由 XAML 提供，窗口按钮配色由 ThemeService.ApplyTitleBar 跟随皮肤。
+    /// </summary>
+    private void SetupTitleBar()
+    {
+        try
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+            {
+                AppTitleBar.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+        }
+        catch
+        {
+            // 任何异常都退回系统标题栏，绝不让窗口变成"不可拖拽"
+            AppTitleBar.Visibility = Visibility.Collapsed;
+        }
     }
 
     // ---- 导航 ----
