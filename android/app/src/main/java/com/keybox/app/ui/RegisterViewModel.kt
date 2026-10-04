@@ -110,7 +110,17 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             try {
                 val repository = ServiceLocator.authRepository
                 val verificationToken = repository.verifyCode(id, current.code.trim())
-                val session = repository.signIn(verificationToken)
+                // 未注册号码必须走 signup（signin 会 404 User not exist）；
+                // 若该号码其实已注册（平台报 exist），退回 signin 完成登录。
+                val session = try {
+                    repository.signUp(verificationToken, current.phone)
+                } catch (e: Exception) {
+                    if (e.message?.contains("exist", ignoreCase = true) == true) {
+                        repository.signIn(verificationToken)
+                    } else {
+                        throw e
+                    }
+                }
                 ServiceLocator.sessionStore.save(session)
 
                 val probe = ServiceLocator.kbApi.probeActivation(session.accessToken)

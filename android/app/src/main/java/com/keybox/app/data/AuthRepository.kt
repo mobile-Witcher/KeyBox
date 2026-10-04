@@ -62,6 +62,22 @@ class AuthRepository(private val client: OkHttpClient) {
      * 端点 /auth/v1/token **无 Authorization 头**；refresh_token 失效时抛
      * [AuthException](recoverableByRelogin = true)，上层据此回登录页。
      */
+    /**
+     * Step ③b：verification_token 换登录态（**新用户注册**专用）。
+     *
+     * 为什么必须有它：未注册手机号调 /auth/v1/signin 会返回
+     * 404 {"error":"not_found","error_code":5,"error_description":"User not exist."}，
+     * 而注册向导第 1 步恰恰面向尚未注册的号码 ⇒ 必须先走 /auth/v1/signup。
+     * 号码其实已存在时平台会报错，由调用方退回 [signIn]。
+     */
+    suspend fun signUp(verificationToken: String, phone: String): Session = withContext(Dispatchers.IO) {
+        val body = JSONObject()
+            .put("phone_number", normalizePhone(phone))
+            .put("verification_token", verificationToken)
+        val text = post("/auth/v1/signup", body.toString(), bearer = BuildConfig.PUBLISHABLE_KEY)
+        parseSession(text)
+    }
+
     suspend fun refreshSession(refreshToken: String): Session = withContext(Dispatchers.IO) {
         val body = JSONObject()
             .put("client_id", BuildConfig.ENV_ID)
