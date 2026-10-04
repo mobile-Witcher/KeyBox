@@ -1,4 +1,6 @@
 # KeyBox-Windows
+> 📘 在**另一台电脑**上安装本 MSIX（含证书信任）与重新签名：见 [`docs/SIGNING-AND-TRUST.md`](docs/SIGNING-AND-TRUST.md)；公开证书在 `docs/certs/keybox-codesign.cer`
+
 
 ![KeyBox](docs/assets/keybox-banner-light.png)
 
