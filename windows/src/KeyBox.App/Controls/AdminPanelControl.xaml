@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="KeyBox.App.Controls.AdminPanelControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:KeyBox.App.ViewModels">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Padding="4,4,6,0">
+        <!-- 顶部：开户计数 + 生成邀请码 + 刷新 -->
+        <Grid Grid.Row="0" ColumnSpacing="10" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Grid.Column="0"
+                Text="{x:Bind ViewModel.CountText, Mode=OneWay}"
+                FontSize="16"
+                FontWeight="SemiBold"
+                VerticalAlignment="Center" />
+            <Button
+                Grid.Column="1"
+                Content="生成邀请码"
+                Click="OnCreateInviteClick"
+                IsEnabled="{x:Bind ViewModel.CanGenerateInvite, Mode=OneWay}" />
+            <Button
+                Grid.Column="2"
+                Content="刷新"
+                Click="OnRefreshClick"
+                IsEnabled="{x:Bind ViewModel.IdleEnabled, Mode=OneWay}" />
+        </Grid>
+
+        <!-- 满员提示条 -->
+        <Border
+            Grid.Row="1"
+            Background="{ThemeResource KbWarningSoftBrush}"
+            CornerRadius="6"
+            Padding="10"
+            Margin="0,0,0,8"
+            Visibility="{x:Bind ViewModel.FullBannerVisibility, Mode=OneWay}">
+            <TextBlock Text="已达开户上限，无法再生成邀请码。" FontSize="12" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- 邀请码区（展示一次 + 复制 + 作废） -->
+        <Border
+            Grid.Row="2"
+            Background="{ThemeResource KbSurfaceBrush}"
+            BorderBrush="{ThemeResource KbBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="12"
+            Margin="0,0,0,10"
+            Visibility="{x:Bind ViewModel.InviteCodeVisibility, Mode=OneWay}">
+            <StackPanel Spacing="8">
+                <TextBlock Text="一次性邀请码（展示一次）" FontSize="12" FontWeight="SemiBold" />
+                <TextBlock
+                    Text="{x:Bind ViewModel.InviteCode, Mode=OneWay}"
+                    FontFamily="Consolas"
+                    FontSize="16"
+                    TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="复制" Click="OnCopyInviteClick" />
+                    <Button Content="作废" Click="OnRevokeInviteClick" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 用户列表 -->
+        <Grid Grid.Row="3">
+            <ListView ItemsSource="{x:Bind ViewModel.Users, Mode=OneWay}" SelectionMode="None" Padding="0,0,0,0">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0,4" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AdminUserItem">
+                        <Border
+                            Background="{ThemeResource KbSurfaceBrush}"
+                            BorderBrush="{ThemeResource KbBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,10">
+                            <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock
+                                            Text="{x:Bind DisplayName}"
+                                            FontSize="15"
+                                            FontWeight="SemiBold" />
+                                        <Border
+                                            Background="{x:Bind StatusBrush}"
+                                            CornerRadius="8"
+                                            Padding="8,2">
+                                            <TextBlock
+                                                Text="{x:Bind StatusText}"
+                                                FontSize="11"
+                                                Foreground="White" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock
+                                        Text="{x:Bind Uid}"
+                                        FontFamily="Consolas"
+                                        FontSize="11"
+                                        Foreground="{ThemeResource KbMutedBrush}" />
+                                    <TextBlock FontSize="12" Foreground="{ThemeResource KbMutedBrush}">
+                                        <Run Text="注册 " /><Run Text="{x:Bind CreatedAtText}" /><Run Text=" · 密钥 " /><Run Text="{x:Bind ItemCount}" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center" Visibility="{x:Bind ActionsVisibility}">
+                                    <Button Content="{x:Bind StatusActionText}" Click="OnToggleStatusClick" />
+                                    <Button Content="删除数据" Click="OnDeleteClick" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <ProgressRing
+                Width="32"
+                Height="32"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.LoadingVisibility, Mode=OneWay}" />
+        </Grid>
+
+        <!-- 内联二次确认（避免嵌套 ContentDialog） -->
+        <Border
+            Grid.Row="4"
+            Background="{ThemeResource KbWarningSoftBrush}"
+            CornerRadius="6"
+            Padding="12"
+            Margin="0,8,0,0"
+            Visibility="{x:Bind ViewModel.ConfirmVisibility, Mode=OneWay}">
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Text="{x:Bind ViewModel.ConfirmText, Mode=OneWay}"
+                    FontSize="12"
+                    TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="确认" Click="OnConfirmClick" />
+                    <Button Content="取消" Click="OnConfirmCancelClick" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 状态 + 底栏免责声明 -->
+        <StackPanel Grid.Row="5" Spacing="6" Margin="0,8,0,0">
+            <TextBlock
+                Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                Foreground="{x:Bind ViewModel.StatusBrush, Mode=OneWay}"
+                FontSize="12"
+                TextWrapping="Wrap" />
+            <TextBlock
+                Text="管理员看不到任何人的密钥内容，仅可停用与删除。"
+                FontSize="11"
+                Foreground="{ThemeResource KbMutedBrush}"
+                TextWrapping="Wrap" />
+        </StackPanel>
+    </Grid>
+</UserControl>

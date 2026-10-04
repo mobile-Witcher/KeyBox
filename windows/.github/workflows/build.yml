@@ -1,0 +1,58 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore KeyBox-Windows.sln
+
+      # W1 核心交付物：加密向量 + 登录/会话契约测试（纯托管，无需 WinUI 环境）
+      - name: Test (KeyBox.Core)
+        run: dotnet test tests/KeyBox.Core.Tests/KeyBox.Core.Tests.csproj -c Release --no-restore --logger "console;verbosity=normal"
+
+      - name: Build (full solution, x64)
+        run: dotnet build KeyBox-Windows.sln -c Release --no-restore -p:Platform=x64
+
+  # W5：MSIX 打包（未签名 sideload 包；MakeAppx/SignTool 来自 BuildTools NuGet 包）
+  package-msix:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Package MSIX (unsigned, sideload)
+        shell: pwsh
+        run: ./scripts/package-msix.ps1 -Version 0.1.0.0 -Platform x64
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeyBox-0.1.0-x64-msix
+          path: artifacts/*.msix
+          if-no-files-found: error

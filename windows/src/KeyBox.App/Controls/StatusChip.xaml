@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  StatusChip —— 状态胶囊（W7-E ③）。
+
+  为什么不能硬编码颜色：W7 引入了 9 皮肤 × 浅/深共 18 套配色，
+  硬编码的 Colors.MediumSeaGreen / Gray / DarkOrange 在深色皮肤上会过暗、
+  在纸质/极客/赛博等皮肤上会与底色撞色。这里一律走主题令牌：
+    底色 = 语义色与卡面做 22% 混合（Kb*SoftBrush 已由 ThemeService 按皮肤算好）
+    文字 = 语义色本身（各皮肤按正文对比度校准过）
+  胶囊形状走皮肤圆角令牌，顺带满足「极简皮肤无圆角」这类皮肤特性。
+-->
+<UserControl
+    x:Class="KeyBox.App.Controls.StatusChip"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border
+        x:Name="ChipRoot"
+        Background="{ThemeResource KbMutedSoftBrush}"
+        BorderBrush="{ThemeResource KbBorderBrush}"
+        BorderThickness="1"
+        CornerRadius="6"
+        Padding="8,2"
+        VerticalAlignment="Center">
+        <TextBlock
+            x:Name="ChipText"
+            Text=""
+            FontSize="11"
+            FontWeight="SemiBold"
+            Foreground="{ThemeResource KbMutedBrush}"
+            TextWrapping="NoWrap" />
+    </Border>
+</UserControl>

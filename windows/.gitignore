@@ -1,0 +1,22 @@
+# ---- 构建产物 ----
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+*.userprefs
+artifacts/
+
+# ---- 本地敏感配置（含真实 ENV_ID / PUBLISHABLE_KEY，绝不入库）----
+keys.json
+appsettings.local.json
+
+# ---- 会话 / 运行时文件 ----
+*.log
+*.tmp
+
+# ---- 系统 ----
+Thumbs.db
+Desktop.ini
+.DS_Store

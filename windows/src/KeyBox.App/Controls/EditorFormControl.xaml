@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="KeyBox.App.Controls.EditorFormControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Spacing="10" Width="400">
+        <TextBox
+            Header="站点名称 *"
+            PlaceholderText="如 OpenAI"
+            Text="{x:Bind ViewModel.FormSite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox
+            Header="接口地址"
+            PlaceholderText="如 https://api.openai.com/v1"
+            Text="{x:Bind ViewModel.FormUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox
+            Header="官网网址"
+            PlaceholderText="如 https://platform.openai.com"
+            Text="{x:Bind ViewModel.FormWebsite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox
+            Header="模型名"
+            PlaceholderText="如 gpt-4o"
+            Text="{x:Bind ViewModel.FormModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox
+            Header="密钥 *"
+            PlaceholderText="粘贴 API 密钥"
+            Text="{x:Bind ViewModel.FormKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox
+            Header="备注"
+            PlaceholderText="可选"
+            Text="{x:Bind ViewModel.FormNote, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox
+            Header="分类（逗号 / 中文逗号 / 顿号分隔）"
+            PlaceholderText="如 开发, 生产"
+            Text="{x:Bind ViewModel.FormTagsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBlock
+            Text="{x:Bind ViewModel.FormError, Mode=OneWay}"
+            Foreground="{ThemeResource KbDangerBrush}"
+            TextWrapping="Wrap" />
+    </StackPanel>
+</UserControl>

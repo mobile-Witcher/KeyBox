@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="KeyBox.App.Pages.ActivatePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="{ThemeResource KbBgBrush}">
+        <ScrollViewer
+            HorizontalScrollBarVisibility="Disabled"
+            HorizontalScrollMode="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+            <StackPanel
+                MaxWidth="420"
+                Spacing="12"
+                Padding="24"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+                <TextBlock
+                    Text="{x:Bind ViewModel.Title}"
+                    FontSize="24"
+                    FontWeight="Bold"
+                    TextWrapping="Wrap"
+                    Foreground="{ThemeResource KbTextBrush}" />
+
+                <!-- 拦截态（账号被停用/删除）：只给原因与出口 -->
+                <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.BlockedVisibility}">
+                    <TextBlock
+                        Text="{x:Bind ViewModel.Hint}"
+                        TextWrapping="Wrap"
+                        FontSize="13"
+                        Foreground="{ThemeResource KbMutedBrush}" />
+                    <Button
+                        Content="返回登录页"
+                        HorizontalAlignment="Stretch"
+                        Click="OnGoLoginClick" />
+                </StackPanel>
+
+                <!-- 正常态：初始化 / 邀请码激活 -->
+                <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.FormVisibility}">
+                    <TextBlock
+                        Text="{x:Bind ViewModel.Hint}"
+                        TextWrapping="Wrap"
+                        FontSize="12"
+                        Foreground="{ThemeResource KbMutedBrush}" />
+
+                    <TextBox
+                        Header="一次性邀请码"
+                        PlaceholderText="向管理员索取"
+                        Visibility="{x:Bind ViewModel.InviteCodeVisibility}"
+                        Text="{x:Bind ViewModel.InviteCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <PasswordBox
+                        Header="主密码（至少 8 位，忘记无法找回）"
+                        PasswordChanged="OnPasswordChanged" />
+
+                    <PasswordBox
+                        Header="确认主密码"
+                        PasswordChanged="OnConfirmChanged" />
+
+                    <TextBlock
+                        Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                        TextWrapping="Wrap"
+                        FontSize="12"
+                        Foreground="{ThemeResource KbDangerBrush}" />
+
+                    <Button
+                        Content="激活并继续"
+                        HorizontalAlignment="Stretch"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Command="{x:Bind ViewModel.SubmitCommand}" />
+
+                    <ProgressRing
+                        Width="24"
+                        Height="24"
+                        HorizontalAlignment="Center"
+                        IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.BusyVisibility, Mode=OneWay}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
