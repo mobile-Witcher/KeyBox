@@ -21,6 +21,9 @@ sealed interface MainUiState {
     /** 未登录（或 refresh_token 已失效），展示登录页。 */
     data object NeedsLogin : MainUiState
 
+    /** 未注册（或未完成激活）：展示独立注册页（两步向导）。 */
+    data object NeedsRegister : MainUiState
+
     /** 已登录但未解锁 vault：展示三层解锁页（生物 / PIN / 主密码）。 */
     data class Locked(val uid: String) : MainUiState
 
@@ -71,6 +74,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onLoginSuccess(uid: String) {
+        _state.value = MainUiState.Locked(uid)
+    }
+
+    /** R01/R03：进入独立注册页（登录页「没有账号？注册」）。 */
+    fun beginRegister() {
+        _state.value = MainUiState.NeedsRegister
+    }
+
+    /** R01/R03：注册成功 → 进解锁页（用刚设的主密码解锁，顺带验证材料可用）。 */
+    fun onRegistered(uid: String) {
         _state.value = MainUiState.Locked(uid)
     }
 

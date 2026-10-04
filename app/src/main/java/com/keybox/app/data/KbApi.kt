@@ -59,6 +59,8 @@ data class KbInvite(val code: String, val createdAt: String)
 data class KbFnEnvelope(
     val ok: Boolean,
     val data: JSONObject?,
+    /** 仅 kbGetMyRole 在"本账号尚未激活"时附带：true=系统已有用户（去邀请码激活）；false=系统还没有用户（去首次初始化）。 */
+    val initialized: Boolean = true,
     val error: String,
 )
 
@@ -232,6 +234,62 @@ class KbApi(private val client: OkHttpClient) {
             Unit
         }
 
+    /** R01/R03 门禁探针结果。 */
+    data class ActivationProbe(
+        /** 已激活（ok 且 status == "active"）。 */
+        val activated: Boolean,
+        /** 未激活时：true=系统已有用户（去邀请码激活）；false=系统还没有用户（去首次初始化）。 */
+        val initialized: Boolean,
+        /** 服务端返回的 kb_users.status。 */
+        val status: String,
+        /** 失败原因（网络异常或服务端错误码）。 */
+        val error: String,
+    )
+
+    /**
+     * R01/R03 门禁探针：登录后判断本账号是否可用（**不抛异常**）。
+     * ⚠️ 判定必须看 status == "active"：被软删/停用的账号在 kb_users 里**仍有行**，
+     *    kbGetMyRole 照样能返回 —— 只看 ok 会把这类账号误判为"已激活"（Windows 端真机踩过）。
+     */
+    suspend fun probeActivation(accessToken: String): ActivationProbe = withContext(Dispatchers.IO) {
+        try {
+            val env = invokeFunction("kbGetMyRole", "{}", accessToken, READ_TIMEOUT_SEC)
+            val status = if (env.ok) env.data?.optString("status").orEmpty() else ""
+            ActivationProbe(
+                activated = env.ok && status == "active",
+                initialized = env.initialized,
+                status = status,
+                error = env.error,
+            )
+        } catch (e: Exception) {
+            ActivationProbe(activated = false, initialized = true, status = "", error = e.message.orEmpty())
+        }
+    }
+
+    /** R03：用一次性邀请码完成激活（kbRegister）。只上传盐与校验串，主密码与主密钥绝不出设备。 */
+    suspend fun registerRemote(
+        code: String,
+        kdfSalt: String,
+        kdfVerifier: String,
+        accessToken: String,
+    ): KbFnEnvelope = withContext(Dispatchers.IO) {
+        val body = JSONObject()
+            .put("code", code)
+            .put("kdfSalt", kdfSalt)
+            .put("kdfVerifier", kdfVerifier)
+        invokeFunction("kbRegister", body.toString(), accessToken, READ_TIMEOUT_SEC)
+    }
+
+    /** R01：首个管理员初始化（kbInitAdmin）。服务端守卫：kb_users 已有任意用户即 ALREADY_INITIALIZED。 */
+    suspend fun initAdminRemote(
+        kdfSalt: String,
+        kdfVerifier: String,
+        accessToken: String,
+    ): KbFnEnvelope = withContext(Dispatchers.IO) {
+        val body = JSONObject().put("kdfSalt", kdfSalt).put("kdfVerifier", kdfVerifier)
+        invokeFunction("kbInitAdmin", body.toString(), accessToken, READ_TIMEOUT_SEC)
+    }
+
     /** R02：管理员生成一次性邀请码（kbInviteCreate；展示一次，用一次即失效）。 */
     suspend fun inviteCreateRemote(accessToken: String): KbInvite = withContext(Dispatchers.IO) {
         val env = invokeFunction("kbInviteCreate", "{}", accessToken, READ_TIMEOUT_SEC)
@@ -356,7 +414,12 @@ class KbApi(private val client: OkHttpClient) {
         }
         val ok = node.optBoolean("ok", false)
         val data = if (node.has("data") && !node.isNull("data")) node.optJSONObject("data") else null
-        return KbFnEnvelope(ok = ok, data = data, error = node.optString("error"))
+        return KbFnEnvelope(
+            ok = ok,
+            data = data,
+            error = node.optString("error"),
+            initialized = if (node.has("initialized")) node.optBoolean("initialized", true) else true,
+        )
     }
 
     private fun parseSecretRows(text: String): List<KbSecretRow> {

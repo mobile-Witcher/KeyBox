@@ -83,6 +83,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 val verificationToken = repository.verifyCode(verificationId, current.code.trim())
                 val session = repository.signIn(verificationToken)
                 ServiceLocator.sessionStore.save(session)
+
+                // R01/R03 门禁：平台手机号登录成功 ≠ 已开户。
+                // 停用 → 明确提示；未注册/未完成激活 → 留在登录页提示走注册（deleted 允许重新开户）。
+                val probe = ServiceLocator.kbApi.probeActivation(session.accessToken)
+                if (!probe.activated) {
+                    val message = if (probe.status == "disabled") {
+                        "该账号已被管理员停用，请联系管理员。"
+                    } else {
+                        "本账号尚未注册（或未完成激活），请点击下方「没有账号？注册」完成注册。"
+                    }
+                    _uiState.update { it.copy(error = message) }
+                    return@launch
+                }
                 onSuccess(session.uid)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message ?: "登录失败") }

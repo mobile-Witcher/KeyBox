@@ -93,7 +93,15 @@ fun KeyBoxApp(viewModel: MainViewModel = viewModel()) {
                 CircularProgressIndicator()
             }
 
-            MainUiState.NeedsLogin -> LoginScreen(onLoginSuccess = viewModel::onLoginSuccess)
+            MainUiState.NeedsLogin -> LoginScreen(
+                onLoginSuccess = viewModel::onLoginSuccess,
+                onRegister = viewModel::beginRegister,
+            )
+
+            MainUiState.NeedsRegister -> RegisterScreen(
+                onRegistered = viewModel::onRegistered,
+                onBack = viewModel::logout,
+            )
 
             is MainUiState.Locked -> UnlockScreen(
                 onUnlocked = viewModel::onUnlocked,

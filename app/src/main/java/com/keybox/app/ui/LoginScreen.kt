@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
+    onRegister: () -> Unit,
     viewModel: LoginViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -113,6 +115,14 @@ fun LoginScreen(
             } else {
                 Text("登录")
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onRegister,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("没有账号？注册")
         }
 
         state.error?.let { message ->
