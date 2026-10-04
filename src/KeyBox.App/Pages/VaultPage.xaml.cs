@@ -66,22 +66,17 @@ public sealed partial class VaultPage : Page
     private void OnAppearanceClick(object sender, RoutedEventArgs e)
     {
         var panel = new AppearancePanel();
-        var flyout = new Flyout { Content = panel };
 
-        // 弹层（Flyout/Dialog）不会继承内容根的 RequestedTheme：直接给面板本体设主题，
-        // 并同步自身底色。订阅主题变化做实时同步，关闭时退订（避免事件泄漏）。
-        void SyncPanelTheme()
-        {
-            panel.RequestedTheme = ThemeService.CurrentElementTheme;
-            if (Application.Current?.Resources[ThemeService.Surface] is Brush surface)
-            {
-                panel.Background = surface;
-            }
-        }
+        // 呈现器（Flyout 外框）也要用皮肤色：面板本体已自绘底色，这里补外框/圆角，
+        // 避免弹出时露出 WinUI 默认色的一条边。面板内部颜色由 AppearancePanel.Refresh() 自管。
+        var presenter = new Style(typeof(FlyoutPresenter));
+        presenter.Setters.Add(new Setter(Control.BackgroundProperty, ThemeService.SurfaceBrush));
+        presenter.Setters.Add(new Setter(Control.BorderBrushProperty, ThemeService.BorderBrush));
+        presenter.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+        presenter.Setters.Add(new Setter(Control.CornerRadiusProperty, new CornerRadius(10)));
+        presenter.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(14)));
 
-        ThemeService.Changed += SyncPanelTheme;
-        flyout.Closed += (_, _) => ThemeService.Changed -= SyncPanelTheme;
-        SyncPanelTheme();
+        var flyout = new Flyout { Content = panel, FlyoutPresenterStyle = presenter };
         flyout.ShowAt((FrameworkElement)sender);
     }
 
@@ -167,8 +162,13 @@ public sealed partial class VaultPage : Page
     {
         var dialog = new ContentDialog
         {
-            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            // 弹层不继承内容根主题：① 显式跟随明暗 ② 用皮肤令牌刷底色/文字/边框
+            // （只做①的话会得到"WinUI 默认深色"，与所选皮肤不符）
             RequestedTheme = ThemeService.CurrentElementTheme,
+            Background = ThemeService.SurfaceBrush,
+            Foreground = ThemeService.TextBrush,
+            BorderBrush = ThemeService.BorderBrush,
+            BorderThickness = new Thickness(1),
             XamlRoot = XamlRoot,
             Title = ViewModel.EditorTitle,
             PrimaryButtonText = "保存",
@@ -201,8 +201,13 @@ public sealed partial class VaultPage : Page
         if (ViewModel.DeleteTarget is not { } target) return;
         var dialog = new ContentDialog
         {
-            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            // 弹层不继承内容根主题：① 显式跟随明暗 ② 用皮肤令牌刷底色/文字/边框
+            // （只做①的话会得到"WinUI 默认深色"，与所选皮肤不符）
             RequestedTheme = ThemeService.CurrentElementTheme,
+            Background = ThemeService.SurfaceBrush,
+            Foreground = ThemeService.TextBrush,
+            BorderBrush = ThemeService.BorderBrush,
+            BorderThickness = new Thickness(1),
             XamlRoot = XamlRoot,
             Title = "删除密钥",
             Content = $"确定删除「{target.Site}」吗？此操作不可恢复。",
@@ -232,8 +237,13 @@ public sealed partial class VaultPage : Page
         };
         var dialog = new ContentDialog
         {
-            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            // 弹层不继承内容根主题：① 显式跟随明暗 ② 用皮肤令牌刷底色/文字/边框
+            // （只做①的话会得到"WinUI 默认深色"，与所选皮肤不符）
             RequestedTheme = ThemeService.CurrentElementTheme,
+            Background = ThemeService.SurfaceBrush,
+            Foreground = ThemeService.TextBrush,
+            BorderBrush = ThemeService.BorderBrush,
+            BorderThickness = new Thickness(1),
             XamlRoot = XamlRoot,
             Title = "重命名分类",
             Content = textBox,
@@ -258,8 +268,13 @@ public sealed partial class VaultPage : Page
         if (ViewModel.TagDeleteName is not { } name) return;
         var dialog = new ContentDialog
         {
-            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            // 弹层不继承内容根主题：① 显式跟随明暗 ② 用皮肤令牌刷底色/文字/边框
+            // （只做①的话会得到"WinUI 默认深色"，与所选皮肤不符）
             RequestedTheme = ThemeService.CurrentElementTheme,
+            Background = ThemeService.SurfaceBrush,
+            Foreground = ThemeService.TextBrush,
+            BorderBrush = ThemeService.BorderBrush,
+            BorderThickness = new Thickness(1),
             XamlRoot = XamlRoot,
             Title = "删除分类",
             Content = $"将从 {ViewModel.TagDeleteCount} 条密钥的分类中移除「{name}」。（分类为空时整键省略）",
@@ -299,8 +314,13 @@ public sealed partial class VaultPage : Page
 
         var dialog = new ContentDialog
         {
-            // 弹窗不继承内容根的 RequestedTheme，必须显式跟随，否则深色皮肤下弹窗仍是浅色
+            // 弹层不继承内容根主题：① 显式跟随明暗 ② 用皮肤令牌刷底色/文字/边框
+            // （只做①的话会得到"WinUI 默认深色"，与所选皮肤不符）
             RequestedTheme = ThemeService.CurrentElementTheme,
+            Background = ThemeService.SurfaceBrush,
+            Foreground = ThemeService.TextBrush,
+            BorderBrush = ThemeService.BorderBrush,
+            BorderThickness = new Thickness(1),
             XamlRoot = XamlRoot,
             Title = "同步冲突",
             Content = stack,

@@ -81,6 +81,18 @@ public static class ThemeService
     /// </summary>
     public static ElementTheme CurrentElementTheme => IsDarkEffective ? ElementTheme.Dark : ElementTheme.Light;
 
+    /// <summary>当前皮肤的卡面画刷（弹层自绘底色用；画刷实例恒定、换肤时原地改色，故引用不会失效）。</summary>
+    public static Brush SurfaceBrush => Res(Surface);
+
+    /// <summary>当前皮肤的正文画刷。</summary>
+    public static Brush TextBrush => Res(Text);
+
+    /// <summary>当前皮肤的描边画刷。</summary>
+    public static Brush BorderBrush => Res(Border);
+
+    private static Brush Res(string key)
+        => Application.Current?.Resources[key] as Brush ?? new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+
     /// <summary>皮肤或明暗变化后触发（供外观面板刷新选中态）。</summary>
     public static event Action? Changed;
 

@@ -171,10 +171,22 @@ public sealed class AppearancePanel : UserControl
                 }
             }
 
-            // 面板自身的文字色
-            if (Content is StackPanel root && root.Children.Count > 0 && root.Children[0] is TextBlock title)
+            // 面板自身：明暗跟随 + 皮肤底色 + 文字色
+            // （弹层不继承内容根 RequestedTheme；UserControl 的 Background 默认 null，
+            //   不显式刷的话会露出 Flyout 呈现器的默认色，表现为"面板不跟随皮肤"）
+            RequestedTheme = ThemeService.CurrentElementTheme;
+            Background = B(ThemeService.Surface);
+            if (Content is StackPanel root && root.Children.Count > 0)
             {
-                title.Foreground = B(ThemeService.Text);
+                if (root.Children[0] is TextBlock title)
+                {
+                    title.Foreground = B(ThemeService.Text);
+                }
+
+                if (root.Children[root.Children.Count - 1] is TextBlock footer)
+                {
+                    footer.Foreground = B(ThemeService.Muted);
+                }
             }
         }
         finally
