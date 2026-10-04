@@ -49,7 +49,42 @@ public static class AppServices
     /// <summary>当前登录 uid（登录成功后写入会话，重启后从 session.json 恢复）。</summary>
     public static string? CurrentUid => SessionManager.Current?.Uid;
 
+    /// <summary>
+    /// R95②：会话失效的**说明文案**。由 <see cref="NavigateToLoginWithNotice"/> 写入，
+    /// 登录页展示后应调用 <see cref="ConsumeLoginNotice"/> 清除，避免下次无故出现。
+    /// </summary>
+    public static string? LoginNotice { get; private set; }
+
     public static void NavigateToLogin() => MainWindow?.NavigateToLogin();
+
+    /// <summary>带说明地回到登录页（会话被其他设备顶掉、或续期永久失败时使用）。</summary>
+    public static void NavigateToLoginWithNotice(string notice)
+    {
+        LoginNotice = notice;
+        MainWindow?.NavigateToLogin();
+    }
+
+    public static string? ConsumeLoginNotice()
+    {
+        string? n = LoginNotice;
+        LoginNotice = null;
+        return n;
+    }
+
+    /// <summary>
+    /// R95①：启动时主动续期一次。实测（docs/DIAGNOSIS-multi-device-login.md §6.2）表明
+    /// "已成功续期过"的会话不会被其他设备登录作废，而"从未续期过"的会话会被作废且重试无效，
+    /// 因此在启动时先把自己的会话变成"已续期过"的状态。失败不阻塞启动（留给后续请求/解锁页处理）。
+    /// </summary>
+    public static void KickProactiveRefresh()
+    {
+        if (SessionManager.Current is null) { return; }
+        _ = System.Threading.Tasks.Task.Run(async () =>
+        {
+            try { await SessionManager.RefreshAsync().ConfigureAwait(false); }
+            catch { /* 故意吞掉：启动阶段不因续期失败打断用户 */ }
+        });
+    }
 
     public static void NavigateToUnlock() => MainWindow?.NavigateToUnlock();
 
