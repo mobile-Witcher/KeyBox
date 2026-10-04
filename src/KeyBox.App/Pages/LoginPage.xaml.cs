@@ -45,13 +45,7 @@ public sealed partial class LoginPage : Page
     /// </summary>
     private void OnRegisterClick(object sender, RoutedEventArgs e)
     {
-        if (AppServices.SessionManager.Current is not null)
-        {
-            AppServices.NavigateToActivate(true);
-            return;
-        }
-
-        ViewModel.StatusMessage = "注册流程：先用手机号验证码登录（未注册的号码也能登录），登录后会自动进入「邀请码激活」页填写邀请码与主密码。";
+        AppServices.NavigateToRegister();
     }
 
     private async void OnLoginSucceeded()
@@ -76,7 +70,9 @@ public sealed partial class LoginPage : Page
             return;
         }
 
-        // initialized=false → 系统还没有任何用户 → 首次初始化；其余（true/未知）→ 邀请码激活
-        AppServices.NavigateToActivate(probe.Initialized ?? true);
+        // 未注册：停在登录页给出明确提示（不再静默跳转），由用户点「没有账号？注册」进入注册页
+        ViewModel.StatusMessage = probe.Initialized == false
+            ? "本账号未注册，且系统尚无任何用户。请点击下方「没有账号？注册」完成首次初始化。"
+            : "本账号尚未注册（或未完成激活）。请点击下方「没有账号？注册」完成注册。";
     }
 }

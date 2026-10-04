@@ -79,6 +79,9 @@ public sealed partial class MainWindow : Window
 
     public void NavigateToVault() => RootFrame.Navigate(typeof(VaultPage));
 
+    /// <summary>R01/R03：独立注册页（手机号验证码登录 → 邀请码 + 主密码）。</summary>
+    public void NavigateToRegister() => RootFrame.Navigate(typeof(RegisterPage));
+
     /// <summary>R01/R03：激活页（首次初始化 / 邀请码激活）。</summary>
     public void NavigateToActivate() => RootFrame.Navigate(typeof(ActivatePage));
 

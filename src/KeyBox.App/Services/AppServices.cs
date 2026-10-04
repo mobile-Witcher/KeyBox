@@ -63,6 +63,9 @@ public static class AppServices
         MainWindow?.NavigateToActivate();
     }
 
+    /// <summary>R01/R03：进独立注册页（两步向导）。</summary>
+    public static void NavigateToRegister() => MainWindow?.NavigateToRegister();
+
     /// <summary>账号被停用/删除：进激活页的"拦截"态，给出明确原因并回登录页。</summary>
     public static void NavigateToBlocked(string notice)
     {

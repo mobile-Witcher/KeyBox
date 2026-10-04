@@ -44,7 +44,7 @@ public sealed partial class UnlockPage : Page
         // 此时不要把人推去激活页，交给解锁流程自己报错更准确。
         if (!probe.Activated && probe.Error.Length == 0)
         {
-            AppServices.NavigateToActivate(probe.Initialized ?? true);
+            AppServices.NavigateToRegister();
             return;
         }
 
