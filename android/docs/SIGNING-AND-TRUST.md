@@ -114,3 +114,39 @@ hvigorw assembleHap --mode module -p product=default
 
 **绝不要**：把 `.pfx` / `.jks` / `key.properties` / 任何明文密码提交进 git、贴进 issue、或写进文档。
 仓库 `.gitignore` 已忽略 `key.properties`、`*.jks`、`*.pfx` 与 `secrets/`；提交前用 `git status` 复核一遍。
+
+
+---
+
+## 五、鸿蒙改包名后必须重签（DevEco Studio 中文界面步骤）
+
+**背景**：华为签名 profile（`C:\Users\<你>\.ohos\config\*.p7b`）与 **bundleName 绑定**。
+一旦改了 `AppScope/app.json5` 里的 `bundleName`，旧 profile 立即失效，`assembleHap` 会直接失败
+（报 `00304004 Not Found` 或 profile 无效）。**这一步没有命令行/API 可替代，必须在 DevEco 里点。**
+
+1. **用新路径打开项目**：菜单 **文件 → 打开…**，选择 `KeyBox/harmony` 目录（不是已废弃的旧目录）
+2. **文件 → 项目结构…**（快捷键 `Ctrl+Alt+Shift+S`）
+3. 左侧列表选 **签名配置**
+4. 勾选 **自动生成签名**；若弹登录框，点 **登录** 用华为账号登录（个人开发者、已实名即可）
+5. 右下角 **应用 → 确定**
+6. 成功后 DevEco 会在 `C:\Users\<你>\.ohos\config\` 生成**新的一套** `.cer / .p7b / .p12`，
+   并自动改写 `harmony/build-profile.json5` 里的 `signingConfigs`
+
+完成后重新出包：
+```powershell
+$env:DEVECO_SDK_HOME='C:\Program Files\Huawei\DevEco Studio\sdk'
+cd KeyBox/harmony
+hvigorw assembleHap --mode module -p product=default
+# 产物：entry/build/default/outputs/default/entry-default-signed.hap
+```
+
+### 装到真机（两种方式等价）
+
+```powershell
+# 方式一：命令行（与"小白调试助手"底层相同，都是 hdc）
+& "C:\Program Files\Huawei\DevEco Studio\sdk\default\openharmony\toolchains\hdc.exe" list targets
+& "…\hdc.exe" install -r entry\build\default\outputs\default\entry-default-signed.hap
+```
+- **方式二**：用「小白调试助手」加载同一个 `entry-default-signed.hap` 安装（无需 DevEco 全量环境）
+- 前提：手机已开 **开发者模式 + USB 调试**，并用 USB 连接电脑、在手机上信任该电脑
+- 卸载：`hdc uninstall com.mobilewitcher.keybox`
