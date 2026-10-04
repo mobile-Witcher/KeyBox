@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="KeyBox.App.Pages.ActivatePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="{ThemeResource KbBgBrush}">
+        <StackPanel
+            MaxWidth="440"
+            Spacing="12"
+            Padding="24"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Center">
+
+            <TextBlock
+                Text="{x:Bind ViewModel.Title}"
+                FontSize="24"
+                FontWeight="Bold"
+                Foreground="{ThemeResource KbTextBrush}" />
+
+            <TextBlock
+                Text="{x:Bind ViewModel.Hint}"
+                TextWrapping="Wrap"
+                FontSize="12"
+                Foreground="{ThemeResource KbMutedBrush}" />
+
+            <TextBox
+                Header="一次性邀请码"
+                PlaceholderText="向管理员索取"
+                Visibility="{x:Bind ViewModel.InviteCodeVisibility}"
+                Text="{x:Bind ViewModel.InviteCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+            <PasswordBox
+                Header="主密码（至少 8 位，忘记无法找回）"
+                PasswordChanged="OnPasswordChanged" />
+
+            <PasswordBox
+                Header="确认主密码"
+                PasswordChanged="OnConfirmChanged" />
+
+            <TextBlock
+                Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                TextWrapping="Wrap"
+                FontSize="12"
+                Foreground="{ThemeResource KbDangerBrush}" />
+
+            <Button
+                Content="激活并继续"
+                HorizontalAlignment="Stretch"
+                Style="{ThemeResource AccentButtonStyle}"
+                Command="{x:Bind ViewModel.SubmitCommand}" />
+
+            <ProgressRing
+                Width="24"
+                Height="24"
+                IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.BusyVisibility, Mode=OneWay}" />
+        </StackPanel>
+    </Grid>
+</Page>

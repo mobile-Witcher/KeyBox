@@ -1,7 +1,15 @@
 namespace KeyBox.Core.Data;
 
 /// <summary>云函数归一化返回体（照安卓 KbFnEnvelope）。</summary>
-public sealed record KbFnEnvelope(bool Ok, System.Text.Json.JsonElement? Data, string Error);
+public sealed record KbFnEnvelope(bool Ok, System.Text.Json.JsonElement? Data, string Error, bool? Initialized = null);
+
+/// <summary>
+/// 登录后的"是否已激活"探针结果（R01/R03 门禁，照网页版 api.ts 的 ApiResult.initialized 语义）。
+///   Activated   = true：本账号已在 kb_users 中且可取到密钥参数 → 直接进解锁页
+///   Initialized = false：系统还没有任何用户 → 前端应引导「首次初始化」（kbInitAdmin）
+///   Initialized = true ：系统已有用户但本账号未激活 → 前端应引导「邀请码激活」（kbRegister）
+/// </summary>
+public sealed record ActivationProbe(bool Activated, bool? Initialized, string Error);
 
 /// <summary>kb_users 的密钥参数行（解锁校验用；照安卓 KbUserInfo）。</summary>
 public sealed record KbUserInfo(

@@ -1,4 +1,5 @@
 using KeyBox.App.Services;
+using KeyBox.Core.Data;
 using KeyBox.App.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -37,9 +38,21 @@ public sealed partial class LoginPage : Page
         _countdownTimer.Start();
     }
 
-    private void OnLoginSucceeded()
+    private async void OnLoginSucceeded()
     {
         _countdownTimer.Stop();
-        AppServices.NavigateToUnlock();
+
+        // R01/R03 门禁：平台手机号登录成功 ≠ 已开户。必须先问云函数本账号是否已激活，
+        // 否则未激活的号会被放进解锁页（看起来"登录成功"，实际取不到密钥参数），
+        // 而拿到邀请码的新同事也无法在原生端完成开户。
+        ActivationProbe probe = await AppServices.ActivationService.ProbeAsync();
+        if (probe.Activated)
+        {
+            AppServices.NavigateToUnlock();
+            return;
+        }
+
+        // initialized=false → 系统还没有任何用户 → 首次初始化；其余（true/未知）→ 邀请码激活
+        AppServices.NavigateToActivate(probe.Initialized ?? true);
     }
 }

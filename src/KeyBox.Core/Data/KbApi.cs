@@ -148,6 +148,90 @@ public sealed class KbApi
     }
 
     /// <summary>
+    /// R01/R03 门禁探针：登录成功后调 kbGetMyRole，判断本账号是否已激活。
+    /// 不抛异常（网络/未激活都归一成结果），供登录后路由使用。
+    /// 未激活时云函数会带 initialized：false=系统没有任何用户（→首次初始化），true=已有用户（→邀请码激活）。
+    /// </summary>
+    public async Task<ActivationProbe> ProbeActivationAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            string text = await SendAsync(HttpMethod.Post, "/v1/functions/kbGetMyRole", "{}", ct).ConfigureAwait(false);
+
+            using JsonDocument doc = ParseDocument(text);
+            JsonElement root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("result", out JsonElement inner))
+            {
+                root = inner;
+            }
+
+            bool activated = root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("ok", out JsonElement okEl)
+                && okEl.ValueKind == JsonValueKind.True;
+
+            bool? initialized = null;
+            if (root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("initialized", out JsonElement initEl)
+                && (initEl.ValueKind == JsonValueKind.True || initEl.ValueKind == JsonValueKind.False))
+            {
+                initialized = initEl.ValueKind == JsonValueKind.True;
+            }
+
+            string error = root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("error", out JsonElement errEl)
+                && errEl.ValueKind == JsonValueKind.String
+                    ? errEl.GetString() ?? ""
+                    : "";
+
+            return new ActivationProbe(activated, initialized, error);
+        }
+        catch (Exception ex)
+        {
+            return new ActivationProbe(false, null, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// R03：用一次性邀请码完成激活（kbRegister）。只上传盐与校验串，**主密码与主密钥绝不进入本请求**。
+    /// 恢复码材料可选（契约里 recoverySalt/recoveryBlob 为可选）。
+    /// </summary>
+    public async Task<KbFnEnvelope> RegisterAsync(
+        string code, string kdfSalt, string kdfVerifier, string recoverySalt, string recoveryBlob, CancellationToken ct = default)
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["code"] = code,
+            ["kdfSalt"] = kdfSalt,
+            ["kdfVerifier"] = kdfVerifier,
+        };
+        if (!string.IsNullOrEmpty(recoverySalt))
+        {
+            body["recoverySalt"] = recoverySalt;
+            body["recoveryBlob"] = recoveryBlob;
+        }
+
+        return await InvokeFunctionAsync("kbRegister", JsonSerializer.Serialize(body, JsonOptions), ct).ConfigureAwait(false);
+    }
+
+    /// <summary>R01：首个管理员初始化（kbInitAdmin）。服务端守卫：kb_users 已有任意用户即 ALREADY_INITIALIZED。</summary>
+    public async Task<KbFnEnvelope> InitAdminAsync(
+        string kdfSalt, string kdfVerifier, string recoverySalt, string recoveryBlob, CancellationToken ct = default)
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["kdfSalt"] = kdfSalt,
+            ["kdfVerifier"] = kdfVerifier,
+        };
+        if (!string.IsNullOrEmpty(recoverySalt))
+        {
+            body["recoverySalt"] = recoverySalt;
+            body["recoveryBlob"] = recoveryBlob;
+        }
+
+        return await InvokeFunctionAsync("kbInitAdmin", JsonSerializer.Serialize(body, JsonOptions), ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// R21：整批提交重加密后的全量密文（kbRotateMaster；key_epoch+1 由服务端完成）。
     /// 只传密文与盐/校验串，主密钥与主密码绝不进入本请求。返回推进后的 key_epoch。
     /// </summary>

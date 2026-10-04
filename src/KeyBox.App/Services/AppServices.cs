@@ -20,6 +20,10 @@ public static class AppServices
     public static AdminService AdminService { get; }
     public static HelloWrapperStore HelloStore { get; }
     public static HelloAuthService HelloAuth { get; }
+    public static ActivationService ActivationService { get; }
+
+    /// <summary>登录页探到"本账号未激活"后传给激活页：true=系统已有用户（需邀请码），false=系统还没有用户（首次初始化）。</summary>
+    public static bool PendingSystemHasUsers { get; set; } = true;
 
     public static MainWindow? MainWindow { get; set; }
 
@@ -35,6 +39,7 @@ public static class AppServices
         SecurityService = new SecurityService(KbApi);
         AdminService = new KeyBox.Core.Admin.AdminService(KbApi);
         HelloStore = new HelloWrapperStore();
+        ActivationService = new ActivationService(KbApi);
         HelloAuth = new HelloAuthService(UnlockService, HelloStore);
     }
 
@@ -46,6 +51,13 @@ public static class AppServices
     public static void NavigateToUnlock() => MainWindow?.NavigateToUnlock();
 
     public static void NavigateToVault() => MainWindow?.NavigateToVault();
+
+    /// <summary>R01/R03：进激活页（systemHasUsers=false 表示系统还没有用户，走首次初始化）。</summary>
+    public static void NavigateToActivate(bool systemHasUsers)
+    {
+        PendingSystemHasUsers = systemHasUsers;
+        MainWindow?.NavigateToActivate();
+    }
 
     /// <summary>退出登录：抹零内存主密钥 + 删除 Windows Hello 包裹物 + 删除会话，回登录页。</summary>
     public static void SignOutAndGoLogin()
