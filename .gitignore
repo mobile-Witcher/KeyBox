@@ -73,3 +73,12 @@ Thumbs.db
 
 # CloudBase CLI 拉取的函数配置（含环境变量真值），绝不进仓库
 cloudbaserc.json
+
+# --- 构建产物（2026-10-04 清理时补）---
+/windows/portable*/
+/windows/artifacts/
+/windows/**/bin/
+/windows/**/obj/
+/harmony/**/build/
+/harmony/**/oh_modules/
+*.dmp
