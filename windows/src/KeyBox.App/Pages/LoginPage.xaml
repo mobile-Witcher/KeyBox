@@ -56,6 +56,14 @@
                 Click="OnRegisterClick"
                 Content="没有账号？注册" />
 
+            <!-- R95-2: 会话失效的说明（例如被其他设备顶掉），由代码后置在进入本页时写入 -->
+            <TextBlock
+                x:Name="NoticeText"
+                Foreground="{ThemeResource KbMutedBrush}"
+                TextWrapping="Wrap"
+                HorizontalAlignment="Center"
+                Visibility="Collapsed" />
+
             <ProgressRing
                 Width="28"
                 Height="28"

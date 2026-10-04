@@ -21,6 +21,14 @@ public sealed partial class LoginPage : Page
         ViewModel.CountdownStarted += OnCountdownStarted;
         InitializeComponent();
 
+        // R95-2: 若因会话失效跳转而来，把原因展示出来（消费后清除，避免下次无故出现）
+        string? notice = AppServices.ConsumeLoginNotice();
+        if (!string.IsNullOrEmpty(notice))
+        {
+            NoticeText.Text = notice;
+            NoticeText.Visibility = Visibility.Visible;
+        }
+
         _countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _countdownTimer.Tick += (_, _) =>
         {
