@@ -62,7 +62,10 @@ struct Index {
     } catch (e) {
       // refresh 失效：清掉旧登录态，留在登录页重新走验证码
       await clearTokens();
-      this.status = '';
+      // R95-2: 不再静默回到登录页——把原因告诉用户
+      // （平台只保留已续期过的会话：本端从未续期过而其他设备登录时，refresh_token 会永久失效且重试无效）
+      this.status = '该账号的登录态已在其他设备上失效，请重新登录。';
+      this.statusColor = this.c().danger;
       hilog.warn(0x0000, TAG, 'restore failed: %{public}s', (e as Error).message);
     } finally {
       this.busy = false;
