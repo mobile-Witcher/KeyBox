@@ -388,6 +388,43 @@
                 <Button Content="清除搜索" Command="{x:Bind ViewModel.ClearSearchCommand}" HorizontalAlignment="Center" />
             </StackPanel>
 
+            <!-- W7-E 收尾：加载骨架屏（先占位，避免加载完成时卡片高度/列数跳变）-->
+            <Grid
+                Padding="12,4"
+                ColumnSpacing="10"
+                VerticalAlignment="Top"
+                Visibility="{x:Bind ViewModel.LoadingVisibility, Mode=OneWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    Grid.Column="0"
+                    Height="280"
+                    CornerRadius="{ThemeResource KbCardCornerRadius}"
+                    Background="{ThemeResource KbSurfaceBrush}"
+                    BorderBrush="{ThemeResource KbBorderBrush}"
+                    BorderThickness="1"
+                    Opacity="0.55" />
+                <Border
+                    Grid.Column="1"
+                    Height="280"
+                    CornerRadius="{ThemeResource KbCardCornerRadius}"
+                    Background="{ThemeResource KbSurfaceBrush}"
+                    BorderBrush="{ThemeResource KbBorderBrush}"
+                    BorderThickness="1"
+                    Opacity="0.55" />
+                <Border
+                    Grid.Column="2"
+                    Height="280"
+                    CornerRadius="{ThemeResource KbCardCornerRadius}"
+                    Background="{ThemeResource KbSurfaceBrush}"
+                    BorderBrush="{ThemeResource KbBorderBrush}"
+                    BorderThickness="1"
+                    Opacity="0.55" />
+            </Grid>
+
             <ProgressRing
                 Width="36"
                 Height="36"
