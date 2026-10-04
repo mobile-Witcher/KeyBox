@@ -135,7 +135,20 @@ export async function signIn(verificationToken: string): Promise<Session> {
  * body = { client_id(环境id), client_secret(空串), grant_type:"refresh_token", refresh_token }。
  * 带任何 Authorization 头都会被服务器当 JWT 验签而报 "malformed jwt / invalid token header"。
  */
+/**
+ * R95 加固：平台侧偶发续期竞态（invalid_grant 4026）可能让首次续期失败，
+ * 先重试一次再判定会话失效，避免把用户误登出。
+ */
 export async function refreshSession(refreshToken: string): Promise<Session> {
+  try {
+    return await refreshSessionOnce(refreshToken);
+  } catch (e) {
+    await new Promise<void>((resolve) => { setTimeout(() => { resolve(); }, 600); });
+    return await refreshSessionOnce(refreshToken);
+  }
+}
+
+async function refreshSessionOnce(refreshToken: string): Promise<Session> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const body: RefreshBody = {
     client_id: ENV_ID,
