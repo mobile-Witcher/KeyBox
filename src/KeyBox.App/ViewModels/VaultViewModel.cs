@@ -707,10 +707,11 @@ public partial class VaultViewModel : ObservableObject
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        var package = new DataPackage();
-        package.SetText(text);
-        Clipboard.SetContent(package);
-        Clipboard.Flush();
+        if (!ClipboardGuard.TrySetText(text))
+        {
+            StatusMessage = "复制失败：剪贴板被其它程序占用，请稍后重试";
+            return;
+        }
 
         _copyCts?.Cancel();
         _copyCts = new CancellationTokenSource();
@@ -734,10 +735,7 @@ public partial class VaultViewModel : ObservableObject
             }
         }
 
-        var clearPackage = new DataPackage();
-        clearPackage.SetText("");
-        Clipboard.SetContent(clearPackage);
-        Clipboard.Flush();
+        ClipboardGuard.TrySetText("");
 
         CopyCountdown = 0;
         StatusMessage = "剪贴板已自动清空";
