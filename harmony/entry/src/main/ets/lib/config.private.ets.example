@@ -1,0 +1,10 @@
+/**
+ * config.private.ets.example —— 敏感配置模板。
+ *
+ * 复制本文件为 config.private.ets（同目录），填入真实值后即可构建。
+ * config.private.ets 已被 .gitignore 排除，不会入库。
+ *
+ * 值的获取：腾讯云 CloudBase 控制台 → 环境 → 概览（环境 ID）/ 应用认证（publishable key）。
+ */
+export const ENV_ID: string = 'your-env-id';
+export const PUBLISHABLE_KEY: string = 'your-publishable-key';

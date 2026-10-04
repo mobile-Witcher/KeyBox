@@ -1,0 +1,7 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "KeyBox 密钥保管箱鸿蒙客户端" },
+    { "name": "EntryAbility_desc", "value": "KeyBox 主入口" },
+    { "name": "EntryAbility_label", "value": "KeyBox" }
+  ]
+}
