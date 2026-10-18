@@ -18,7 +18,7 @@ import {
   initBioStore, hasBiometricLock, setupBiometric, unlockWithBiometric, getBioStatus
 } from '../lib/biometric';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar, SkinBackdrop } from '../components/SkinChrome';
+import { SkinBar, SkinBackdrop, SkinSection } from '../components/SkinChrome';
 // warning 色经 c().warning 提供
 
 const TAG: string = 'KeyBoxUnlock';
@@ -232,12 +232,10 @@ struct Unlock {
 
   build() {
     Stack() {
+      SkinBackdrop()
       Column({ space: 14 }) {
         SkinBar({ title: '解锁', bleed: 32 })
-        Text('KeyBox 解锁')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(this.c().text)
+        SkinSection({ title: 'KeyBox 解锁', extra: 'UNLOCK' })
 
         // ── 生物识别模式 ──
         if (this.mode === 'bio') {
@@ -363,9 +361,7 @@ struct Unlock {
       .height('100%')
       .justifyContent(FlexAlign.Center)
       .padding({ left: '8%', right: '8%' })
-      .backgroundColor(this.c().bg)
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      SkinBackdrop()
 
       // ── 生物识别设置引导（主密码解锁成功后，设备支持时优先弹这个） ──
       if (this.showBioSetup) {

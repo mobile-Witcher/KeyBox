@@ -17,6 +17,96 @@
  */
 import { colorsOf, normalizeSkinId, resolveDark, SkinId, ThemeColors } from '../lib/theme';
 
+/** 弹层/面板的边框色（每套皮肤不同：蓝图青、档案红、其余用主题强边框）。 */
+export function sheetBorderColor(skin: string): string {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'blueprint') return '#0ae0f0';
+  if (k === 'mono') return '#c8102e';
+  if (k === 'hud') return '#a99c82';
+  if (k === 'lab') return '#aab3ac';
+  return '#9fada8';
+}
+
+/**
+ * 分区标题：标记色竖条 + 标题（每套皮肤不同字重/字距）+ 右侧附加信息 + 细分隔线。
+ * 用来替换页面里朴素的 Text('标题')，让每个层级的标题都有皮肤语言。
+ */
+@Component
+export struct SkinSection {
+  @Prop title: string = '';
+  @Prop extra: string = '';
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private skinId(): SkinId {
+    return normalizeSkinId(this.skin);
+  }
+
+  private c(): ThemeColors {
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
+  }
+
+  private tSize(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'blueprint') return 18;
+    if (k === 'overprint') return 16;
+    if (k === 'mono') return 14;
+    return 13;
+  }
+
+  private tWeight(): FontWeight {
+    const k: SkinId = this.skinId();
+    if (k === 'blueprint') return FontWeight.Bolder;
+    if (k === 'mono') return FontWeight.Lighter;
+    if (k === 'hud') return FontWeight.Bold;
+    return FontWeight.Medium;
+  }
+
+  private tTrack(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'mono') return 2.5;
+    if (k === 'hud') return 1.2;
+    if (k === 'blueprint') return 0.4;
+    return 0.8;
+  }
+
+  build() {
+    Column({ space: 6 }) {
+      Row({ space: 8 }) {
+        Text('')
+          .width(3)
+          .height(14)
+          .backgroundColor(skinAccentColor(this.skin))
+        Text(this.title)
+          .fontSize(this.tSize())
+          .fontWeight(this.tWeight())
+          .fontFamily(this.c().fontSans)
+          .letterSpacing(this.tTrack())
+          .fontColor(this.c().text)
+          .layoutWeight(1)
+          .maxLines(1)
+        if (this.extra.length > 0) {
+          Text(this.extra)
+            .fontSize(10)
+            .letterSpacing(1)
+            .fontColor(this.c().muted)
+        }
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      Row()
+        .width('100%')
+        .height(1)
+        .backgroundColor(this.c().border)
+    }
+    .width('100%')
+    .padding({ top: 4, bottom: 2 })
+    .alignItems(HorizontalAlign.Start)
+  }
+}
+
 /** 皮肤标记色（供页面自定义装饰复用）。 */
 export function skinAccentColor(skin: string): string {
   const k: SkinId = normalizeSkinId(skin);

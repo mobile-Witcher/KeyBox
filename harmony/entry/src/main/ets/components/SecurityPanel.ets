@@ -24,6 +24,7 @@ import { setMasterKeyRaw, getMasterKeyRaw } from '../lib/session';
 import { clearPinLock } from '../lib/pinlock';
 import { clearBiometricLock } from '../lib/biometric';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
+import { SkinSection } from './SkinChrome';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 
 const TAG: string = 'KeyBoxSecurity';
@@ -409,10 +410,7 @@ export struct SecurityPanel {
       Scroll() {
         Column({ space: 14 }) {
           Row() {
-            Text('安全')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.c().text)
+            SkinSection({ title: '安全', extra: 'SECURITY' })
             Blank()
             Text('关闭')
               .fontSize(13)

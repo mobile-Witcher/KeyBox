@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -641,6 +641,7 @@ struct Vault {
 
   build() {
     Stack() {
+      SkinBackdrop()
       Column() {
         SkinBar({ title: '密钥库' })
         SkinWordmark({ count: 0 })
@@ -834,9 +835,7 @@ struct Vault {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor(this.c().bg)
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      SkinBackdrop()
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
@@ -929,6 +928,7 @@ struct Vault {
           .width('80%')
           .padding(14)
           .backgroundColor(this.c().surface)
+          .border({ width: 1, color: sheetBorderColor(this.skin) })
           .borderRadius(12)
           .border({ width: 0.5, color: this.c().border })
         }
@@ -1046,6 +1046,7 @@ struct Vault {
           .width('86%')
           .padding(16)
           .backgroundColor(this.c().surface)
+          .border({ width: 1, color: sheetBorderColor(this.skin) })
           .borderRadius(16)
         }
         .width('100%')
@@ -1143,6 +1144,7 @@ struct Vault {
           .width('92%')
           .constraintSize({ maxHeight: '86%' })
           .backgroundColor(this.c().surface)
+          .border({ width: 1, color: sheetBorderColor(this.skin) })
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1205,6 +1207,7 @@ struct Vault {
           .width('86%')
           .padding(18)
           .backgroundColor(this.c().surface)
+          .border({ width: 1, color: sheetBorderColor(this.skin) })
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1249,6 +1252,7 @@ struct Vault {
           .width('86%')
           .padding(18)
           .backgroundColor(this.c().surface)
+          .border({ width: 1, color: sheetBorderColor(this.skin) })
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1325,6 +1329,7 @@ struct Vault {
           .width('88%')
           .padding(18)
           .backgroundColor(this.c().surface)
+          .border({ width: 1, color: sheetBorderColor(this.skin) })
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1493,6 +1498,7 @@ struct Vault {
     .width('100%')
     .padding(14)
     .backgroundColor(this.c().surface)
+    .border({ width: 1, color: sheetBorderColor(this.skin) })
     .borderRadius(this.c().radiusCard)
     .border({ width: this.cardBorderWidth(), color: this.cardBorderColor() })
     .shadow({
