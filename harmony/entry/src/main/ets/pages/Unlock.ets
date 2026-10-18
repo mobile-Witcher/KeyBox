@@ -233,7 +233,7 @@ struct Unlock {
   build() {
     Stack() {
       Column({ space: 14 }) {
-        SkinBar({ title: '解锁' })
+        SkinBar({ title: '解锁', bleed: 32 })
         Text('KeyBox 解锁')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
@@ -245,8 +245,10 @@ struct Unlock {
             .fontSize(13)
             .fontColor(this.c().muted)
           Button('开始认证')
+            .type(ButtonType.Normal)
             .width('100%')
             .height(46)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().primary)
             .fontColor(this.c().primaryContrast)
             .enabled(!this.busy)
@@ -278,14 +280,17 @@ struct Unlock {
             .type(InputType.Number)
             .width('100%')
             .height(44)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().surface)
             .fontColor(this.c().text)
             .onChange((value: string) => {
               this.pin = value;
             })
           Button(this.busy ? '校验中…' : '解锁')
+            .type(ButtonType.Normal)
             .width('100%')
             .height(44)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().primary)
             .fontColor(this.c().primaryContrast)
             .enabled(!this.busy)
@@ -317,14 +322,17 @@ struct Unlock {
             .type(InputType.Password)
             .width('100%')
             .height(44)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().surface)
             .fontColor(this.c().text)
             .onChange((value: string) => {
               this.masterPassword = value;
             })
           Button(this.busy ? '校验中…' : '解锁')
+            .type(ButtonType.Normal)
             .width('100%')
             .height(44)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().primary)
             .fontColor(this.c().primaryContrast)
             .enabled(!this.busy)
@@ -374,6 +382,7 @@ struct Unlock {
             }
             Row({ space: 10 }) {
               Button('跳过')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().surface2)
                 .fontColor(this.c().text)
@@ -381,6 +390,7 @@ struct Unlock {
                   this.skipBioSetup();
                 })
               Button('开启')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().primary)
                 .fontColor(this.c().primaryContrast)
@@ -437,6 +447,7 @@ struct Unlock {
             }
             Row({ space: 10 }) {
               Button('跳过')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().surface2)
                 .fontColor(this.c().text)
@@ -444,6 +455,7 @@ struct Unlock {
                   this.skipPinSetup();
                 })
               Button('保存 PIN')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().primary)
                 .fontColor(this.c().primaryContrast)

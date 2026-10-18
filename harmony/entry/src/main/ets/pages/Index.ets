@@ -142,7 +142,7 @@ struct Index {
 
   build() {
     Column({ space: 14 }) {
-      SkinBar({ title: '登录' })
+      SkinBar({ title: '登录', bleed: 32 })
       Text('KeyBox')
         .fontSize(26)
         .fontWeight(FontWeight.Bold)
@@ -159,6 +159,7 @@ struct Index {
           .type(InputType.PhoneNumber)
           .width('100%')
           .height(44)
+          .borderRadius(this.c().radius)
           .backgroundColor(this.c().surface)
           .fontColor(this.c().text)
           .onChange((value: string) => {
@@ -166,8 +167,10 @@ struct Index {
           })
 
         Button('获取验证码')
+          .type(ButtonType.Normal)
           .width('100%')
           .height(44)
+          .borderRadius(this.c().radius)
           .backgroundColor(this.c().primary)
           .fontColor(this.c().primaryContrast)
           .enabled(!this.busy)
@@ -187,14 +190,17 @@ struct Index {
             .type(InputType.Number)
             .width('100%')
             .height(44)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().surface)
             .fontColor(this.c().text)
             .onChange((value: string) => {
               this.code = value;
             })
           Button('登录')
+            .type(ButtonType.Normal)
             .width('100%')
             .height(44)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().primary)
             .fontColor(this.c().primaryContrast)
             .enabled(!this.busy)
@@ -207,8 +213,10 @@ struct Index {
       }
 
       Button('没有账号？注册')
+        .type(ButtonType.Normal)
         .width('100%')
         .height(44)
+        .borderRadius(this.c().radius)
         .backgroundColor(this.c().surface)
         .fontColor(this.c().text)
         .enabled(!this.busy)
