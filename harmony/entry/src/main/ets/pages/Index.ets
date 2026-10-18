@@ -15,7 +15,7 @@ const TAG: string = 'KeyBoxIndex';
 @Entry
 @Component
 struct Index {
-  @StorageProp('skin') skin: string = 'default';
+  @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
   @State phone: string = '';

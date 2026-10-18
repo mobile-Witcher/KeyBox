@@ -22,7 +22,7 @@ const VERIFIER_PLAINTEXT: string = 'KeyBox-Verify';
 @Entry
 @Component
 struct Register {
-  @StorageProp('skin') skin: string = 'default';
+  @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
 

@@ -58,7 +58,7 @@ class BackupFile {
 
 @Component
 export struct SecurityPanel {
-  @StorageProp('skin') skin: string = 'default';
+  @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
   /** 关闭面板（Vault 侧收起弹层）。 */

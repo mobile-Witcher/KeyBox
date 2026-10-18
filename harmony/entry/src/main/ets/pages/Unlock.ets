@@ -29,7 +29,7 @@ const PIN_MAX_FAILS: number = 5;
 @Entry
 @Component
 struct Unlock {
-  @StorageProp('skin') skin: string = 'default';
+  @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
   @State mode: string = 'loading'; // 'loading' | 'bio' | 'pin' | 'password'

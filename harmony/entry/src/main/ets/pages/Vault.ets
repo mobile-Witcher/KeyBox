@@ -69,7 +69,7 @@ function fmtTime(iso: string): string {
 @Entry
 @Component
 struct Vault {
-  @StorageProp('skin') skin: string = 'default';
+  @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
   @StorageProp('wide') isWide: boolean = false;

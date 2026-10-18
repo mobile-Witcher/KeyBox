@@ -7,6 +7,7 @@
 import { preferences } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { normalizeSkinId } from './theme';
 
 const TAG: string = 'KeyBoxPrefs';
 const STORE_NAME: string = 'keybox-prefs';
@@ -17,7 +18,8 @@ let prefs: preferences.Preferences | null = null;
 export async function initPrefs(context: common.Context): Promise<void> {
   try {
     prefs = await preferences.getPreferences(context, STORE_NAME);
-    const skin = (await prefs.get('skin', 'default')) as string;
+    const rawSkin = (await prefs.get('skin', 'hud')) as string;
+    const skin = normalizeSkinId(rawSkin);
     const darkMode = (await prefs.get('darkMode', 'system')) as string;
     AppStorage.setOrCreate('skin', skin);
     AppStorage.setOrCreate('darkMode', darkMode);
