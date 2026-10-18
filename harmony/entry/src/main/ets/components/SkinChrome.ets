@@ -25,17 +25,17 @@ export struct SkinBar {
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
 
-  private id(): SkinId {
+  private skinId(): SkinId {
     return normalizeSkinId(this.skin);
   }
 
   private c(): ThemeColors {
-    return colorsOf(this.id(), resolveDark(this.darkMode, this.systemDark));
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
   }
 
   /** 左侧眉标（等宽大写，皮肤决定用词）。 */
   private kicker(): string {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'lab') return 'LAB // SPECIMEN BAY';
     if (k === 'blueprint') return 'INDEX // KEYBOX';
     if (k === 'mono') return 'KEYBOX // ARCHIVE';
@@ -45,7 +45,7 @@ export struct SkinBar {
 
   /** 右侧元信息（编号 / 计数 / 单位）。 */
   private meta(): string {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'lab') return 'SAMPLE KB-OP-0007 · REV 03';
     if (k === 'blueprint') return '01 / 01';
     if (k === 'mono') return 'SERIES 07 · NO. 0042';
@@ -55,7 +55,7 @@ export struct SkinBar {
 
   /** 是否反白条（黑底白字）：蓝图与黑白档案用，其它用主题浅底。 */
   private hardBar(): boolean {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     return k === 'blueprint' || k === 'mono';
   }
 
@@ -65,7 +65,7 @@ export struct SkinBar {
 
   private barFg(): string {
     if (!this.hardBar()) return this.c().muted;
-    return this.id() === 'blueprint' ? '#0ae0f0' : '#e0433c';
+    return this.skinId() === 'blueprint' ? '#0ae0f0' : '#e0433c';
   }
 
   private barTextFg(): string {
@@ -111,16 +111,16 @@ export struct SkinWordmark {
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
 
-  private id(): SkinId {
+  private skinId(): SkinId {
     return normalizeSkinId(this.skin);
   }
 
   private c(): ThemeColors {
-    return colorsOf(this.id(), resolveDark(this.darkMode, this.systemDark));
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
   }
 
   private wordmark(): string {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'lab') return 'SPECIMEN REGISTRY';
     if (k === 'blueprint') return 'ARCHIVE';
     if (k === 'mono') return 'ARCHIVE';
@@ -129,7 +129,7 @@ export struct SkinWordmark {
   }
 
   private sub(): string {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'lab') return '标本登记 · 样本编号与周期';
     if (k === 'blueprint') return 'KEYBOX · ZERO-KNOWLEDGE VAULT';
     if (k === 'mono') return '01 · KEYBOX ARCHIVE';
@@ -138,7 +138,7 @@ export struct SkinWordmark {
   }
 
   private wmSize(): number {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'blueprint') return 30;
     if (k === 'mono') return 24;
     if (k === 'lab') return 20;
@@ -146,15 +146,15 @@ export struct SkinWordmark {
   }
 
   private wmWeight(): FontWeight {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'blueprint') return FontWeight.Bolder;
-    if (k === 'mono') return FontWeight.Light;
+    if (k === 'mono') return FontWeight.Lighter;
     if (k === 'lab') return FontWeight.Medium;
     return FontWeight.Bold;
   }
 
   private wmTracking(): number {
-    const k: SkinId = this.id();
+    const k: SkinId = this.skinId();
     if (k === 'mono') return 3.5;
     if (k === 'lab') return 1.4;
     if (k === 'overprint') return 0.6;

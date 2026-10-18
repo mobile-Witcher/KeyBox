@@ -149,23 +149,39 @@ export const SKINS: SkinDef[] = [
 
 export const DEFAULT_SKIN: SkinId = 'hud';
 
-/** 旧版本存下的皮肤 id（含更早的 9 套）统一回落到默认皮肤，避免升级后空主题。 */
-const LEGACY_SKIN_MAP: Record<string, SkinId> = {
-  default: 'hud', endfield: 'hud',
-  paper: 'mono', rhodes: 'mono',
-  cyber: 'blueprint', arknights: 'blueprint', hacker: 'blueprint',
-  tech: 'lab', rhine: 'lab', solar: 'lab',
-  minimal: 'overprint', atlas: 'overprint', kawaii: 'hud', sunset: 'overprint'
-};
-
-/** 把存储里可能残留的旧 id 规范化成当前 5 个合法 id。 */
+/**
+ * 旧版本存下的皮肤 id（含更早的 9 套与已改名的皮肤）统一映射到当前 5 套，
+ * 避免升级后空主题。ArkTS 不允许 Record 字面量，这里用 switch 表达。
+ */
 export function normalizeSkinId(raw: string): SkinId {
-  const mapped: SkinId | undefined = LEGACY_SKIN_MAP[raw];
-  if (mapped !== undefined) return mapped;
-  for (const s of SKINS) {
-    if (s.id === raw) return s.id;
+  switch (raw) {
+    case 'hud':
+    case 'default':
+    case 'endfield':
+    case 'kawaii':
+      return 'hud';
+    case 'lab':
+    case 'tech':
+    case 'rhine':
+    case 'solar':
+      return 'lab';
+    case 'blueprint':
+    case 'cyber':
+    case 'arknights':
+    case 'hacker':
+      return 'blueprint';
+    case 'mono':
+    case 'paper':
+    case 'rhodes':
+      return 'mono';
+    case 'overprint':
+    case 'minimal':
+    case 'atlas':
+    case 'sunset':
+      return 'overprint';
+    default:
+      return DEFAULT_SKIN;
   }
-  return DEFAULT_SKIN;
 }
 
 /** 三态明暗解析：'system' 跟随系统，'light'/'dark' 手动锁定。 */
