@@ -946,11 +946,12 @@ export struct SkinIcon {
   @Prop iconColor: string = '#000000';
 
   private glyph(): string {
-    if (this.iconName === 'users') return '⚙';
-    if (this.iconName === 'shield') return '⛨';
-    if (this.iconName === 'palette') return '◑';
-    if (this.iconName === 'sync') return '⟳';
-    return '⇥';
+    // U+FE0E：强制文本呈现（单色），避免系统把字符渲染成彩色 emoji
+    if (this.iconName === 'users') return '⚙\uFE0E';
+    if (this.iconName === 'shield') return '⚿\uFE0E';
+    if (this.iconName === 'palette') return '◐\uFE0E';
+    if (this.iconName === 'sync') return '↻\uFE0E';
+    return '⇥\uFE0E';
   }
 
   build() {
