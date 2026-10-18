@@ -1004,16 +1004,22 @@ export struct SkinIcon {
   }
 
   build() {
-    Canvas(this.ctx)
-      .width(this.iconSize)
-      .height(this.iconSize)
-      .hitTestBehavior(HitTestMode.None)
-      .onReady(() => {
-        this.draw();
-      })
-      .onAreaChange(() => {
-        this.draw();
-      })
+    // 用 Path 组件直接按 24×24 原生坐标绘制（不做任何缩放/Canvas），
+    // 由外层容器尺寸决定视觉大小，天然居中，避免 Canvas 首帧尺寸为 0 的问题。
+    Stack({ alignContent: Alignment.Center }) {
+      ForEach(this.paths(), (d: string, i: number) => {
+        Path({ width: 24, height: 24, commands: d })
+          .fill('#00000000')
+          .stroke(this.iconColor)
+          .strokeWidth(1.8)
+          .strokeLineCap(LineCapStyle.Round)
+          .strokeLineJoin(LineJoinStyle.Round)
+          .hitTestBehavior(HitTestMode.None)
+      }, (d: string, i: number) => 'p' + i.toString())
+    }
+    .width(24)
+    .height(24)
+    .hitTestBehavior(HitTestMode.None)
   }
 }
 /** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
