@@ -964,6 +964,7 @@ export struct SkinIcon {
         .width(24)
         .fontColor(this.iconColor)
         .textAlign(TextAlign.Center)
+        .offset({ x: 0, y: this.dy() })
         .hitTestBehavior(HitTestMode.None)
     }
   }
