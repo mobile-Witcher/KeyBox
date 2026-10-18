@@ -1007,3 +1007,46 @@ export struct SkinIcon {
       })
   }
 }
+/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
+@Component
+export struct SkinIconButton {
+  @Prop iconName: string = 'logout';
+  @Prop iconSize: number = 18;
+  @Prop iconColor: string = '#000000';
+  @Prop boxSize: number = 32;
+  @Prop dot: boolean = false;
+  onPick: () => void = () => {};
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private c(): ThemeColors {
+    return colorsOf(normalizeSkinId(this.skin), resolveDark(this.darkMode, this.systemDark));
+  }
+
+  build() {
+    Stack({ alignContent: Alignment.Center }) {
+      SkinIcon({ iconName: this.iconName, iconSize: this.iconSize, iconColor: this.iconColor })
+      if (this.dot) {
+        Stack({ alignContent: Alignment.TopEnd }) {
+          Text('')
+            .width(6)
+            .height(6)
+            .borderRadius(3)
+            .backgroundColor(this.c().warning)
+        }
+        .width('100%')
+        .height('100%')
+        .hitTestBehavior(HitTestMode.None)
+      }
+    }
+    .width(this.boxSize)
+    .height(this.boxSize)
+    .borderRadius(10)
+    .border({ width: 1, color: this.c().border })
+    .backgroundColor(this.c().bg)
+    .onClick(() => {
+      this.onPick();
+    })
+  }
+}

@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard, SkinButton, SkinIcon } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard, SkinButton, SkinIcon, SkinIconButton } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -653,44 +653,39 @@ struct Vault {
             .fontColor(this.c().text)
           Blank()
           if (this.isAdmin) {
-            Text('管理')
-              .fontSize(13)
-              .fontColor(this.c().muted)
-              .onClick(() => {
+            SkinIconButton({
+              iconName: 'users',
+              iconSize: 18,
+              iconColor: this.c().muted,
+              onPick: () => {
                 router.pushUrl({ url: 'pages/Admin' });
-              })
-          }
-          Row({ space: 2 }) {
-            Text('安全')
-              .fontSize(13)
-              .fontColor(this.c().muted)
-            if (this.recoveryAttention) {
-              Text('●')
-                .fontSize(9)
-                .fontColor(this.c().warning)
-            }
-          }
-          .onClick(() => {
-            this.showSecurity = true;
-          })
-          Text('外观')
-            .fontSize(13)
-            .fontColor(this.c().muted)
-            .onClick(() => {
-              this.showAppearance = !this.showAppearance;
+              }
             })
-          // 退出登录：图标按钮（加外框、去掉文字）
-          Stack() {
-            SkinIcon({ iconName: 'logout', iconSize: 26, iconColor: this.c().muted })
           }
-          .width(40)
-          .height(40)
-          .borderRadius(this.c().radius)
-          .border({ width: 1, color: this.c().border })
-          .backgroundColor(this.c().bg)
-          .accessibilityText('退出登录')
-          .onClick(() => {
-            this.signOut();
+          SkinIconButton({
+            iconName: 'shield',
+            iconSize: 18,
+            iconColor: this.c().muted,
+            dot: this.recoveryAttention,
+            onPick: () => {
+              this.showSecurity = true;
+            }
+          })
+          SkinIconButton({
+            iconName: 'palette',
+            iconSize: 18,
+            iconColor: this.c().muted,
+            onPick: () => {
+              this.showAppearance = !this.showAppearance;
+            }
+          })
+          SkinIconButton({
+            iconName: 'logout',
+            iconSize: 18,
+            iconColor: this.c().muted,
+            onPick: () => {
+              this.signOut();
+            }
           })
         }
         .width('100%')
