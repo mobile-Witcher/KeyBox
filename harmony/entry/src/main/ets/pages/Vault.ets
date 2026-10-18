@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard, SkinButton, SkinIcon, SkinIconButton } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, SkinCard, SkinButton, SkinScrim, SkinInlineBtn, SkinIcon, SkinIconButton } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -813,18 +813,15 @@ struct Vault {
       .opacity(1)
       .animation({ duration: 160, curve: Curve.EaseOut })
 
-      // ── 弹层遮罩：皮肤色半透明层（不拦截点击，各弹层自己处理关闭） ──
+      // ── 弹层遮罩：皮肤色点阵层（SkinScrim 自带 160ms 过渡、不拦截点击，各弹层自己处理关闭） ──
       if (this.overlayOpen()) {
-        Text('')
-          .width('100%')
-          .height('100%')
-          .backgroundColor(scrimColor(this.skin))
-          .hitTestBehavior(HitTestMode.None)
-          .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
+        SkinScrim()
       }
 
       // ── 悬浮操作（同步 / 新增）：全屏对齐层内贴右下角，两个按钮同尺寸 56 ──
-      Stack({ alignContent: Alignment.BottomEnd }) {
+      // 弹层打开时隐藏 FAB：SkinScrim 在 FAB 图层之下，不隐藏会让 FAB「浮」在遮罩之上。
+      if (!this.overlayOpen()) {
+        Stack({ alignContent: Alignment.BottomEnd }) {
         Column({ space: 10 }) {
           Stack({ alignContent: Alignment.Center }) {
             SkinIcon({
@@ -839,7 +836,7 @@ struct Vault {
           .border({ width: 1, color: this.c().border })
           .backgroundColor(this.c().surface)
           .opacity(this.syncing ? 0.6 : 1)
-          .shadow({ radius: 10, color: '#00000022', offsetX: 0, offsetY: 3 })
+          .shadow({ radius: 10, color: '#22000000', offsetX: 0, offsetY: 3 })
           .accessibilityText(this.syncing ? '同步中' : '同步')
           .onClick(() => {
             if (!this.syncing) {
@@ -854,16 +851,17 @@ struct Vault {
             .fontSize(24)
             .backgroundColor(this.c().primary)
             .fontColor(this.c().primaryContrast)
-            .shadow({ radius: 12, color: '#00000033', offsetX: 0, offsetY: 4 })
+            .shadow({ radius: 12, color: '#33000000', offsetX: 0, offsetY: 4 })
             .onClick(() => {
               this.openNew();
             })
         }
         .margin({ right: 14, bottom: 26 })
+        }
+        .width('100%')
+        .height('100%')
+        .hitTestBehavior(HitTestMode.Transparent)
       }
-      .width('100%')
-      .height('100%')
-      .hitTestBehavior(HitTestMode.Transparent)
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
@@ -924,30 +922,26 @@ struct Vault {
               Divider()
                 .color(this.c().border)
                 .margin({ top: 4, bottom: 4 })
-              Row({ space: 10 }) {
-                Button('重命名分类')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .height(34)
-                  .fontSize(12)
-                  .backgroundColor(this.c().surface2)
-                  .fontColor(this.c().text)
-                  .onClick(() => {
+              Column({ space: 8 }) {
+                SkinInlineBtn({
+                  label: '重命名分类',
+                  kind: 'ghost',
+                  btnHeight: 36,
+                  onTap: () => {
                     this.fTagName = this.activeTag ?? '';
                     this.showTagMenu = false;
                     this.dialogMode = 'tagRename';
-                  })
-                Button('删除分类')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .height(34)
-                  .fontSize(12)
-                  .backgroundColor(this.c().danger)
-                  .fontColor(this.c().primaryContrast)
-                  .onClick(() => {
+                  }
+                })
+                SkinInlineBtn({
+                  label: '删除分类',
+                  kind: 'danger',
+                  btnHeight: 36,
+                  onTap: () => {
                     this.showTagMenu = false;
                     this.dialogMode = 'tagDelete'; // 二次确认对话框
-                  })
+                  }
+                })
               }
               .width('100%')
             }
@@ -964,7 +958,6 @@ struct Vault {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.35)')
         .justifyContent(FlexAlign.Start)
         .alignItems(HorizontalAlign.Center)
         .padding({ top: 96 })
@@ -1022,42 +1015,42 @@ struct Vault {
               .fontColor(this.c().muted)
               .margin({ top: 4 })
             Row({ space: 6 }) {
-              Button('跟随系统')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .fontSize(12)
-                .backgroundColor(this.darkMode === 'system' ? this.c().primary : this.c().surface2)
-                .fontColor(this.darkMode === 'system' ? this.c().primaryContrast : this.c().text)
-                .onClick(() => {
-                  AppStorage.setOrCreate('darkMode', 'system');
-                  void savePrefs(this.skin, 'system');
+              Row() {
+                SkinInlineBtn({
+                  label: '跟随系统',
+                  kind: this.darkMode === 'system' ? 'primary' : 'ghost',
+                  btnHeight: 34,
+                  btnFontSize: 11,
+                  onTap: () => {
+                    AppStorage.setOrCreate('darkMode', 'system');
+                    void savePrefs(this.skin, 'system');
+                  }
                 })
-              Button('浅色')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .fontSize(12)
-                .backgroundColor(this.darkMode === 'light' ? this.c().primary : this.c().surface2)
-                .fontColor(this.darkMode === 'light' ? this.c().primaryContrast : this.c().text)
-                .onClick(() => {
-                  AppStorage.setOrCreate('darkMode', 'light');
-                  void savePrefs(this.skin, 'light');
+              }.layoutWeight(1)
+              Row() {
+                SkinInlineBtn({
+                  label: '浅色',
+                  kind: this.darkMode === 'light' ? 'primary' : 'ghost',
+                  btnHeight: 34,
+                  btnFontSize: 11,
+                  onTap: () => {
+                    AppStorage.setOrCreate('darkMode', 'light');
+                    void savePrefs(this.skin, 'light');
+                  }
                 })
-              Button('深色')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .fontSize(12)
-                .backgroundColor(this.darkMode === 'dark' ? this.c().primary : this.c().surface2)
-                .fontColor(this.darkMode === 'dark' ? this.c().primaryContrast : this.c().text)
-                .onClick(() => {
-                  AppStorage.setOrCreate('darkMode', 'dark');
-                  void savePrefs(this.skin, 'dark');
+              }.layoutWeight(1)
+              Row() {
+                SkinInlineBtn({
+                  label: '深色',
+                  kind: this.darkMode === 'dark' ? 'primary' : 'ghost',
+                  btnHeight: 34,
+                  btnFontSize: 11,
+                  onTap: () => {
+                    AppStorage.setOrCreate('darkMode', 'dark');
+                    void savePrefs(this.skin, 'dark');
+                  }
                 })
+              }.layoutWeight(1)
             }
             .width('100%')
 
@@ -1081,7 +1074,6 @@ struct Vault {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
         .justifyContent(FlexAlign.Center)
         .onClick(() => {
           this.showAppearance = false;
@@ -1147,22 +1139,26 @@ struct Vault {
                   this.fTags = v;
                 })
               Row({ space: 10 }) {
-                Button('取消')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .backgroundColor(this.c().surface2)
-                  .fontColor(this.c().text)
-                  .onClick(() => {
-                    this.closeDialog();
+                Row() {
+                  SkinInlineBtn({
+                    label: '取消',
+                    kind: 'ghost',
+                    btnHeight: 40,
+                    onTap: () => {
+                      this.closeDialog();
+                    }
                   })
-                Button('保存')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .backgroundColor(this.c().primary)
-                  .fontColor(this.c().primaryContrast)
-                  .onClick(() => {
-                    void this.saveDialog();
+                }.layoutWeight(1)
+                Row() {
+                  SkinInlineBtn({
+                    label: '保存',
+                    kind: 'primary',
+                    btnHeight: 40,
+                    onTap: () => {
+                      void this.saveDialog();
+                    }
                   })
+                }.layoutWeight(1)
               }
               .width('100%')
               .margin({ top: 6 })
@@ -1181,7 +1177,6 @@ struct Vault {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
         .justifyContent(FlexAlign.Center)
         .align(Alignment.Center)
       }
@@ -1205,33 +1200,37 @@ struct Vault {
               .fontSize(11)
               .fontColor(this.c().muted)
             Row({ space: 10 }) {
-              Button('取消')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .onClick(() => {
-                  this.closeDialog();
-                })
-              Button('确认')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  const next = this.fTagName.trim();
-                  if (next === '') {
-                    this.status = '分类名不能为空';
-                    this.statusColor = this.c().danger;
-                    return;
-                  }
-                  const oldName = this.activeTag ?? '';
-                  if (next === oldName) {
+              Row() {
+                SkinInlineBtn({
+                  label: '取消',
+                  kind: 'ghost',
+                  btnHeight: 40,
+                  onTap: () => {
                     this.closeDialog();
-                    return;
                   }
-                  void this.applyTagChange(oldName, next);
                 })
+              }.layoutWeight(1)
+              Row() {
+                SkinInlineBtn({
+                  label: '确认',
+                  kind: 'primary',
+                  btnHeight: 40,
+                  onTap: () => {
+                    const next = this.fTagName.trim();
+                    if (next === '') {
+                      this.status = '分类名不能为空';
+                      this.statusColor = this.c().danger;
+                      return;
+                    }
+                    const oldName = this.activeTag ?? '';
+                    if (next === oldName) {
+                      this.closeDialog();
+                      return;
+                    }
+                    void this.applyTagChange(oldName, next);
+                  }
+                })
+              }.layoutWeight(1)
             }
             .width('100%')
           }
@@ -1246,7 +1245,6 @@ struct Vault {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
         .justifyContent(FlexAlign.Center)
         .align(Alignment.Center)
       }
@@ -1263,22 +1261,26 @@ struct Vault {
               .fontSize(13)
               .fontColor(this.c().text)
             Row({ space: 10 }) {
-              Button('取消')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .onClick(() => {
-                  this.closeDialog();
+              Row() {
+                SkinInlineBtn({
+                  label: '取消',
+                  kind: 'ghost',
+                  btnHeight: 40,
+                  onTap: () => {
+                    this.closeDialog();
+                  }
                 })
-              Button('删除')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().danger)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.applyTagChange(this.activeTag ?? '', null);
+              }.layoutWeight(1)
+              Row() {
+                SkinInlineBtn({
+                  label: '删除',
+                  kind: 'danger',
+                  btnHeight: 40,
+                  onTap: () => {
+                    void this.applyTagChange(this.activeTag ?? '', null);
+                  }
                 })
+              }.layoutWeight(1)
             }
             .width('100%')
           }
@@ -1293,7 +1295,6 @@ struct Vault {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
         .justifyContent(FlexAlign.Center)
         .align(Alignment.Center)
       }
@@ -1331,26 +1332,26 @@ struct Vault {
             }
             .constraintSize({ maxHeight: 180 })
             Row({ space: 10 }) {
-              Button('保留本机')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.resolveConflicts(false);
+              Row() {
+                SkinInlineBtn({
+                  label: '保留本机',
+                  kind: 'primary',
+                  btnHeight: 40,
+                  onTap: () => {
+                    void this.resolveConflicts(false);
+                  }
                 })
-              Button('用服务端')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.resolveConflicts(true);
+              }.layoutWeight(1)
+              Row() {
+                SkinInlineBtn({
+                  label: '用服务端',
+                  kind: 'ghost',
+                  btnHeight: 40,
+                  onTap: () => {
+                    void this.resolveConflicts(true);
+                  }
                 })
+              }.layoutWeight(1)
             }
             .width('100%')
             Text('稍后处理')
@@ -1372,7 +1373,6 @@ struct Vault {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
         .justifyContent(FlexAlign.Center)
         .align(Alignment.Center)
       }
@@ -1420,7 +1420,7 @@ struct Vault {
   }
 
   private cardShadowColor(): string {
-    return this.skin === 'overprint' ? '#00000022' : '#00000000';
+    return this.skin === 'overprint' ? '#22000000' : '#00000000';
   }
   @Builder
   SecretCard(it: VaultItem) {
@@ -1518,26 +1518,28 @@ struct Vault {
       .width('100%')
 
       Row({ space: 10 }) {
-        Button('编辑')
-          .type(ButtonType.Normal)
-          .layoutWeight(1)
-          .height(34)
-          .fontSize(13)
-          .backgroundColor(this.c().surface2)
-          .fontColor(this.c().text)
-          .onClick(() => {
-            this.openEdit(it);
+        Row() {
+          SkinInlineBtn({
+            label: '编辑',
+            kind: 'ghost',
+            btnHeight: 34,
+            btnFontSize: 12,
+            onTap: () => {
+              this.openEdit(it);
+            }
           })
-        Button('删除')
-          .type(ButtonType.Normal)
-          .layoutWeight(1)
-          .height(34)
-          .fontSize(13)
-          .backgroundColor(this.c().danger)
-          .fontColor('#FFFFFF')
-          .onClick(() => {
-            void this.remove(it);
+        }.layoutWeight(1)
+        Row() {
+          SkinInlineBtn({
+            label: '删除',
+            kind: 'danger',
+            btnHeight: 34,
+            btnFontSize: 12,
+            onTap: () => {
+              void this.remove(it);
+            }
           })
+        }.layoutWeight(1)
       }
       .width('100%')
       .margin({ top: 4 })
