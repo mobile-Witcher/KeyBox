@@ -397,6 +397,7 @@ export default function VaultPage({
         onSignOut={onSignOut}
         onOpenAdmin={onOpenAdmin}
         onOpenSecurity={masterKey ? openSecurity : undefined}
+        securityAttention={masterKey ? recoveryPending : false}
       />
 
       {/* 桌面：侧栏与主区左右并排；移动端：纵向堆叠（侧栏变成横向标签条，见 TagSidebar） */}
@@ -409,8 +410,6 @@ export default function VaultPage({
             onSelect={setActiveTag}
             onRequestRename={(tag) => void handleRequestRename(tag)}
             onRequestDelete={(tag) => void handleRequestDelete(tag)}
-            onOpenSecurity={openSecurity}
-            settingsAttention={recoveryPending}
           />
         ) : null}
 

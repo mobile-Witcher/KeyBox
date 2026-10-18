@@ -8,7 +8,7 @@
  *     未命中的分类回落到通用「标签」图标——因为标签是用户自建的，无法穷举。
  *   - 标签管理（改名 / 删除，R18）**没有丢**：选中某个分类后，在其下方出现两个小图标按钮。
  *     （原实现是 hover 显示文字按钮，图标栏放不下文字，故改为「选中后显示图标」。）
- *   - 图标栏底部固定「安全」入口（打开安全弹层），可带角标提示。
+ *   - 图标栏底部不再放「安全」入口（与顶栏盾牌图标功能重复，已移除；安全提醒角标移到顶栏盾牌上）。
  *
  * 移动端（<768px）：横向标签条改为**下拉选择器**——
  *   收起态显示当前选中项（默认「全部密钥（N）」），点击展开菜单列出「全部」+ 各分类（带条数），
@@ -38,10 +38,6 @@ interface TagSidebarProps {
   onSelect: (tag: string | null) => void;
   onRequestRename: (tag: string) => void;
   onRequestDelete: (tag: string) => void;
-  /** 点击底部「安全」图标（打开安全弹层）。 */
-  onOpenSecurity: () => void;
-  /** true 时在安全图标上显示角标（有未完成的安全提醒）。 */
-  settingsAttention?: boolean;
 }
 
 /**
@@ -65,8 +61,6 @@ export default function TagSidebar({
   onSelect,
   onRequestRename,
   onRequestDelete,
-  onOpenSecurity,
-  settingsAttention = false,
 }: TagSidebarProps): JSX.Element {
   /** 图标按钮基座（40×40，居中）。 */
   const railBtn =
@@ -133,27 +127,6 @@ export default function TagSidebar({
             );
           })}
         </nav>
-
-        {/* 底部固定：安全（打开安全弹层：改主密码 / 备份 / 恢复码） */}
-        <div className="mt-auto pt-3">
-          <button
-            type="button"
-            onClick={onOpenSecurity}
-            title="安全（改主密码 / 备份 / 恢复码）"
-            aria-label="安全（改主密码 / 备份 / 恢复码）"
-            className={`relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-kb-muted transition hover:bg-kb-surface-2 hover:text-kb-text ${railOff}`}
-          >
-            <ShieldIcon size={18} />
-            <span className="hidden text-sm lg:inline">安全</span>
-            {settingsAttention ? (
-              <span
-                aria-hidden="true"
-                title="有未完成的安全提醒"
-                className="absolute right-2 top-2 h-2 w-2 rounded-full bg-kb-primary"
-              />
-            ) : null}
-          </button>
-        </div>
       </div>
     </aside>
   );

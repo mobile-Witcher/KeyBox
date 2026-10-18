@@ -34,6 +34,8 @@ interface TopBarProps {
   onOpenAdmin?: () => void;
   /** 点击"安全"（打开安全弹层：改主密码 / 加密备份 / 恢复码）。未解锁（无主密钥）时上层不传。 */
   onOpenSecurity?: () => void;
+  /** true 时在"安全"图标上显示提醒角标（例如恢复码尚未确认）。 */
+  securityAttention?: boolean;
 }
 
 function MenuItem({
@@ -69,6 +71,7 @@ export default function TopBar({
   onSignOut,
   onOpenAdmin,
   onOpenSecurity,
+  securityAttention = false,
 }: TopBarProps): JSX.Element {
   const avatarText = (Array.from(username.trim())[0] || "?").toUpperCase();
   const { theme, toggleTheme } = useAppearance();
@@ -162,7 +165,11 @@ export default function TopBar({
           </TopIconButton>
         ) : null}
         {onOpenSecurity ? (
-          <TopIconButton label="安全（改主密码 / 备份 / 恢复码）" onClick={onOpenSecurity}>
+          <TopIconButton
+            label="安全（改主密码 / 备份 / 恢复码）"
+            onClick={onOpenSecurity}
+            dot={securityAttention}
+          >
             <ShieldIcon size={18} />
           </TopIconButton>
         ) : null}
@@ -247,10 +254,13 @@ export default function TopBar({
 function TopIconButton({
   label,
   onClick,
+  dot,
   children,
 }: {
   label: string;
   onClick: () => void;
+  /** 右上角小圆点：有未处理的安全提醒时提示一下。 */
+  dot?: boolean;
   children: React.ReactNode;
 }): JSX.Element {
   return (
@@ -259,9 +269,15 @@ function TopIconButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-lg text-kb-muted transition hover:bg-kb-surface-2 hover:text-kb-text"
+      className="relative grid h-9 w-9 place-items-center rounded-lg text-kb-muted transition hover:bg-kb-surface-2 hover:text-kb-text"
     >
       {children}
+      {dot ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-kb-primary"
+        />
+      ) : null}
     </button>
   );
 }

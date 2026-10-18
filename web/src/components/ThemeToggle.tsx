@@ -60,11 +60,8 @@ export default function ThemeToggle(): JSX.Element {
             <span className="kb-hint ml-auto max-w-[9rem] truncate text-right">{currentSkinLabel}</span>
           </div>
 
-          {/* 皮肤 */}
-          <p className="kb-heading mt-3.5 text-[11px] font-semibold uppercase leading-none tracking-[0.18em] text-kb-muted">
-            皮肤
-          </p>
-          <div className="mt-2.5 max-h-[44vh] space-y-1.5 overflow-y-auto pr-1">
+          {/* 皮肤列表（不设分区标题：面板头已有「外观」，减少一行噪音） */}
+          <div className="mt-3.5 max-h-[44vh] space-y-1.5 overflow-y-auto pr-1">
             {SKINS.map((s) => (
               <SkinOption
                 key={s.id}
@@ -77,14 +74,12 @@ export default function ThemeToggle(): JSX.Element {
             ))}
           </div>
 
-          {/* 明暗：三段式分段控件 */}
-          <p className="kb-heading mt-4 border-t border-kb-border pt-4 text-[11px] font-semibold uppercase leading-none tracking-[0.18em] text-kb-muted">
-            明暗
-          </p>
+          {/* 明暗：三段式分段控件（分隔线取代原来的「明暗」标题行） */}
+          <div className="mt-4 border-t border-kb-border" />
           <div
             role="group"
             aria-label="明暗模式"
-            className="mt-2.5 grid grid-cols-3 gap-1.5 rounded-lg border border-kb-border p-1"
+            className="mt-3 grid grid-cols-3 gap-1.5 rounded-lg border border-kb-border p-1"
           >
             <ThemeChoice
               active={preference === "light"}
@@ -105,11 +100,6 @@ export default function ThemeToggle(): JSX.Element {
               label="跟随系统"
             />
           </div>
-          <p className="kb-hint mt-2 text-[10px] leading-relaxed">
-            {preference === "system"
-              ? "跟随系统：浏览器/系统切换到深色或浅色时会自动同步。"
-              : "当前已固定。选「跟随系统」可随浏览器深浅自动切换。"}
-          </p>
         </div>
       ) : null}
     </div>
