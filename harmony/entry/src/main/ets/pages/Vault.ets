@@ -679,12 +679,16 @@ struct Vault {
             .onClick(() => {
               this.showAppearance = !this.showAppearance;
             })
-          Row({ space: 4 }) {
-            SkinIcon({ iconName: 'logout', iconSize: 32, iconColor: this.c().muted })
-            Text('退出登录')
-              .fontSize(13)
-              .fontColor(this.c().muted)
+          // 退出登录：图标按钮（加外框、去掉文字）
+          Stack() {
+            SkinIcon({ iconName: 'logout', iconSize: 26, iconColor: this.c().muted })
           }
+          .width(40)
+          .height(40)
+          .borderRadius(this.c().radius)
+          .border({ width: 1, color: this.c().border })
+          .backgroundColor(this.c().bg)
+          .accessibilityText('退出登录')
           .onClick(() => {
             this.signOut();
           })
