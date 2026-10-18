@@ -249,6 +249,8 @@ struct Admin {
 
   build() {
     Stack() {
+      // 底纹必须是 Stack 的第一个子节点（最底层），否则会盖住页面内容
+      SkinBackdrop()
       Column() {
         SkinBar({ title: '管理后台' })
         // ── 顶栏 ──
@@ -494,9 +496,7 @@ struct Admin {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor(this.c().bg)
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      SkinBackdrop()
 
       // ── 作废邀请码二次确认 ──
       if (this.confirmMode === 'revoke') {
