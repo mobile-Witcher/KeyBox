@@ -2218,3 +2218,93 @@ body {
     padding: 22px 18px 20px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   卡片语汇反哺（源自鸿蒙端：顶端强调线 + 四角括号 + 皮肤代号标尺）
+   仅作用于 .kb-card（列表卡片，不是浮层），浮层 .kb-card-lg 不受影响
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-skin="hud"] {
+  --kb-card-accent: #f2c300;
+  --kb-card-tag: "ASSET";
+}
+[data-skin="lab"] {
+  --kb-card-accent: #2fb6b0;
+  --kb-card-tag: "SPECIMEN";
+}
+[data-skin="mono"] {
+  --kb-card-accent: #c8102e;
+  --kb-card-tag: "ARCHIVE";
+}
+[data-skin="blueprint"] {
+  --kb-card-accent: #0ae0f0;
+  --kb-card-tag: "RECORD";
+}
+[data-skin="overprint"] {
+  --kb-card-accent: #4c6fff;
+  --kb-card-tag: "PLATE";
+}
+
+[data-skin="hud"] .kb-card,
+[data-skin="lab"] .kb-card,
+[data-skin="mono"] .kb-card,
+[data-skin="blueprint"] .kb-card,
+[data-skin="overprint"] .kb-card {
+  position: relative;
+  border-top: 2px solid var(--kb-card-accent);
+  /* 四角括号：8 条渐变，位置/尺寸/重复方式见下 */
+  background-image:
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent)),
+    linear-gradient(var(--kb-card-accent), var(--kb-card-accent));
+  background-size:
+    14px 1.5px,
+    1.5px 14px,
+    14px 1.5px,
+    1.5px 14px,
+    14px 1.5px,
+    1.5px 14px,
+    14px 1.5px,
+    1.5px 14px;
+  background-position:
+    left top,
+    left top,
+    right top,
+    right top,
+    left bottom,
+    left bottom,
+    right bottom,
+    right bottom;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+
+/* 右上角皮肤代号标尺 */
+[data-skin="hud"] .kb-card::before,
+[data-skin="lab"] .kb-card::before,
+[data-skin="mono"] .kb-card::before,
+[data-skin="blueprint"] .kb-card::before,
+[data-skin="overprint"] .kb-card::before {
+  content: var(--kb-card-tag);
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-family: var(--kb-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: var(--kb-card-accent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* 套印图录：保留硬偏影；其余皮肤卡片给一层极淡投影 */
+[data-skin="hud"] .kb-card,
+[data-skin="lab"] .kb-card,
+[data-skin="mono"] .kb-card,
+[data-skin="blueprint"] .kb-card {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
