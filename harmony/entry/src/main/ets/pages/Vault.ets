@@ -20,6 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
+import { SkinBar, SkinWordmark } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';

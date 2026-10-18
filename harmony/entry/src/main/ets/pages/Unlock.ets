@@ -18,6 +18,7 @@ import {
   initBioStore, hasBiometricLock, setupBiometric, unlockWithBiometric, getBioStatus
 } from '../lib/biometric';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
+import { SkinBar } from '../components/SkinChrome';
 // warning 色经 c().warning 提供
 
 const TAG: string = 'KeyBoxUnlock';

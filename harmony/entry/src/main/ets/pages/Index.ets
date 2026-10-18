@@ -8,6 +8,7 @@ import { sendVerification, verifyCode, signIn, refreshSession } from '../lib/aut
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { loadTokens, saveTokens, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
+import { SkinBar } from '../components/SkinChrome';
 import { probeActivation } from '../lib/kbapi';
 
 const TAG: string = 'KeyBoxIndex';

@@ -15,6 +15,7 @@ import { probeActivation, registerRemote, initAdminRemote, KbFnEnvelope } from '
 import { deriveKeyRaw, kb1Encrypt } from '../lib/kbcrypto';
 import { generateSaltB64 } from '../lib/kbrecovery';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
+import { SkinBar } from '../components/SkinChrome';
 
 const TAG: string = 'KeyBoxRegister';
 const VERIFIER_PLAINTEXT: string = 'KeyBox-Verify';

@@ -22,6 +22,7 @@ import {
 } from '../lib/kbapi';
 import { clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
+import { SkinBar } from '../components/SkinChrome';
 
 const TAG: string = 'KeyBoxAdmin';
 
