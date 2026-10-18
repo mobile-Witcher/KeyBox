@@ -452,8 +452,8 @@ export default function VaultPage({
                 onSelect={setActiveTag}
               />
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                {/* 终末地皮肤专用：密钥舱页头（其它皮肤 display:none） */}
-                <div className="kb-endfield-only">
+                {/* 工业终端皮肤专用：密钥舱页头（其它皮肤 display:none） */}
+                <div className="kb-hud-only">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="kb-plate">Asset Bay</span>
                     <span className="kb-eyebrow">
@@ -464,64 +464,64 @@ export default function VaultPage({
                   </div>
                   <h2 className="kb-bay-title mt-2 text-2xl text-kb-text">Specimen Archive</h2>
                 </div>
-                {/* 明日方舟官网皮肤专用：巨型词标页头 */}
-                <div className="kb-off-hdr">
+                {/* 黑白档案官网皮肤专用：巨型词标页头 */}
+                <div className="kb-bp-hdr">
                   <div>
-                    <h2 className="kb-off-wordmark">Archive</h2>
-                    <span className="kb-off-sub">
-                      RHODES ISLAND · https://ak.hypergryph.com/
+                    <h2 className="kb-bp-wordmark">Archive</h2>
+                    <span className="kb-bp-sub">
+                      KEYBOX · ZERO-KNOWLEDGE VAULT
                     </span>
                   </div>
-                  <span className="kb-off-hdr-count">
+                  <span className="kb-bp-hdr-count">
                     {String(visible.length).padStart(2, "0")} / {String(visible.length).padStart(2, "0")}
                   </span>
                 </div>
-                {/* 莱茵生命皮肤专用：标本登记页头 */}
-                <div className="kb-rhine-hdr">
+                {/* 实验档案皮肤专用：标本登记页头 */}
+                <div className="kb-lab-hdr">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="kb-rhine-tag">Registry</span>
-                    <span className="kb-rhine-eyebrow">
+                    <span className="kb-lab-tag">Registry</span>
+                    <span className="kb-lab-eyebrow">
                       Specimen registry · 标本登记 {visible.length}
                       {activeTag ? ` · ${activeTag}` : ""}
                     </span>
                   </div>
-                  <h2 className="kb-rhine-h2">
+                  <h2 className="kb-lab-h2">
                     Specimen Registry
-                    <span className="kb-rhine-count">
+                    <span className="kb-lab-count">
                       /{String(visible.length).padStart(2, "0")}
                     </span>
                   </h2>
                 </div>
-                {/* 明日方舟皮肤专用：档案页头（大号细体编号） */}
-                <div className="kb-ark-hdr">
-                  <span className="kb-ark-hdr-no">01</span>
+                {/* 黑白档案皮肤专用：档案页头（大号细体编号） */}
+                <div className="kb-mono-hdr">
+                  <span className="kb-mono-hdr-no">01</span>
                   <div>
-                    <span className="kb-ark-eyebrow">KeyBox // Archive</span>
-                    <h2 className="kb-ark-h2">
+                    <span className="kb-mono-eyebrow">KeyBox // Archive</span>
+                    <h2 className="kb-mono-h2">
                       Archive
-                      <span className="kb-ark-count">
+                      <span className="kb-mono-count">
                         {String(visible.length).padStart(2, "0")}
                       </span>
                     </h2>
                   </div>
                 </div>
                 {/* 图录皮肤专用：RECORD 页头（小窗框 + 衬线标题） */}
-                <div className="kb-atlas-hdr">
-                  <div className="kb-atlas-hdr-win">
-                    <span className="kb-atlas-hdr-bar">
+                <div className="kb-ovp-hdr">
+                  <div className="kb-ovp-hdr-win">
+                    <span className="kb-ovp-hdr-bar">
                       <i />
                       <i />
                       <i />
                     </span>
                     <b>Record · 06</b>
-                    <span>Laterano / Sanctum</span>
+                    <span>Vault / Index</span>
                   </div>
-                  <h2 className="kb-atlas-h2">
+                  <h2 className="kb-ovp-h2">
                     The Archive
-                    <span className="kb-atlas-count">{String(visible.length).padStart(2, "0")}</span>
+                    <span className="kb-ovp-count">{String(visible.length).padStart(2, "0")}</span>
                   </h2>
                 </div>
-                <h2 className="kb-hide-in-endfield kb-hide-when-styled text-base font-semibold">
+                <h2 className="kb-hide-in-hud kb-hide-when-styled text-base font-semibold">
                   我的密钥（{visible.length}
                   {visible.length !== items.length ? ` / 共 ${items.length}` : ""}）
                   {activeTag ? <span className="ml-2 text-sm text-kb-muted">标签：{activeTag}</span> : null}
@@ -724,7 +724,7 @@ function UnlockPanel({
 }): JSX.Element {
   return (
     <div className="mx-auto max-w-md rounded-xl border border-kb-border bg-kb-surface p-6 shadow-sm dark:border-kb-border dark:bg-kb-surface">
-      <div className="kb-endfield-only mb-3">
+      <div className="kb-hud-only mb-3">
         <span className="kb-plate">Authorize</span>
       </div>
       <h2 className="kb-unlock-title text-base font-semibold">输入主密码解锁</h2>

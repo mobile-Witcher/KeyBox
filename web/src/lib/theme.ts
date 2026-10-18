@@ -4,7 +4,7 @@
  * 两个正交维度：
  *   - 明暗：`light` | `dark`          → 落到 `<html class="dark">`（Tailwind darkMode:"class"）
  *   - 皮肤：5 种                        → 落到 `<html data-skin="...">`
- * 组合示例：终末地·深色 = `<html data-skin="endfield" class="dark">`。
+ * 组合示例：工业终端·深色 = `<html data-skin="hud" class="dark">`。
  * 皮肤只改 index.css 里的语义变量，因此**新增皮肤不需要改任何组件**。
  *
  * 三个目标：① 手动切换 ② 记住选择（localStorage）③ 首屏不闪。
@@ -23,11 +23,11 @@ export type Theme = "light" | "dark";
 export type ThemePreference = Theme | "system";
 
 export type Skin =
-  | "endfield" // 终末地 · 现场终端
-  | "rhine" // 莱茵生命 · 无菌档案
-  | "arknights" // 明日方舟 · 官网
-  | "rhodes" // 明日方舟 · 罗德岛终端
-  | "atlas"; // 众生行记 · 套印图录
+  | "hud" // 工业终端
+  | "lab" // 实验档案
+  | "blueprint" // 蓝图海报
+  | "mono" // 黑白档案
+  | "overprint"; // 套印图录
 
 /** localStorage 键（与 index.html 内联脚本一致）。 */
 export const THEME_STORAGE_KEY = "keybox.theme";
@@ -35,39 +35,39 @@ export const SKIN_STORAGE_KEY = "keybox.skin";
 
 /** 各皮肤 × 明暗的首屏底色（三方一致，见文件头说明）。 */
 export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
-  endfield: { light: "#ede6d6", dark: "#0e0f0f" },
-  rhine: { light: "#f4f6f4", dark: "#0b1012" },
-  rhodes: { light: "#f7f7f5", dark: "#08090a" },
-  arknights: { light: "#e7eef1", dark: "#000000" },
-  atlas: { light: "#edf1ee", dark: "#0b0f12" },
+  hud: { light: "#ede6d6", dark: "#0e0f0f" },
+  lab: { light: "#f4f6f4", dark: "#0b1012" },
+  mono: { light: "#f7f7f5", dark: "#08090a" },
+  blueprint: { light: "#e7eef1", dark: "#000000" },
+  overprint: { light: "#edf1ee", dark: "#0b0f12" },
 };
 
 /** 可选皮肤清单（供外观选择器渲染；顺序即展示顺序）。 */
 export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
   {
-    id: "endfield",
-    label: "终末地 · 现场终端",
+    id: "hud",
+    label: "工业终端",
     hint: "石墨 HUD / 奶油纸双底，信号黄 + 全息青，全直角工业终端",
   },
   {
-    id: "rhine",
-    label: "莱茵生命 · 无菌档案",
-    hint: "骨白纸底 + 莱茵青，细双框与等宽编号，像实验记录本",
+    id: "lab",
+    label: "实验档案",
+    hint: "骨白纸底 + 淡青，细双框与等宽编号，像实验记录本",
   },
   {
-    id: "arknights",
-    label: "明日方舟 · 官网",
-    hint: "纯黑 chrome + 青色强调 + 蓝图线稿，巨型词标与双语导航",
+    id: "blueprint",
+    label: "蓝图海报",
+    hint: "纯黑 chrome + 青，蓝图网格与巨型词标",
   },
   {
-    id: "rhodes",
-    label: "明日方舟 · 罗德岛终端",
-    hint: "近黑白 + 血红角标，游戏内终端的硬朗秩序",
+    id: "mono",
+    label: "黑白档案",
+    hint: "近黑白 + 朱红角标，硬朗的档案秩序",
   },
   {
-    id: "atlas",
-    label: "众生行记 · 套印图录",
-    hint: "冷白纸 + 钴蓝圆盘 + 套印错位，细线圆环与坐标刻度的图录秩序",
+    id: "overprint",
+    label: "套印图录",
+    hint: "冷白纸 + 钴蓝圆盘 + 套印错位，细线图录",
   },
 ];
 
@@ -85,7 +85,7 @@ function readStorage(key: string): string | null {
   }
 }
 
-/** 读取 URL 预览参数（`?skin=endfield&theme=dark`）。用于演示/截图，不写回存储。 */
+/** 读取 URL 预览参数（`?skin=hud&theme=dark`）。用于演示/截图，不写回存储。 */
 function readUrlParam(key: string): string | null {
   try {
     return new URLSearchParams(window.location.search).get(key);
@@ -128,13 +128,13 @@ export function resolveInitialTheme(): Theme {
   return pref === "system" ? systemPreferredTheme() : pref;
 }
 
-/** 解析首屏皮肤：URL 预览参数 > 存储 > endfield（默认皮肤）。 */
+/** 解析首屏皮肤：URL 预览参数 > 存储 > hud（默认皮肤）。 */
 export function resolveInitialSkin(): Skin {
-  if (!hasWindow()) return "endfield";
+  if (!hasWindow()) return "hud";
   const fromUrl = readUrlParam("skin");
   if (fromUrl && SKIN_IDS.indexOf(fromUrl as Skin) >= 0) return fromUrl as Skin;
   const stored = readStorage(SKIN_STORAGE_KEY);
-  return SKIN_IDS.indexOf(stored as Skin) >= 0 ? (stored as Skin) : "endfield";
+  return SKIN_IDS.indexOf(stored as Skin) >= 0 ? (stored as Skin) : "hud";
 }
 
 // ---------------------------------------------------------------------------
@@ -142,7 +142,7 @@ export function resolveInitialSkin(): Skin {
 // ---------------------------------------------------------------------------
 let currentPreference: ThemePreference = "system";
 let currentTheme: Theme = "light";
-let currentSkin: Skin = "endfield";
+let currentSkin: Skin = "hud";
 const themeListeners = new Set<(theme: Theme) => void>();
 const skinListeners = new Set<(skin: Skin) => void>();
 
@@ -232,10 +232,10 @@ export function subscribeSkin(fn: (skin: Skin) => void): () => void {
 }
 
 /**
- * 兼容旧调用：仅按明暗取默认皮肤（endfield）的底色。
+ * 兼容旧调用：仅按明暗取默认皮肤（hud）的底色。
  * 新代码请用 `SKIN_BG[skin][theme]`。
  */
 export const THEME_BG: Record<Theme, string> = {
-  light: SKIN_BG.endfield.light,
-  dark: SKIN_BG.endfield.dark,
+  light: SKIN_BG.hud.light,
+  dark: SKIN_BG.hud.dark,
 };

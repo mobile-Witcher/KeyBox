@@ -112,59 +112,59 @@ export default function TopBar({
   return (
     <>
       {/*
-       * 终末地皮肤专用：顶栏上方的终端信息条（其它皮肤 display:none，视觉零变化；不参与 sticky）。
+       * 工业终端皮肤专用：顶栏上方的终端信息条（其它皮肤 display:none，视觉零变化；不参与 sticky）。
        * 展开条件见 index.css「主界面（密钥舱）终端化附加元素」。
        */}
       <div className="kb-term-bar kb-appterm" aria-hidden="true">
         <span className="kb-plate">Asset Bay</span>
-        <b>ENDFIELD // KEYBOX</b>
+        <b>INDUSTRIAL // KEYBOX</b>
         <span className="kb-term-extra">UNIT EN-07</span>
         <span className="kb-term-extra">LINK STABLE</span>
         <span className="kb-term-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
-      {/* 明日方舟官网皮肤专用：顶部导航条（双语标签 + 计数器，黑底） */}
-      <div className="kb-off-strip" aria-hidden="true">
-        <b className="kb-off-nav kb-off-nav-on">
+      {/* 黑白档案官网皮肤专用：顶部导航条（双语标签 + 计数器，黑底） */}
+      <div className="kb-bp-strip" aria-hidden="true">
+        <b className="kb-bp-nav kb-bp-nav-on">
           INDEX<span>首页</span>
         </b>
-        <span className="kb-off-nav">
+        <span className="kb-bp-nav">
           ARCHIVE<span>密钥</span>
         </span>
-        <span className="kb-off-nav">
+        <span className="kb-bp-nav">
           OPERATOR<span>操作员</span>
         </span>
-        <span className="kb-off-nav">
+        <span className="kb-bp-nav">
           MEDIA<span>记录</span>
         </span>
-        <span className="kb-off-count ml-auto">04 / 04</span>
+        <span className="kb-bp-count ml-auto">04 / 04</span>
       </div>
 
-      {/* 莱茵生命专用：标本舱信息条（其它皮肤隐藏） */}
-      <div className="kb-rhine-strip" aria-hidden="true">
-        <span className="kb-rhine-strip-plate">Specimen</span>
-        <b>RHINE LAB // SPECIMEN BAY</b>
-        <span className="kb-rhine-strip-extra">SAMPLE KB-OP-0007</span>
-        <span className="kb-rhine-strip-extra">REV 03</span>
-        <span className="kb-rhine-strip-extra ml-auto">OPERATOR {avatarText}</span>
+      {/* 实验档案专用：标本舱信息条（其它皮肤隐藏） */}
+      <div className="kb-lab-strip" aria-hidden="true">
+        <span className="kb-lab-strip-plate">Specimen</span>
+        <b>LAB // SPECIMEN BAY</b>
+        <span className="kb-lab-strip-extra">SAMPLE KB-OP-0007</span>
+        <span className="kb-lab-strip-extra">REV 03</span>
+        <span className="kb-lab-strip-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
-      {/* 明日方舟专用：档案条（其它皮肤隐藏） */}
-      <div className="kb-ark-strip" aria-hidden="true">
-        <b>ARKNIGHTS</b>
-        <span className="kb-ark-strip-slash">//</span>
+      {/* 黑白档案专用：档案条（其它皮肤隐藏） */}
+      <div className="kb-mono-strip" aria-hidden="true">
+        <b>KEYBOX</b>
+        <span className="kb-mono-strip-slash">//</span>
         <span>ARCHIVE</span>
-        <span className="kb-ark-strip-extra">SERIES 07</span>
-        <span className="kb-ark-strip-extra">NO. 0042</span>
-        <span className="kb-ark-strip-extra ml-auto">OPERATOR {avatarText}</span>
+        <span className="kb-mono-strip-extra">SERIES 07</span>
+        <span className="kb-mono-strip-extra">NO. 0042</span>
+        <span className="kb-mono-strip-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
-      {/* 众生行记·图录专用：图录条（其它皮肤隐藏） */}
-      <div className="kb-atlas-strip" aria-hidden="true">
-        <b>THE MASSES // TRAVELS</b>
-        <span className="kb-atlas-strip-extra">RECORD · 06</span>
-        <span className="kb-atlas-strip-extra">+Y2 +Y3</span>
-        <span className="kb-atlas-strip-extra ml-auto">OPERATOR {avatarText}</span>
+      {/* 套印图录·图录专用：图录条（其它皮肤隐藏） */}
+      <div className="kb-ovp-strip" aria-hidden="true">
+        <b>KEYBOX // VAULT</b>
+        <span className="kb-ovp-strip-extra">RECORD · 06</span>
+        <span className="kb-ovp-strip-extra">+Y2 +Y3</span>
+        <span className="kb-ovp-strip-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
       <header

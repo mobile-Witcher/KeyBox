@@ -5,7 +5,7 @@
  * 主题系统（2026-09-29 升级为「皮肤 × 明暗」双维度）
  *   - 明暗：<html class="dark">（Tailwind darkMode:"class"）
  *   - 皮肤：<html data-skin="default|tech|minimal|paper">
- *   - 组合：`<html data-skin="endfield" class="dark">` 即"终末地·深色"
+ *   - 组合：`<html data-skin="hud" class="dark">` 即"工业终端·深色"
  *   变量只在下面集中定义，组件一律消费语义令牌（bg-kb-surface / text-kb-muted / …），
  *   因此新增皮肤**不需要改任何组件**。
  * ═══════════════════════════════════════════════════════════════════════════
@@ -212,11 +212,11 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   皮肤 ⑩：endfield（终末地 · 现场终端）
+   皮肤 ⑩：hud（工业终端）
    浅色 = 官网式奶油纸 + 墨黑 + 信号黄；深色 = 游戏内工业 HUD（石墨 + 信号黄 + 全息青）
    几何：全直角（radius 0）、无投影（用双线框代替）、大写等宽标签
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-skin="endfield"] {
+[data-skin="hud"] {
   /* —— 奶油纸（浅色）—— */
   --kb-bg: #ede6d6;
   --kb-surface: #f6f0e2;
@@ -239,7 +239,7 @@ body {
   --kb-radius-card: 0px;
   --kb-font-sans: "Bahnschrift", "Microsoft YaHei UI", "Segoe UI", sans-serif;
   --kb-heading-tracking: 0.14em;
-  /* 终末地专属令牌 */
+  /* 工业终端专属令牌 */
   --kb-signal: #b98a00;
   --kb-holo: #1c7d82;
   --kb-plate-ink: #141007;
@@ -247,7 +247,7 @@ body {
   --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
   color-scheme: light;
 }
-[data-skin="endfield"].dark {
+[data-skin="hud"].dark {
   /* —— 石墨 HUD（深色）—— */
   --kb-bg: #0e0f0f;
   --kb-surface: #1d2020;
@@ -273,10 +273,10 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   皮肤 ⑪：rhine（莱茵生命 · 无菌档案）
-   骨白纸底 + 莱茵青；细双框、等宽大写标签、点阵底——像一册实验记录本
+   皮肤 ⑪：lab（实验档案）
+   骨白纸底 + 淡青；细双框、等宽大写标签、点阵底——像一册实验记录本
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-skin="rhine"] {
+[data-skin="lab"] {
   --kb-bg: #f4f6f4;
   --kb-surface: #ffffff;
   --kb-surface-2: #e7eae6;
@@ -284,7 +284,7 @@ body {
   --kb-muted: #6b7472;
   --kb-border: #c9d0ca;
   --kb-border-strong: #aab3ac;
-  /* 莱茵青做主色：深一点保证白字对比度 */
+  /* 淡青做主色：深一点保证白字对比度 */
   --kb-primary: #0e6e6b;
   --kb-primary-hover: #0a5754;
   --kb-primary-contrast: #ffffff;
@@ -304,7 +304,7 @@ body {
   --kb-holo: #2fb6b0;
   color-scheme: light;
 }
-[data-skin="rhine"].dark {
+[data-skin="lab"].dark {
   --kb-bg: #0b1012;
   --kb-surface: #121a1d;
   --kb-surface-2: #182226;
@@ -327,7 +327,7 @@ body {
 }
 
 /* 点阵底：档案纸的印刷网点 */
-[data-skin="rhine"] body {
+[data-skin="lab"] body {
   background-image: radial-gradient(circle, var(--kb-grid) 1px, transparent 1px);
   background-size: 24px 24px;
 }
@@ -338,29 +338,29 @@ body {
  *    导致浮层变成文档流内的块，把顶栏整行往下顶（2026-10-18 实际踩过）。
  *    因此第二道细线用 box-shadow 内描边实现，完全不影响定位。
  */
-[data-skin="rhine"] .kb-card,
-[data-skin="rhine"] .kb-card-lg {
+[data-skin="lab"] .kb-card,
+[data-skin="lab"] .kb-card-lg {
   border-color: var(--kb-border-strong);
   box-shadow:
     inset 0 0 0 4px var(--kb-surface),
     inset 0 0 0 5px var(--kb-border);
 }
 /* 标签/按钮/表格头统一等宽大写 */
-[data-skin="rhine"] .kb-badge {
+[data-skin="lab"] .kb-badge {
   border-radius: 0;
   font-family: var(--kb-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-[data-skin="rhine"] .kb-btn-primary,
-[data-skin="rhine"] .kb-btn-ghost,
-[data-skin="rhine"] .kb-btn-danger {
+[data-skin="lab"] .kb-btn-primary,
+[data-skin="lab"] .kb-btn-ghost,
+[data-skin="lab"] .kb-btn-danger {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
 }
-[data-skin="rhine"] thead th {
+[data-skin="lab"] thead th {
   font-family: var(--kb-mono);
   font-size: 0.64rem;
   letter-spacing: 0.16em;
@@ -368,38 +368,38 @@ body {
   color: var(--kb-muted);
   border-bottom: 1px solid var(--kb-border-strong);
 }
-[data-skin="rhine"] table tbody td {
+[data-skin="lab"] table tbody td {
   border-bottom: 1px solid var(--kb-border);
 }
-[data-skin="rhine"] code {
+[data-skin="lab"] code {
   font-family: var(--kb-mono);
   letter-spacing: 0.06em;
 }
-[data-skin="rhine"] h1,
-[data-skin="rhine"] h2,
-[data-skin="rhine"] h3 {
+[data-skin="lab"] h1,
+[data-skin="lab"] h2,
+[data-skin="lab"] h3 {
   letter-spacing: 0.08em;
 }
 /* 后台/安全/弹窗里的通用面板：细框、去阴影 */
-[data-skin="rhine"] section.rounded-xl {
+[data-skin="lab"] section.rounded-xl {
   border-color: var(--kb-border-strong);
   box-shadow: none;
 }
 /* 圆角统一压到 2px（保持档案卡的硬边感；头像/圆点等 .rounded-full 保留圆形） */
-[data-skin="rhine"]
+[data-skin="lab"]
   :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
   border-radius: 2px;
 }
 /* 无菌风格不做柔光：隐藏登录页装饰光晕 */
-[data-skin="rhine"] .blur-3xl {
+[data-skin="lab"] .blur-3xl {
   display: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   皮肤 ⑫：rhodes（明日方舟 · 罗德岛终端）
+   皮肤 ⑫：mono（黑白档案）
    近黑白 + 血红点缀；细线角标（corner brackets）、胶片感条纹、杂志式宽字距
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-skin="rhodes"] {
+[data-skin="mono"] {
   --kb-bg: #f7f7f5;
   --kb-surface: #ffffff;
   --kb-surface-2: #efefec;
@@ -426,7 +426,7 @@ body {
   --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
   color-scheme: light;
 }
-[data-skin="rhodes"].dark {
+[data-skin="mono"].dark {
   --kb-bg: #08090a;
   --kb-surface: #101113;
   --kb-surface-2: #16181a;
@@ -450,7 +450,7 @@ body {
 }
 
 /* 胶片感扫描条纹底 */
-[data-skin="rhodes"] body {
+[data-skin="mono"] body {
   background-image: repeating-linear-gradient(
     0deg,
     var(--kb-grid) 0 1px,
@@ -460,10 +460,10 @@ body {
 /*
  * 卡片：1px 细框 + 四角血红角标。
  * 角标全部用背景渐变绘制（8 条 10×1 / 1×10 的细线），**不涉及 position**，
- * 因此不会像之前的莱茵皮肤那样把 .absolute 浮层顶回文档流。
+ * 因此不会像之前的实验档案皮肤那样把 .absolute 浮层顶回文档流。
  */
-[data-skin="rhodes"] .kb-card,
-[data-skin="rhodes"] .kb-card-lg {
+[data-skin="mono"] .kb-card,
+[data-skin="mono"] .kb-card-lg {
   border-color: var(--kb-border-strong);
   box-shadow: none;
   background-image:
@@ -489,29 +489,29 @@ body {
   background-repeat: no-repeat;
 }
 /* 标题：细字重 + 宽字距（杂志式） */
-[data-skin="rhodes"] h1,
-[data-skin="rhodes"] h2,
-[data-skin="rhodes"] h3 {
+[data-skin="mono"] h1,
+[data-skin="mono"] h2,
+[data-skin="mono"] h3 {
   font-weight: 300;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 /* 标签/按钮/表头：等宽大写 */
-[data-skin="rhodes"] .kb-badge {
+[data-skin="mono"] .kb-badge {
   border-radius: 0;
   font-family: var(--kb-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-[data-skin="rhodes"] .kb-btn-primary,
-[data-skin="rhodes"] .kb-btn-ghost,
-[data-skin="rhodes"] .kb-btn-danger {
+[data-skin="mono"] .kb-btn-primary,
+[data-skin="mono"] .kb-btn-ghost,
+[data-skin="mono"] .kb-btn-danger {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.7rem;
 }
-[data-skin="rhodes"] thead th {
+[data-skin="mono"] thead th {
   font-family: var(--kb-mono);
   font-size: 0.62rem;
   letter-spacing: 0.2em;
@@ -519,44 +519,44 @@ body {
   color: var(--kb-muted);
   border-bottom: 1px solid var(--kb-border-strong);
 }
-[data-skin="rhodes"] table tbody td {
+[data-skin="mono"] table tbody td {
   border-bottom: 1px solid var(--kb-border);
 }
-[data-skin="rhodes"] code {
+[data-skin="mono"] code {
   font-family: var(--kb-mono);
   letter-spacing: 0.06em;
 }
 /* 后台/安全/弹窗里的通用面板 */
-[data-skin="rhodes"] section.rounded-xl {
+[data-skin="mono"] section.rounded-xl {
   border-color: var(--kb-border-strong);
   box-shadow: none;
 }
 /* 全直角（圆点/头像保留圆形） */
-[data-skin="rhodes"]
+[data-skin="mono"]
   :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
   border-radius: 0;
 }
 /* 官网风格没有柔光 */
-[data-skin="rhodes"] .blur-3xl {
+[data-skin="mono"] .blur-3xl {
   display: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    方舟皮肤：登录 / 注册 / 初始化页的杂志式双栏主视觉
-   默认隐藏；仅 [data-skin="rhodes"] 展开，窄屏自动收起
+   默认隐藏；仅 [data-skin="mono"] 展开，窄屏自动收起
    ═══════════════════════════════════════════════════════════════════════════ */
-.kb-ark-hero {
+.kb-mono-hero {
   display: none;
 }
-[data-skin="rhodes"] .kb-auth-page .kb-card-lg {
+[data-skin="mono"] .kb-auth-page .kb-card-lg {
   max-width: 1080px;
   padding: 0;
 }
-[data-skin="rhodes"] .kb-auth-grid {
+[data-skin="mono"] .kb-auth-grid {
   display: grid;
   grid-template-columns: 1.02fr 0.98fr;
 }
-[data-skin="rhodes"] .kb-ark-hero {
+[data-skin="mono"] .kb-mono-hero {
   display: grid;
   grid-template-columns: 22px 1fr;
   gap: 20px;
@@ -565,7 +565,7 @@ body {
   background: var(--kb-surface);
 }
 /* 竖排刊头 */
-[data-skin="rhodes"] .kb-ark-vert {
+[data-skin="mono"] .kb-mono-vert {
   writing-mode: vertical-rl;
   font-family: var(--kb-mono);
   font-size: 9px;
@@ -574,12 +574,12 @@ body {
   color: var(--kb-muted);
   white-space: nowrap;
 }
-[data-skin="rhodes"] .kb-ark-body {
+[data-skin="mono"] .kb-mono-body {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-[data-skin="rhodes"] .kb-ark-kicker {
+[data-skin="mono"] .kb-mono-kicker {
   font-family: var(--kb-mono);
   font-size: 0.62rem;
   letter-spacing: 0.3em;
@@ -587,7 +587,7 @@ body {
   color: var(--kb-primary);
 }
 /* 超大细字标题：第二行做描边空心字（杂志封面感） */
-[data-skin="rhodes"] .kb-ark-title {
+[data-skin="mono"] .kb-mono-title {
   margin: 14px 0 0;
   font-family: "Bahnschrift", "D-DIN", "Segoe UI", sans-serif;
   font-weight: 200;
@@ -597,25 +597,25 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="rhodes"] .kb-ark-title span {
+[data-skin="mono"] .kb-mono-title span {
   display: block;
   color: transparent;
   -webkit-text-stroke: 1px var(--kb-text);
 }
-[data-skin="rhodes"] .kb-ark-cn {
+[data-skin="mono"] .kb-mono-cn {
   margin: 16px 0 0;
   font-size: 13px;
   letter-spacing: 0.2em;
   color: var(--kb-text);
 }
-[data-skin="rhodes"] .kb-ark-note {
+[data-skin="mono"] .kb-mono-note {
   margin: 8px 0 0;
   max-width: 21em;
   font-size: 11.5px;
   line-height: 1.75;
   color: var(--kb-muted);
 }
-[data-skin="rhodes"] .kb-ark-serial {
+[data-skin="mono"] .kb-mono-serial {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -628,66 +628,66 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="rhodes"] .kb-ark-serial span:nth-child(2),
-[data-skin="rhodes"] .kb-ark-serial span:nth-child(4) {
+[data-skin="mono"] .kb-mono-serial span:nth-child(2),
+[data-skin="mono"] .kb-mono-serial span:nth-child(4) {
   color: var(--kb-primary);
 }
 /* 机密封条：三条不等宽横条，中间一条血红 */
-[data-skin="rhodes"] .kb-ark-redact {
+[data-skin="mono"] .kb-mono-redact {
   display: flex;
   gap: 6px;
   margin-top: 14px;
 }
-[data-skin="rhodes"] .kb-ark-redact i {
+[data-skin="mono"] .kb-mono-redact i {
   display: block;
   height: 8px;
   background: var(--kb-text);
   opacity: 0.82;
 }
-[data-skin="rhodes"] .kb-ark-redact i:nth-child(1) {
+[data-skin="mono"] .kb-mono-redact i:nth-child(1) {
   width: 44%;
 }
-[data-skin="rhodes"] .kb-ark-redact i:nth-child(2) {
+[data-skin="mono"] .kb-mono-redact i:nth-child(2) {
   width: 20%;
   background: var(--kb-primary);
 }
-[data-skin="rhodes"] .kb-ark-redact i:nth-child(3) {
+[data-skin="mono"] .kb-mono-redact i:nth-child(3) {
   width: 30%;
 }
-[data-skin="rhodes"] .kb-auth-main {
+[data-skin="mono"] .kb-auth-main {
   padding: 32px 34px 30px;
 }
 @media (max-width: 920px) {
-  [data-skin="rhodes"] .kb-auth-page .kb-card-lg {
+  [data-skin="mono"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     overflow: hidden;
   }
-  [data-skin="rhodes"] .kb-auth-grid {
+  [data-skin="mono"] .kb-auth-grid {
     grid-template-columns: 1fr;
   }
-  [data-skin="rhodes"] .kb-ark-hero {
+  [data-skin="mono"] .kb-mono-hero {
     display: none !important;
   }
-  [data-skin="rhodes"] .kb-auth-main {
+  [data-skin="mono"] .kb-auth-main {
     padding: 22px 18px 20px;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   莱茵生命：登录/注册页左栏「实验记录本」（默认隐藏）
+   实验档案：登录/注册页左栏「实验记录本」（默认隐藏）
    ═══════════════════════════════════════════════════════════════════════════ */
-.kb-rhine-hero {
+.kb-lab-hero {
   display: none;
 }
-[data-skin="rhine"] .kb-auth-page .kb-card-lg {
+[data-skin="lab"] .kb-auth-page .kb-card-lg {
   max-width: 1060px;
   padding: 0;
 }
-[data-skin="rhine"] .kb-auth-grid {
+[data-skin="lab"] .kb-auth-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
-[data-skin="rhine"] .kb-rhine-hero {
+[data-skin="lab"] .kb-lab-hero {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -695,13 +695,13 @@ body {
   border-right: 1px solid var(--kb-border-strong);
   background: var(--kb-surface-2);
 }
-[data-skin="rhine"] .kb-rhine-top {
+[data-skin="lab"] .kb-lab-top {
   display: flex;
   gap: 12px;
   align-items: flex-start;
 }
 /* 十字准星：两条居中的细线画在方框里（无定位副作用） */
-[data-skin="rhine"] .kb-rhine-cross {
+[data-skin="lab"] .kb-lab-cross {
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
@@ -713,14 +713,14 @@ body {
   background-position: center, center;
   background-repeat: no-repeat;
 }
-[data-skin="rhine"] .kb-rhine-kicker {
+[data-skin="lab"] .kb-lab-kicker {
   font-family: var(--kb-mono);
   font-size: 0.6rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--kb-primary);
 }
-[data-skin="rhine"] .kb-rhine-title {
+[data-skin="lab"] .kb-lab-title {
   margin: 7px 0 0;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-weight: 600;
@@ -730,25 +730,25 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="rhine"] .kb-rhine-title span {
+[data-skin="lab"] .kb-lab-title span {
   color: var(--kb-primary);
 }
-[data-skin="rhine"] .kb-rhine-cn {
+[data-skin="lab"] .kb-lab-cn {
   margin: 8px 0 0;
   font-size: 12px;
   letter-spacing: 0.14em;
   color: var(--kb-muted);
 }
-[data-skin="rhine"] .kb-rhine-note {
+[data-skin="lab"] .kb-lab-note {
   margin: 0;
   font-size: 11.5px;
   line-height: 1.7;
   color: var(--kb-muted);
 }
-[data-skin="rhine"] .kb-rhine-scan {
+[data-skin="lab"] .kb-lab-scan {
   height: 104px;
 }
-[data-skin="rhine"] .kb-rhine-scan-cap {
+[data-skin="lab"] .kb-lab-scan-cap {
   position: absolute;
   left: 10px;
   bottom: 7px;
@@ -758,7 +758,7 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="rhine"] .kb-rhine-meta {
+[data-skin="lab"] .kb-lab-meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
@@ -766,11 +766,11 @@ body {
   border: 1px solid var(--kb-border-strong);
   background: var(--kb-border);
 }
-[data-skin="rhine"] .kb-rhine-meta > div {
+[data-skin="lab"] .kb-lab-meta > div {
   background: var(--kb-surface);
   padding: 7px 9px;
 }
-[data-skin="rhine"] .kb-rhine-meta span {
+[data-skin="lab"] .kb-lab-meta span {
   display: block;
   font-family: var(--kb-mono);
   font-size: 0.55rem;
@@ -778,7 +778,7 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="rhine"] .kb-rhine-meta b {
+[data-skin="lab"] .kb-lab-meta b {
   display: block;
   margin-top: 4px;
   font-family: var(--kb-mono);
@@ -786,7 +786,7 @@ body {
   letter-spacing: 0.08em;
   color: var(--kb-text);
 }
-[data-skin="rhine"] .kb-rhine-stamp {
+[data-skin="lab"] .kb-lab-stamp {
   align-self: flex-end;
   transform: rotate(-6deg);
   border: 1.5px solid var(--kb-danger);
@@ -799,7 +799,7 @@ body {
   padding: 5px 9px;
   opacity: 0.82;
 }
-[data-skin="rhine"] .kb-rhine-foot {
+[data-skin="lab"] .kb-lab-foot {
   display: flex;
   justify-content: space-between;
   padding-top: 8px;
@@ -810,30 +810,30 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="rhine"] .kb-auth-main {
+[data-skin="lab"] .kb-auth-main {
   padding: 28px 30px 26px;
 }
 @media (max-width: 920px) {
-  [data-skin="rhine"] .kb-auth-page .kb-card-lg {
+  [data-skin="lab"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     overflow: hidden;
   }
-  [data-skin="rhine"] .kb-auth-grid {
+  [data-skin="lab"] .kb-auth-grid {
     grid-template-columns: 1fr;
   }
-  [data-skin="rhine"] .kb-rhine-hero {
+  [data-skin="lab"] .kb-lab-hero {
     display: none !important;
   }
-  [data-skin="rhine"] .kb-auth-main {
+  [data-skin="lab"] .kb-auth-main {
     padding: 22px 18px 20px;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   皮肤 ⑭：atlas（众生行记 · 套印图录）
-   参考「众生行记」平面设计图录：冷白纸 + 钴蓝圆盘 + 套印错位 + 细线刻度
+   皮肤 ⑭：overprint（套印图录）
+   参考「套印图录」平面设计图录：冷白纸 + 钴蓝圆盘 + 套印错位 + 细线刻度
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-skin="atlas"] {
+[data-skin="overprint"] {
   --kb-bg: #edf1ee;
   --kb-surface: #ffffff;
   --kb-surface-2: #e3e9e6;
@@ -855,11 +855,11 @@ body {
   --kb-heading-tracking: 0.02em;
   --kb-grid: rgba(16, 20, 24, 0.055);
   --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
-  --kb-atlas-cobalt: #2447c6;
-  --kb-atlas-ink: #101418;
+  --kb-ovp-cobalt: #2447c6;
+  --kb-ovp-ink: #101418;
   color-scheme: light;
 }
-[data-skin="atlas"].dark {
+[data-skin="overprint"].dark {
   --kb-bg: #0b0f12;
   --kb-surface: #11161a;
   --kb-surface-2: #171e23;
@@ -877,57 +877,57 @@ body {
   --kb-shadow: none;
   --kb-shadow-lg: none;
   --kb-grid: rgba(232, 237, 234, 0.045);
-  --kb-atlas-cobalt: #4c6fff;
-  --kb-atlas-ink: #e8edea;
+  --kb-ovp-cobalt: #4c6fff;
+  --kb-ovp-ink: #e8edea;
   color-scheme: dark;
 }
 /* 半调网点底（印刷网点） */
-[data-skin="atlas"] body {
+[data-skin="overprint"] body {
   background-image: radial-gradient(circle, var(--kb-grid) 1px, transparent 1px);
   background-size: 6px 6px;
 }
 /* 标题：Didone 衬线 + 套印错位（青/红双色偏移，用文字阴影实现，零布局影响） */
-[data-skin="atlas"] h1,
-[data-skin="atlas"] h2,
-[data-skin="atlas"] h3 {
+[data-skin="overprint"] h1,
+[data-skin="overprint"] h2,
+[data-skin="overprint"] h3 {
   font-family: "Times New Roman", "Songti SC", "Source Han Serif SC", Georgia, serif;
   letter-spacing: 0.02em;
   text-shadow:
-    1.5px 0 0 color-mix(in srgb, var(--kb-atlas-cobalt) 35%, transparent),
+    1.5px 0 0 color-mix(in srgb, var(--kb-ovp-cobalt) 35%, transparent),
     -1.5px 0 0 color-mix(in srgb, var(--kb-danger) 18%, transparent);
 }
 /* 卡片：细框 + 套印硬影（3px 实心偏移，像印刷没对准） */
-[data-skin="atlas"] .kb-card,
-[data-skin="atlas"] .kb-card-lg {
+[data-skin="overprint"] .kb-card,
+[data-skin="overprint"] .kb-card-lg {
   border-color: var(--kb-border-strong);
   box-shadow: 3px 3px 0 var(--kb-border);
 }
 /* 主按钮：浅色用墨黑块（对应图录里的「启程」），深色用钴蓝块 */
-[data-skin="atlas"] .kb-btn-primary {
-  background: var(--kb-atlas-ink);
+[data-skin="overprint"] .kb-btn-primary {
+  background: var(--kb-ovp-ink);
   color: var(--kb-bg);
   box-shadow: none;
 }
-[data-skin="atlas"].dark .kb-btn-primary {
+[data-skin="overprint"].dark .kb-btn-primary {
   background: var(--kb-primary);
   color: var(--kb-primary-contrast);
 }
-[data-skin="atlas"] .kb-badge {
+[data-skin="overprint"] .kb-badge {
   border-radius: 0;
-  border-color: var(--kb-atlas-cobalt);
-  color: var(--kb-atlas-cobalt);
+  border-color: var(--kb-ovp-cobalt);
+  color: var(--kb-ovp-cobalt);
   font-family: var(--kb-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-[data-skin="atlas"] .kb-btn-ghost,
-[data-skin="atlas"] .kb-btn-danger {
+[data-skin="overprint"] .kb-btn-ghost,
+[data-skin="overprint"] .kb-btn-danger {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
 }
-[data-skin="atlas"] thead th {
+[data-skin="overprint"] thead th {
   font-family: var(--kb-mono);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
@@ -935,38 +935,38 @@ body {
   color: var(--kb-muted);
   border-bottom: 1px solid var(--kb-border-strong);
 }
-[data-skin="atlas"] table tbody td {
+[data-skin="overprint"] table tbody td {
   border-bottom: 1px solid var(--kb-border);
 }
-[data-skin="atlas"] code {
+[data-skin="overprint"] code {
   font-family: var(--kb-mono);
   letter-spacing: 0.06em;
 }
-[data-skin="atlas"] section.rounded-xl {
+[data-skin="overprint"] section.rounded-xl {
   border-color: var(--kb-border-strong);
   box-shadow: 3px 3px 0 var(--kb-border);
 }
-[data-skin="atlas"]
+[data-skin="overprint"]
   :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
   border-radius: 0;
 }
-[data-skin="atlas"] .blur-3xl {
+[data-skin="overprint"] .blur-3xl {
   display: none !important;
 }
 
 /* 套印图录：登录/注册页左栏 */
-.kb-atlas-hero {
+.kb-ovp-hero {
   display: none;
 }
-[data-skin="atlas"] .kb-auth-page .kb-card-lg {
+[data-skin="overprint"] .kb-auth-page .kb-card-lg {
   max-width: 1060px;
   padding: 0;
 }
-[data-skin="atlas"] .kb-auth-grid {
+[data-skin="overprint"] .kb-auth-grid {
   display: grid;
   grid-template-columns: 1.06fr 0.94fr;
 }
-[data-skin="atlas"] .kb-atlas-hero {
+[data-skin="overprint"] .kb-ovp-hero {
   display: flex;
   gap: 14px;
   padding: 26px 24px 22px;
@@ -978,7 +978,7 @@ body {
     var(--kb-surface-2) 100%
   );
 }
-[data-skin="atlas"] .kb-atlas-coord {
+[data-skin="overprint"] .kb-ovp-coord {
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -988,19 +988,19 @@ body {
   letter-spacing: 0.14em;
   color: var(--kb-muted);
 }
-[data-skin="atlas"] .kb-atlas-coord span::before {
+[data-skin="overprint"] .kb-ovp-coord span::before {
   content: "+";
   margin-right: 3px;
-  color: var(--kb-atlas-cobalt);
+  color: var(--kb-ovp-cobalt);
 }
-[data-skin="atlas"] .kb-atlas-body {
+[data-skin="overprint"] .kb-ovp-body {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
 }
-[data-skin="atlas"] .kb-atlas-caps {
+[data-skin="overprint"] .kb-ovp-caps {
   align-self: flex-start;
   padding: 3px 7px;
   border: 1px solid var(--kb-border-strong);
@@ -1010,29 +1010,29 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="atlas"] .kb-atlas-title {
+[data-skin="overprint"] .kb-ovp-title {
   margin: 0;
   font-family: "Times New Roman", "Songti SC", "Source Han Serif SC", Georgia, serif;
   font-weight: 600;
   font-size: 40px;
   line-height: 0.98;
   letter-spacing: 0.01em;
-  color: var(--kb-atlas-ink);
+  color: var(--kb-ovp-ink);
   text-shadow:
-    1.5px 0 0 color-mix(in srgb, var(--kb-atlas-cobalt) 32%, transparent),
+    1.5px 0 0 color-mix(in srgb, var(--kb-ovp-cobalt) 32%, transparent),
     -1.5px 0 0 color-mix(in srgb, var(--kb-danger) 16%, transparent);
 }
-[data-skin="atlas"] .kb-atlas-title span {
+[data-skin="overprint"] .kb-ovp-title span {
   display: block;
-  color: var(--kb-atlas-cobalt);
+  color: var(--kb-ovp-cobalt);
 }
-[data-skin="atlas"] .kb-atlas-cn {
+[data-skin="overprint"] .kb-ovp-cn {
   margin: 0;
   font-size: 12.5px;
   letter-spacing: 0.2em;
   color: var(--kb-text);
 }
-[data-skin="atlas"] .kb-atlas-quote {
+[data-skin="overprint"] .kb-ovp-quote {
   margin: 0;
   font-family: "Songti SC", "Source Han Serif SC", serif;
   font-size: 12px;
@@ -1040,15 +1040,15 @@ body {
   color: var(--kb-muted);
 }
 /* 钴蓝圆盘 + 两道细圆环（box-shadow 画环，不涉及定位） */
-[data-skin="atlas"] .kb-atlas-disc {
+[data-skin="overprint"] .kb-ovp-disc {
   width: 112px;
   height: 112px;
   margin: 4px 0 2px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 44%,
-    color-mix(in srgb, var(--kb-atlas-cobalt) 86%, #ffffff) 0 40%,
-    var(--kb-atlas-cobalt) 41% 100%
+    color-mix(in srgb, var(--kb-ovp-cobalt) 86%, #ffffff) 0 40%,
+    var(--kb-ovp-cobalt) 41% 100%
   );
   box-shadow:
     0 0 0 8px var(--kb-surface),
@@ -1057,7 +1057,7 @@ body {
     0 0 0 17px var(--kb-border);
 }
 /* 浏览器小窗框（图录里的 RECORD·06 那种） */
-[data-skin="atlas"] .kb-atlas-win {
+[data-skin="overprint"] .kb-ovp-win {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1072,42 +1072,42 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="atlas"] .kb-atlas-win-bar {
+[data-skin="overprint"] .kb-ovp-win-bar {
   display: flex;
   gap: 3px;
   margin-bottom: 2px;
 }
-[data-skin="atlas"] .kb-atlas-win-bar i {
+[data-skin="overprint"] .kb-ovp-win-bar i {
   width: 4px;
   height: 4px;
   background: var(--kb-border-strong);
 }
-[data-skin="atlas"] .kb-atlas-win b {
+[data-skin="overprint"] .kb-ovp-win b {
   color: var(--kb-text);
   font-size: 0.6rem;
   letter-spacing: 0.14em;
 }
 /* 条码 */
-[data-skin="atlas"] .kb-atlas-bars {
+[data-skin="overprint"] .kb-ovp-bars {
   display: flex;
   align-items: flex-end;
   gap: 2px;
   height: 16px;
 }
-[data-skin="atlas"] .kb-atlas-bars i {
+[data-skin="overprint"] .kb-ovp-bars i {
   display: block;
   width: 3px;
   height: 100%;
-  background: var(--kb-atlas-ink);
+  background: var(--kb-ovp-ink);
 }
-[data-skin="atlas"] .kb-atlas-bars i:nth-child(3n) {
+[data-skin="overprint"] .kb-ovp-bars i:nth-child(3n) {
   height: 60%;
 }
-[data-skin="atlas"] .kb-atlas-bars i:nth-child(4n) {
+[data-skin="overprint"] .kb-ovp-bars i:nth-child(4n) {
   width: 1px;
   height: 82%;
 }
-[data-skin="atlas"] .kb-atlas-foot {
+[data-skin="overprint"] .kb-ovp-foot {
   margin-top: auto;
   display: flex;
   justify-content: space-between;
@@ -1119,41 +1119,41 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="atlas"] .kb-auth-main {
+[data-skin="overprint"] .kb-auth-main {
   padding: 28px 30px 26px;
 }
 @media (max-width: 920px) {
-  [data-skin="atlas"] .kb-auth-page .kb-card-lg {
+  [data-skin="overprint"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     overflow: hidden;
   }
-  [data-skin="atlas"] .kb-auth-grid {
+  [data-skin="overprint"] .kb-auth-grid {
     grid-template-columns: 1fr;
   }
-  [data-skin="atlas"] .kb-atlas-hero {
+  [data-skin="overprint"] .kb-ovp-hero {
     display: none !important;
   }
-  [data-skin="atlas"] .kb-auth-main {
+  [data-skin="overprint"] .kb-auth-main {
     padding: 22px 18px 20px;
   }
 }
 
-/* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
-[data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
+/* —— 工业终端：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
+[data-skin="hud"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
   border-radius: 0 !important;
 }
-[data-skin="endfield"] :where(.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+[data-skin="hud"] :where(.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
   box-shadow: none !important;
 }
 /* 蓝图格底（深色更明显） */
-[data-skin="endfield"] body {
+[data-skin="hud"] body {
   background-image:
     linear-gradient(var(--kb-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--kb-grid) 1px, transparent 1px);
   background-size: 8px 8px, 8px 8px;
 }
 /* 输入框：下划线式 + 信号黄焦点 */
-[data-skin="endfield"] .kb-input {
+[data-skin="hud"] .kb-input {
   border-width: 0 0 1px 0;
   border-color: var(--kb-border-strong);
   background-color: color-mix(in srgb, var(--kb-surface) 88%, transparent);
@@ -1165,15 +1165,15 @@ body {
    * 一旦在此覆盖内边距，图标就会压在占位文字上。
    */
 }
-[data-skin="endfield"] .kb-input:focus {
+[data-skin="hud"] .kb-input:focus {
   border-bottom-width: 2px;
   border-color: var(--kb-signal);
   box-shadow: none;
 }
 /* 按钮：直角 + 四角标记；主按钮=信号黄块（深色）/墨黑块（浅色） */
-[data-skin="endfield"] .kb-btn-primary,
-[data-skin="endfield"] .kb-btn-ghost,
-[data-skin="endfield"] .kb-btn-danger {
+[data-skin="hud"] .kb-btn-primary,
+[data-skin="hud"] .kb-btn-ghost,
+[data-skin="hud"] .kb-btn-danger {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -1181,28 +1181,28 @@ body {
   /* 不要在这里加 position：按钮本身可能被用在浮层里，改定位属性易踩坑 */
   box-shadow: none;
 }
-[data-skin="endfield"] .kb-btn-primary:hover:not(:disabled) {
+[data-skin="hud"] .kb-btn-primary:hover:not(:disabled) {
   box-shadow: 0 0 0 1px var(--kb-signal) inset;
 }
-[data-skin="endfield"] .kb-badge {
+[data-skin="hud"] .kb-badge {
   border-radius: 0;
   font-family: var(--kb-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-[data-skin="endfield"] .kb-hint {
+[data-skin="hud"] .kb-hint {
   font-family: var(--kb-mono);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
 }
-/* 终末地：卡片用「双线框」代替圆角与投影 */
-[data-skin="endfield"] .kb-card,
-[data-skin="endfield"] .kb-card-lg {
+/* 工业终端：卡片用「双线框」代替圆角与投影 */
+[data-skin="hud"] .kb-card,
+[data-skin="hud"] .kb-card-lg {
   box-shadow: inset 0 0 0 1px var(--kb-border-strong), inset 0 0 0 4px var(--kb-surface);
   border-color: var(--kb-border-strong);
 }
 
-/* —— 终末地专属组件类 —— */
+/* —— 工业终端专属组件类 —— */
 @layer components {
   /** 信号黄标签牌（全大写等宽，像设备上的丝印） */
   .kb-plate {
@@ -1301,15 +1301,15 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   终末地：授权页（登录 / 注册 / 初始化共用的 AuthCard）双栏终端形态
-   默认隐藏全部新增结构 → 其它 9 套皮肤视觉零变化；仅 [data-skin="endfield"] 展开
+   工业终端：授权页（登录 / 注册 / 初始化共用的 AuthCard）双栏终端形态
+   默认隐藏全部新增结构 → 其它 9 套皮肤视觉零变化；仅 [data-skin="hud"] 展开
    ═══════════════════════════════════════════════════════════════════════════ */
-/* 终末地不做柔光：隐藏登录页装饰光晕（其它皮肤保留） */
-[data-skin="endfield"] .blur-3xl {
+/* 工业终端不做柔光：隐藏登录页装饰光晕（其它皮肤保留） */
+[data-skin="hud"] .blur-3xl {
   display: none !important;
 }
 /* 终端化通用面版：表头大写等宽、标题字距更疏（只影响该皮肤） */
-[data-skin="endfield"] thead th {
+[data-skin="hud"] thead th {
   font-family: var(--kb-mono);
   font-size: 0.64rem;
   letter-spacing: 0.16em;
@@ -1317,12 +1317,12 @@ body {
   color: var(--kb-muted);
   border-bottom: 1px solid var(--kb-border-strong);
 }
-[data-skin="endfield"] table tbody td {
+[data-skin="hud"] table tbody td {
   border-bottom: 1px solid var(--kb-border);
 }
-[data-skin="endfield"] h1,
-[data-skin="endfield"] h2,
-[data-skin="endfield"] h3 {
+[data-skin="hud"] h1,
+[data-skin="hud"] h2,
+[data-skin="hud"] h3 {
   letter-spacing: 0.12em;
 }
 
@@ -1333,18 +1333,18 @@ body {
 }
 
 /* 只作用于登录/注册卡（AuthCard），别把其它 kb-card-lg（外观面板、弹窗）内边距也清零 */
-[data-skin="endfield"] .kb-auth-page .kb-card-lg {
+[data-skin="hud"] .kb-auth-page .kb-card-lg {
   max-width: 1060px;
   padding: 0;
 }
-[data-skin="endfield"] .kb-auth-grid {
+[data-skin="hud"] .kb-auth-grid {
   display: grid;
   grid-template-columns: 1.03fr 0.97fr;
 }
-[data-skin="endfield"] .kb-auth-termbar {
+[data-skin="hud"] .kb-auth-termbar {
   display: flex;
 }
-[data-skin="endfield"] .kb-auth-hero {
+[data-skin="hud"] .kb-auth-hero {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1353,17 +1353,17 @@ body {
   border-right: 1px solid var(--kb-border-strong);
   background: var(--kb-surface-2);
 }
-[data-skin="endfield"] .kb-auth-main {
+[data-skin="hud"] .kb-auth-main {
   display: flex;
   flex-direction: column;
   padding: 24px 26px 22px;
 }
-[data-skin="endfield"] .kb-auth-boot {
+[data-skin="hud"] .kb-auth-boot {
   display: block;
   margin-top: auto;
   padding-top: 16px;
 }
-[data-skin="endfield"] .kb-display-outline {
+[data-skin="hud"] .kb-display-outline {
   /* 描边字：stroke 必须用具体色值，currentColor 会跟着 color:transparent 一起消失 */
   -webkit-text-stroke: 1.2px var(--kb-text);
   color: transparent;
@@ -1381,7 +1381,7 @@ body {
   color: var(--kb-muted);
 }
 
-/* 奶油纸手册插页（终末地官网语汇，固定色值，不随明暗翻转） */
+/* 奶油纸手册插页（工业终端官网语汇，固定色值，不随明暗翻转） */
 .kb-manual {
   background: #ede6d6;
   color: #15140f;
@@ -1462,78 +1462,78 @@ body {
 
 /* 窄屏：单栏，隐藏英雄区与装饰终端条，保持表单可用（窄屏下功能性优先） */
 @media (max-width: 920px) {
-  [data-skin="endfield"] .kb-auth-page {
+  [data-skin="hud"] .kb-auth-page {
     padding: 12px !important;
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
   }
-  [data-skin="endfield"] .kb-auth-page .kb-card-lg {
+  [data-skin="hud"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     width: 100% !important;
     min-width: 0 !important;
     overflow: hidden;
   }
-  [data-skin="endfield"] .kb-auth-grid {
+  [data-skin="hud"] .kb-auth-grid {
     grid-template-columns: minmax(0, 1fr);
     min-width: 0;
     width: 100%;
   }
-  [data-skin="endfield"] .kb-auth-hero,
-  [data-skin="endfield"] .kb-auth-termbar,
-  [data-skin="endfield"] .kb-appterm {
+  [data-skin="hud"] .kb-auth-hero,
+  [data-skin="hud"] .kb-auth-termbar,
+  [data-skin="hud"] .kb-appterm {
     display: none !important;
   }
-  [data-skin="endfield"] .kb-auth-main {
+  [data-skin="hud"] .kb-auth-main {
     padding: 18px 14px 16px;
     min-width: 0;
     width: 100%;
     max-width: 100%;
   }
-  [data-skin="endfield"] .kb-auth-main form,
-  [data-skin="endfield"] .kb-auth-main label,
-  [data-skin="endfield"] .kb-auth-main .kb-input {
+  [data-skin="hud"] .kb-auth-main form,
+  [data-skin="hud"] .kb-auth-main label,
+  [data-skin="hud"] .kb-auth-main .kb-input {
     min-width: 0;
     max-width: 100%;
   }
-  [data-skin="endfield"] .kb-boot-lines span {
+  [data-skin="hud"] .kb-boot-lines span {
     overflow-wrap: anywhere;
     word-break: break-word;
   }
-  [data-skin="endfield"] .kb-boot-warn {
+  [data-skin="hud"] .kb-boot-warn {
     font-size: 0.52rem;
     letter-spacing: 0.06em;
     overflow-wrap: anywhere;
   }
-  [data-skin="endfield"] .kb-input {
+  [data-skin="hud"] .kb-input {
     font-size: 0.82rem;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   终末地：主界面（密钥舱）终端化附加元素
+   工业终端：主界面（密钥舱）终端化附加元素
    默认隐藏 → 其它皮肤不受影响
    ═══════════════════════════════════════════════════════════════════════════ */
 .kb-appterm,
-.kb-endfield-only {
+.kb-hud-only {
   display: none;
 }
-[data-skin="endfield"] .kb-appterm {
+[data-skin="hud"] .kb-appterm {
   display: flex;
 }
-[data-skin="endfield"] .kb-endfield-only {
+[data-skin="hud"] .kb-hud-only {
   display: block;
 }
-[data-skin="endfield"] .kb-hide-in-endfield {
+[data-skin="hud"] .kb-hide-in-hud {
   display: none;
 }
 /* 顶栏上方的终端信息条（非 sticky，独立成条） */
-[data-skin="endfield"] .kb-appterm {
+[data-skin="hud"] .kb-appterm {
   display: flex;
   border-bottom: 1px solid var(--kb-border);
 }
 /* 密钥舱页头：显示字体大字 + 信号黄标签牌 */
-[data-skin="endfield"] .kb-bay-title {
+[data-skin="hud"] .kb-bay-title {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-weight: 700;
   text-transform: uppercase;
@@ -1541,68 +1541,68 @@ body {
   line-height: 1;
 }
 /* 解锁面板：直角 + 双线框 + 等宽小标题（沿用卡片规则，这里只补标题） */
-[data-skin="endfield"] .kb-unlock-title {
+[data-skin="hud"] .kb-unlock-title {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.16em;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   终末地：管理后台 / 安全面板 / 密钥弹窗的通用面版与遮罩
+   工业终端：管理后台 / 安全面板 / 密钥弹窗的通用面版与遮罩
    ═══════════════════════════════════════════════════════════════════════════ */
-/* 内联调色板的可见性修正：标签牌/眉眼在终末地里按各自外观显示 */
-[data-skin="endfield"] .kb-plate.kb-endfield-only {
+/* 内联调色板的可见性修正：标签牌/眉眼在工业终端里按各自外观显示 */
+[data-skin="hud"] .kb-plate.kb-hud-only {
   display: inline-flex;
 }
-[data-skin="endfield"] .kb-eyebrow.kb-endfield-only {
+[data-skin="hud"] .kb-eyebrow.kb-hud-only {
   display: inline;
 }
 /* 通用面板（后台卡片 / 安全面板 / 弹窗）→ 双线框 */
-[data-skin="endfield"] section.rounded-xl,
-[data-skin="endfield"] main section.rounded-xl {
+[data-skin="hud"] section.rounded-xl,
+[data-skin="hud"] main section.rounded-xl {
   border-color: var(--kb-border-strong);
   box-shadow: inset 0 0 0 1px var(--kb-border-strong);
 }
-[data-skin="endfield"] h2,
-[data-skin="endfield"] h3,
-[data-skin="endfield"] h4 {
+[data-skin="hud"] h2,
+[data-skin="hud"] h3,
+[data-skin="hud"] h4 {
   font-family: "Bahnschrift", var(--kb-font-sans);
   letter-spacing: 0.08em;
 }
-[data-skin="endfield"] code {
+[data-skin="hud"] code {
   font-family: var(--kb-mono);
   letter-spacing: 0.08em;
 }
-[data-skin="endfield"] strong {
+[data-skin="hud"] strong {
   letter-spacing: 0.02em;
 }
-/* 弹窗遮罩：叠加细点阵，像设备投影罩（仅终末地） */
-[data-skin="endfield"] .fixed.inset-0.z-50 {
+/* 弹窗遮罩：叠加细点阵，像设备投影罩（仅工业终端） */
+[data-skin="hud"] .fixed.inset-0.z-50 {
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 12px 12px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   壳层风格化（莱茵 / 方舟 / 图录）
+   壳层风格化（实验档案 / 方舟 / 图录）
    每个皮肤一套：顶栏信息条 + 密钥舱页头 + 卡片语汇 + 品牌块 + 微动效
    默认全部 display:none，只有对应皮肤展开 —— 其它皮肤零影响
    ═══════════════════════════════════════════════════════════════════════════ */
-.kb-rhine-strip,
-.kb-ark-strip,
-.kb-atlas-strip,
-.kb-rhine-hdr,
-.kb-ark-hdr,
-.kb-atlas-hdr {
+.kb-lab-strip,
+.kb-mono-strip,
+.kb-ovp-strip,
+.kb-lab-hdr,
+.kb-mono-hdr,
+.kb-ovp-hdr {
   display: none;
 }
-[data-skin="rhine"] .kb-hide-when-styled,
-[data-skin="rhodes"] .kb-hide-when-styled,
-[data-skin="atlas"] .kb-hide-when-styled {
+[data-skin="lab"] .kb-hide-when-styled,
+[data-skin="mono"] .kb-hide-when-styled,
+[data-skin="overprint"] .kb-hide-when-styled {
   display: none;
 }
 
-/* ── 莱茵生命：标本舱 ───────────────────────────────────────────────── */
-[data-skin="rhine"] .kb-rhine-strip {
+/* ── 实验档案：标本舱 ───────────────────────────────────────────────── */
+[data-skin="lab"] .kb-lab-strip {
   position: relative; /* 只给下面那层扫描高光定位，不涉及任何浮层 */
   display: flex;
   align-items: center;
@@ -1617,7 +1617,7 @@ body {
   color: var(--kb-muted);
   overflow: hidden;
 }
-[data-skin="rhine"] .kb-rhine-strip::after {
+[data-skin="lab"] .kb-lab-strip::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1628,32 +1628,32 @@ body {
     transparent 90%
   );
   transform: translateX(-100%);
-  animation: kb-rhine-sweep 7s linear infinite;
+  animation: kb-lab-sweep 7s linear infinite;
   pointer-events: none;
 }
-@keyframes kb-rhine-sweep {
+@keyframes kb-lab-sweep {
   to {
     transform: translateX(100%);
   }
 }
-[data-skin="rhine"] .kb-rhine-strip-plate {
+[data-skin="lab"] .kb-lab-strip-plate {
   padding: 0.14rem 0.4rem;
   border: 1px solid var(--kb-primary);
   color: var(--kb-primary);
   font-weight: 700;
 }
-[data-skin="rhine"] .kb-rhine-strip b {
+[data-skin="lab"] .kb-lab-strip b {
   color: var(--kb-text);
   letter-spacing: 0.22em;
 }
-[data-skin="rhine"] .kb-rhine-strip-extra {
+[data-skin="lab"] .kb-lab-strip-extra {
   color: var(--kb-muted);
 }
 /* 页头：标本登记 */
-[data-skin="rhine"] .kb-rhine-hdr {
+[data-skin="lab"] .kb-lab-hdr {
   display: block;
 }
-[data-skin="rhine"] .kb-rhine-tag {
+[data-skin="lab"] .kb-lab-tag {
   padding: 0.1rem 0.38rem;
   border: 1px solid var(--kb-primary);
   color: var(--kb-primary);
@@ -1662,14 +1662,14 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
-[data-skin="rhine"] .kb-rhine-eyebrow {
+[data-skin="lab"] .kb-lab-eyebrow {
   font-family: var(--kb-mono);
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="rhine"] .kb-rhine-h2 {
+[data-skin="lab"] .kb-lab-h2 {
   margin: 0.35rem 0 0;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 1.5rem;
@@ -1678,7 +1678,7 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="rhine"] .kb-rhine-count {
+[data-skin="lab"] .kb-lab-count {
   margin-left: 0.5rem;
   color: var(--kb-primary);
   font-family: var(--kb-mono);
@@ -1686,11 +1686,11 @@ body {
   letter-spacing: 0.1em;
 }
 /* 卡片语汇：细内框 + 四角准星（.kb-card 不参与浮层，可安全定位） */
-[data-skin="rhine"] .kb-card {
+[data-skin="lab"] .kb-card {
   position: relative;
   border-color: var(--kb-border-strong);
 }
-[data-skin="rhine"] .kb-card::before {
+[data-skin="lab"] .kb-card::before {
   content: "";
   position: absolute;
   inset: 3px;
@@ -1698,7 +1698,7 @@ body {
   opacity: 0.45;
   pointer-events: none;
 }
-[data-skin="rhine"] .kb-card::after {
+[data-skin="lab"] .kb-card::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1715,15 +1715,15 @@ body {
     linear-gradient(var(--kb-primary), var(--kb-primary)) right bottom / 8px 1px no-repeat,
     linear-gradient(var(--kb-primary), var(--kb-primary)) right bottom / 1px 8px no-repeat;
 }
-[data-skin="rhine"] .kb-card:hover::after {
+[data-skin="lab"] .kb-card:hover::after {
   opacity: 1;
 }
-[data-skin="rhine"] .kb-brand {
+[data-skin="lab"] .kb-brand {
   border-radius: 0;
 }
 
-/* ── 明日方舟：档案 ─────────────────────────────────────────────────── */
-[data-skin="rhodes"] .kb-ark-strip {
+/* ── 黑白档案：档案 ─────────────────────────────────────────────────── */
+[data-skin="mono"] .kb-mono-strip {
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -1735,22 +1735,22 @@ body {
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
-[data-skin="rhodes"] .kb-ark-strip b {
+[data-skin="mono"] .kb-mono-strip b {
   font-weight: 600;
   letter-spacing: 0.3em;
 }
-[data-skin="rhodes"] .kb-ark-strip-slash {
+[data-skin="mono"] .kb-mono-strip-slash {
   color: var(--kb-primary);
 }
-[data-skin="rhodes"] .kb-ark-strip-extra {
+[data-skin="mono"] .kb-mono-strip-extra {
   opacity: 0.62;
 }
-[data-skin="rhodes"] .kb-ark-hdr {
+[data-skin="mono"] .kb-mono-hdr {
   display: flex;
   align-items: flex-start;
   gap: 0.9rem;
 }
-[data-skin="rhodes"] .kb-ark-hdr-no {
+[data-skin="mono"] .kb-mono-hdr-no {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 2.1rem;
   font-weight: 200;
@@ -1758,14 +1758,14 @@ body {
   letter-spacing: 0.06em;
   color: var(--kb-primary);
 }
-[data-skin="rhodes"] .kb-ark-eyebrow {
+[data-skin="mono"] .kb-mono-eyebrow {
   font-family: var(--kb-mono);
   font-size: 0.6rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="rhodes"] .kb-ark-h2 {
+[data-skin="mono"] .kb-mono-h2 {
   margin: 0.2rem 0 0;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 1.45rem;
@@ -1774,7 +1774,7 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="rhodes"] .kb-ark-count {
+[data-skin="mono"] .kb-mono-count {
   margin-left: 0.6rem;
   color: var(--kb-primary);
   font-family: var(--kb-mono);
@@ -1782,10 +1782,10 @@ body {
   letter-spacing: 0.16em;
 }
 /* 卡片：悬停时四角角标变长（角标就是底色里画的 8 条渐变，只改尺寸） */
-[data-skin="rhodes"] .kb-card {
+[data-skin="mono"] .kb-card {
   transition: background-size 0.2s ease;
 }
-[data-skin="rhodes"] .kb-card:hover {
+[data-skin="mono"] .kb-card:hover {
   background-size:
     18px 1px,
     1px 18px,
@@ -1796,12 +1796,12 @@ body {
     18px 1px,
     1px 18px;
 }
-[data-skin="rhodes"] .kb-brand {
+[data-skin="mono"] .kb-brand {
   border-radius: 0;
 }
 
-/* ── 众生行记·图录：RECORD ─────────────────────────────────────────── */
-[data-skin="atlas"] .kb-atlas-strip {
+/* ── 套印图录·图录：RECORD ─────────────────────────────────────────── */
+[data-skin="overprint"] .kb-ovp-strip {
   display: flex;
   align-items: center;
   gap: 0.9rem;
@@ -1814,19 +1814,19 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="atlas"] .kb-atlas-strip b {
-  color: var(--kb-atlas-ink);
+[data-skin="overprint"] .kb-ovp-strip b {
+  color: var(--kb-ovp-ink);
   letter-spacing: 0.26em;
 }
-[data-skin="atlas"] .kb-atlas-strip-extra {
-  color: var(--kb-atlas-cobalt);
+[data-skin="overprint"] .kb-ovp-strip-extra {
+  color: var(--kb-ovp-cobalt);
 }
-[data-skin="atlas"] .kb-atlas-hdr {
+[data-skin="overprint"] .kb-ovp-hdr {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
 }
-[data-skin="atlas"] .kb-atlas-hdr-win {
+[data-skin="overprint"] .kb-ovp-hdr-win {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1839,41 +1839,41 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="atlas"] .kb-atlas-hdr-bar {
+[data-skin="overprint"] .kb-ovp-hdr-bar {
   display: flex;
   gap: 3px;
 }
-[data-skin="atlas"] .kb-atlas-hdr-bar i {
+[data-skin="overprint"] .kb-ovp-hdr-bar i {
   width: 4px;
   height: 4px;
   background: var(--kb-border-strong);
 }
-[data-skin="atlas"] .kb-atlas-hdr-win b {
+[data-skin="overprint"] .kb-ovp-hdr-win b {
   color: var(--kb-text);
 }
-[data-skin="atlas"] .kb-atlas-h2 {
+[data-skin="overprint"] .kb-ovp-h2 {
   margin: 0;
   font-family: "Times New Roman", "Songti SC", serif;
   font-size: 1.6rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--kb-atlas-ink);
+  color: var(--kb-ovp-ink);
   text-shadow:
-    1.5px 0 0 color-mix(in srgb, var(--kb-atlas-cobalt) 30%, transparent),
+    1.5px 0 0 color-mix(in srgb, var(--kb-ovp-cobalt) 30%, transparent),
     -1.5px 0 0 color-mix(in srgb, var(--kb-danger) 16%, transparent);
 }
-[data-skin="atlas"] .kb-atlas-count {
+[data-skin="overprint"] .kb-ovp-count {
   margin-left: 0.6rem;
-  color: var(--kb-atlas-cobalt);
+  color: var(--kb-ovp-cobalt);
   font-family: var(--kb-mono);
   font-size: 0.62em;
   letter-spacing: 0.18em;
 }
 /* 卡片：右上角圆盘缩略 + 悬停轻微套印位移 */
-[data-skin="atlas"] .kb-card {
+[data-skin="overprint"] .kb-card {
   position: relative;
 }
-[data-skin="atlas"] .kb-card::after {
+[data-skin="overprint"] .kb-card::after {
   content: "";
   position: absolute;
   right: 8px;
@@ -1881,36 +1881,35 @@ body {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--kb-atlas-cobalt) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--kb-ovp-cobalt) 45%, transparent);
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--kb-atlas-cobalt) 22%, transparent) 0 55%,
+    color-mix(in srgb, var(--kb-ovp-cobalt) 22%, transparent) 0 55%,
     transparent 56%
   );
   pointer-events: none;
 }
-[data-skin="atlas"] .kb-card:hover {
+[data-skin="overprint"] .kb-card:hover {
   transform: translate(-1px, -1px);
 }
-[data-skin="atlas"] .kb-brand {
+[data-skin="overprint"] .kb-brand {
   border-radius: 50%;
 }
 
 @media (max-width: 920px) {
-  [data-skin="rhine"] .kb-rhine-strip,
-  [data-skin="rhodes"] .kb-ark-strip,
-  [data-skin="atlas"] .kb-atlas-strip,
-  [data-skin="arknights"] .kb-off-strip {
+  [data-skin="lab"] .kb-lab-strip,
+  [data-skin="mono"] .kb-mono-strip,
+  [data-skin="overprint"] .kb-ovp-strip,
+  [data-skin="blueprint"] .kb-bp-strip {
     display: none !important;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   皮肤 ⑮：arknights（明日方舟 · 官网）
-   依据 ak.hypergryph.com 实拍：纯黑 chrome + 青色强调 + 蓝图线稿 +
-   巨型重字词标 + 双语导航（INDEX/首页）+ 06/06 计数器
+   皮肤 ⑮：blueprint（蓝图海报）
+   纯黑 chrome + 青 + 蓝图网格 + 巨型词标 + 双语导航 + 计数器
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-skin="arknights"] {
+[data-skin="blueprint"] {
   --kb-bg: #e7eef1;
   --kb-surface: #ffffff;
   --kb-surface-2: #dce6ea;
@@ -1932,12 +1931,12 @@ body {
   --kb-radius-card: 4px;
   --kb-heading-tracking: 0.02em;
   --kb-grid: rgba(10, 13, 14, 0.06);
-  --kb-off-grid: rgba(10, 13, 14, 0.07);
-  --kb-off-cyan: #0aa8bd;
+  --kb-bp-grid: rgba(10, 13, 14, 0.07);
+  --kb-bp-cyan: #0aa8bd;
   --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
   color-scheme: light;
 }
-[data-skin="arknights"].dark {
+[data-skin="blueprint"].dark {
   --kb-bg: #000000;
   --kb-surface: #0b0e0f;
   --kb-surface-2: #12181a;
@@ -1955,47 +1954,47 @@ body {
   --kb-shadow: none;
   --kb-shadow-lg: none;
   --kb-grid: rgba(255, 255, 255, 0.045);
-  --kb-off-grid: rgba(255, 255, 255, 0.055);
-  --kb-off-cyan: #0ae0f0;
+  --kb-bp-grid: rgba(255, 255, 255, 0.055);
+  --kb-bp-cyan: #0ae0f0;
   color-scheme: dark;
 }
 /* 蓝图网格底 */
-[data-skin="arknights"] body {
+[data-skin="blueprint"] body {
   background-image:
-    linear-gradient(to right, var(--kb-off-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--kb-off-grid) 1px, transparent 1px);
+    linear-gradient(to right, var(--kb-bp-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--kb-bp-grid) 1px, transparent 1px);
   background-size: 32px 32px;
 }
-[data-skin="arknights"] h1,
-[data-skin="arknights"] h2,
-[data-skin="arknights"] h3 {
+[data-skin="blueprint"] h1,
+[data-skin="blueprint"] h2,
+[data-skin="blueprint"] h3 {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   letter-spacing: 0.02em;
 }
-[data-skin="arknights"] .kb-card,
-[data-skin="arknights"] .kb-card-lg {
+[data-skin="blueprint"] .kb-card,
+[data-skin="blueprint"] .kb-card-lg {
   border-color: var(--kb-border-strong);
   box-shadow: none;
 }
-[data-skin="arknights"] .kb-card:hover {
-  border-color: var(--kb-off-cyan);
+[data-skin="blueprint"] .kb-card:hover {
+  border-color: var(--kb-bp-cyan);
 }
-[data-skin="arknights"] .kb-badge {
+[data-skin="blueprint"] .kb-badge {
   border-radius: 0;
-  border-color: var(--kb-off-cyan);
-  color: var(--kb-off-cyan);
+  border-color: var(--kb-bp-cyan);
+  color: var(--kb-bp-cyan);
   font-family: var(--kb-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-[data-skin="arknights"] .kb-btn-ghost,
-[data-skin="arknights"] .kb-btn-danger {
+[data-skin="blueprint"] .kb-btn-ghost,
+[data-skin="blueprint"] .kb-btn-danger {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
 }
-[data-skin="arknights"] thead th {
+[data-skin="blueprint"] thead th {
   font-family: var(--kb-mono);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
@@ -2003,31 +2002,31 @@ body {
   color: var(--kb-muted);
   border-bottom: 1px solid var(--kb-border-strong);
 }
-[data-skin="arknights"] code {
+[data-skin="blueprint"] code {
   font-family: var(--kb-mono);
   letter-spacing: 0.06em;
 }
-[data-skin="arknights"] section.rounded-xl {
+[data-skin="blueprint"] section.rounded-xl {
   border-color: var(--kb-border-strong);
   box-shadow: none;
 }
-[data-skin="arknights"] .blur-3xl {
+[data-skin="blueprint"] .blur-3xl {
   display: none !important;
 }
 /* 品牌块：黑底圆角方块 + 青字（对应官网右上角的 App 方块按钮） */
-[data-skin="arknights"] .kb-brand {
+[data-skin="blueprint"] .kb-brand {
   border-radius: 8px;
   background: #000;
-  color: var(--kb-off-cyan);
+  color: var(--kb-bp-cyan);
 }
 
 /* ── 顶部导航条（黑底 + 双语标签 + 计数器） ── */
-.kb-off-strip,
-.kb-off-hdr,
-.kb-off-hero {
+.kb-bp-strip,
+.kb-bp-hdr,
+.kb-bp-hero {
   display: none;
 }
-[data-skin="arknights"] .kb-off-strip {
+[data-skin="blueprint"] .kb-bp-strip {
   display: flex;
   align-items: center;
   gap: 1.4rem;
@@ -2035,7 +2034,7 @@ body {
   background: #000;
   color: #fff;
 }
-[data-skin="arknights"] .kb-off-nav {
+[data-skin="blueprint"] .kb-bp-nav {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2046,7 +2045,7 @@ body {
   text-transform: uppercase;
   color: #fff;
 }
-[data-skin="arknights"] .kb-off-nav span {
+[data-skin="blueprint"] .kb-bp-nav span {
   font-family: var(--kb-mono);
   font-size: 0.5rem;
   font-weight: 400;
@@ -2054,28 +2053,28 @@ body {
   text-transform: none;
   color: rgba(255, 255, 255, 0.5);
 }
-[data-skin="arknights"] .kb-off-nav-on,
-[data-skin="arknights"] .kb-off-nav-on span {
-  color: var(--kb-off-cyan);
+[data-skin="blueprint"] .kb-bp-nav-on,
+[data-skin="blueprint"] .kb-bp-nav-on span {
+  color: var(--kb-bp-cyan);
 }
-[data-skin="arknights"] .kb-off-nav-on span {
+[data-skin="blueprint"] .kb-bp-nav-on span {
   opacity: 0.75;
 }
-[data-skin="arknights"] .kb-off-count {
+[data-skin="blueprint"] .kb-bp-count {
   font-family: var(--kb-mono);
   font-size: 0.6rem;
   letter-spacing: 0.18em;
-  color: var(--kb-off-cyan);
+  color: var(--kb-bp-cyan);
 }
 
 /* ── 密钥舱页头：巨型重字词标 + 计数器 ── */
-[data-skin="arknights"] .kb-off-hdr {
+[data-skin="blueprint"] .kb-bp-hdr {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
 }
-[data-skin="arknights"] .kb-off-wordmark {
+[data-skin="blueprint"] .kb-bp-wordmark {
   margin: 0;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 2.6rem;
@@ -2085,7 +2084,7 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="arknights"] .kb-off-sub {
+[data-skin="blueprint"] .kb-bp-sub {
   display: block;
   margin-top: 0.3rem;
   font-family: var(--kb-mono);
@@ -2094,23 +2093,23 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="arknights"] .kb-off-hdr-count {
+[data-skin="blueprint"] .kb-bp-hdr-count {
   font-family: var(--kb-mono);
   font-size: 0.7rem;
   letter-spacing: 0.2em;
-  color: var(--kb-off-cyan);
+  color: var(--kb-bp-cyan);
 }
 
 /* ── 登录页左栏：黑底蓝图主视觉 ── */
-[data-skin="arknights"] .kb-auth-page .kb-card-lg {
+[data-skin="blueprint"] .kb-auth-page .kb-card-lg {
   max-width: 1080px;
   padding: 0;
 }
-[data-skin="arknights"] .kb-auth-grid {
+[data-skin="blueprint"] .kb-auth-grid {
   display: grid;
   grid-template-columns: 1.04fr 0.96fr;
 }
-[data-skin="arknights"] .kb-off-hero {
+[data-skin="blueprint"] .kb-bp-hero {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -2122,26 +2121,26 @@ body {
   background-size: 28px 28px;
   color: #f2f6f7;
 }
-[data-skin="arknights"] .kb-off-hero-top {
+[data-skin="blueprint"] .kb-bp-hero-top {
   display: flex;
   justify-content: space-between;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
-[data-skin="arknights"] .kb-off-hero-kicker {
+[data-skin="blueprint"] .kb-bp-hero-kicker {
   font-family: var(--kb-mono);
   font-size: 0.58rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: #0ae0f0;
 }
-[data-skin="arknights"] .kb-off-hero-count {
+[data-skin="blueprint"] .kb-bp-hero-count {
   font-family: var(--kb-mono);
   font-size: 0.58rem;
   letter-spacing: 0.2em;
   color: #0ae0f0;
 }
-[data-skin="arknights"] .kb-off-hero-title {
+[data-skin="blueprint"] .kb-bp-hero-title {
   margin: 0.6rem 0 0;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 3.2rem;
@@ -2151,25 +2150,25 @@ body {
   text-transform: uppercase;
   color: #ffffff;
 }
-[data-skin="arknights"] .kb-off-hero-cn {
+[data-skin="blueprint"] .kb-bp-hero-cn {
   margin: 0.5rem 0 0;
   font-size: 0.8rem;
   letter-spacing: 0.2em;
   color: #ffffff;
 }
-[data-skin="arknights"] .kb-off-hero-note {
+[data-skin="blueprint"] .kb-bp-hero-note {
   margin: 0;
   max-width: 22em;
   font-size: 0.7rem;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.6);
 }
-[data-skin="arknights"] .kb-off-hero-rows {
+[data-skin="blueprint"] .kb-bp-hero-rows {
   display: flex;
   flex-direction: column;
   margin-top: auto;
 }
-[data-skin="arknights"] .kb-off-hero-rows > div {
+[data-skin="blueprint"] .kb-bp-hero-rows > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -2177,20 +2176,20 @@ body {
   padding: 0.45rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-[data-skin="arknights"] .kb-off-hero-rows span {
+[data-skin="blueprint"] .kb-bp-hero-rows span {
   font-family: var(--kb-mono);
   font-size: 0.56rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
 }
-[data-skin="arknights"] .kb-off-hero-rows b {
+[data-skin="blueprint"] .kb-bp-hero-rows b {
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.16em;
   color: #ffffff;
 }
-[data-skin="arknights"] .kb-off-hero-foot {
+[data-skin="blueprint"] .kb-bp-hero-foot {
   display: flex;
   justify-content: space-between;
   padding-top: 0.5rem;
@@ -2201,21 +2200,21 @@ body {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
 }
-[data-skin="arknights"] .kb-auth-main {
+[data-skin="blueprint"] .kb-auth-main {
   padding: 28px 30px 26px;
 }
 @media (max-width: 920px) {
-  [data-skin="arknights"] .kb-auth-page .kb-card-lg {
+  [data-skin="blueprint"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     overflow: hidden;
   }
-  [data-skin="arknights"] .kb-auth-grid {
+  [data-skin="blueprint"] .kb-auth-grid {
     grid-template-columns: 1fr;
   }
-  [data-skin="arknights"] .kb-off-hero {
+  [data-skin="blueprint"] .kb-bp-hero {
     display: none !important;
   }
-  [data-skin="arknights"] .kb-auth-main {
+  [data-skin="blueprint"] .kb-auth-main {
     padding: 22px 18px 20px;
   }
 }

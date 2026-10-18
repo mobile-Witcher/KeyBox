@@ -30,13 +30,13 @@ export function AuthCard({
 
       <div className="kb-card-lg relative w-full max-w-md p-8">
         {/*
-         * 终末地皮肤专用结构（其它皮肤通过 CSS 全部隐藏，视觉零变化）：
+         * 工业终端皮肤专用结构（其它皮肤通过 CSS 全部隐藏，视觉零变化）：
          *   .kb-auth-termbar 终端顶栏 / .kb-auth-hero 左栏英雄区 / .kb-auth-boot 启动日志
-         * 展开条件：[data-skin="endfield"]，见 index.css「授权页双栏终端形态」一节。
+         * 展开条件：[data-skin="hud"]，见 index.css「授权页双栏终端形态」一节。
          */}
         <div className="kb-term-bar kb-auth-termbar" aria-hidden>
           <span className="kb-plate">Field Terminal</span>
-          <b>ENDFIELD // ACCESS</b>
+          <b>ACCESS // KEYBOX</b>
           <span className="kb-term-extra">UNIT EN-07</span>
           <span className="kb-term-extra">LINK STABLE</span>
           <span className="kb-term-extra ml-auto">2026-10-18 16:20</span>
@@ -44,29 +44,29 @@ export function AuthCard({
 
         <div className="kb-auth-grid">
           {/*
-           * 明日方舟皮肤专用：左栏杂志式主视觉（其它皮肤 display:none）。
-           * 竖排 ARKNIGHTS + 超大细字标题 + SERIES 编号 + 机密封条。
+           * 黑白档案皮肤专用：左栏杂志式主视觉（其它皮肤 display:none）。
+           * 竖排 KEYBOX + 超大细字标题 + SERIES 编号 + 机密封条。
            */}
-          <aside className="kb-ark-hero" aria-hidden>
-            <div className="kb-ark-vert">Arknights · Operator Terminal</div>
-            <div className="kb-ark-body">
-              <div className="kb-ark-kicker">Ark // Operator Access</div>
-              <p className="kb-ark-title">
+          <aside className="kb-mono-hero" aria-hidden>
+            <div className="kb-mono-vert">Monochrome · Operator Terminal</div>
+            <div className="kb-mono-body">
+              <div className="kb-mono-kicker">Ark // Operator Access</div>
+              <p className="kb-mono-title">
                 Keybox
                 <span>Terminal</span>
               </p>
-              <p className="kb-ark-cn">密钥保管 · 操作员通道</p>
-              <p className="kb-ark-note">
+              <p className="kb-mono-cn">密钥保管 · 操作员通道</p>
+              <p className="kb-mono-note">
                 以手机号验证码确认操作员身份。所有访问行为写入审计记录，明文仅在本次会话内存中停留。
               </p>
-              <div className="kb-ark-serial">
+              <div className="kb-mono-serial">
                 <span>Series 07</span>
                 <span>//</span>
                 <span>Keybox 0.5.2</span>
                 <span>//</span>
                 <span>Internal</span>
               </div>
-              <div className="kb-ark-redact">
+              <div className="kb-mono-redact">
                 <i />
                 <i />
                 <i />
@@ -75,62 +75,62 @@ export function AuthCard({
           </aside>
 
           {/*
-           * 明日方舟官网皮肤专用：黑底蓝图主视觉（其它皮肤 display:none）。
-           * 巨型词标 + 双语导航对 + 计数器 + © HYPERGRYPH 页脚。
+           * 黑白档案官网皮肤专用：黑底蓝图主视觉（其它皮肤 display:none）。
+           * 巨型词标 + 双语导航对 + 计数器 + © KeyBox 页脚。
            */}
-          <aside className="kb-off-hero" aria-hidden>
-            <div className="kb-off-hero-top">
-              <span className="kb-off-hero-kicker">Index</span>
-              <span className="kb-off-hero-count">01 / 01</span>
+          <aside className="kb-bp-hero" aria-hidden>
+            <div className="kb-bp-hero-top">
+              <span className="kb-bp-hero-kicker">Index</span>
+              <span className="kb-bp-hero-count">01 / 01</span>
             </div>
-            <p className="kb-off-hero-title">Keybox</p>
-            <p className="kb-off-hero-cn">罗德岛 · 密钥保管</p>
-            <p className="kb-off-hero-note">
+            <p className="kb-bp-hero-title">Keybox</p>
+            <p className="kb-bp-hero-cn">密钥保管 · 零知识</p>
+            <p className="kb-bp-hero-note">
               以验证码确认操作员身份；密钥只在本次会话内解密，离册即封存。
             </p>
-            <div className="kb-off-hero-rows">
+            <div className="kb-bp-hero-rows">
               <div>
                 <span>Information</span>
-                <b>情报</b>
+                <b>索引</b>
               </div>
               <div>
                 <span>Operator</span>
-                <b>干员</b>
+                <b>密钥</b>
               </div>
               <div>
                 <span>Media</span>
-                <b>泰拉万象</b>
+                <b>记录</b>
               </div>
             </div>
-            <div className="kb-off-hero-foot">
-              <span>© Hypergryph</span>
+            <div className="kb-bp-hero-foot">
+              <span>© KeyBox</span>
               <span>KeyBox 0.5.2</span>
             </div>
           </aside>
 
           {/*
-           * 莱茵生命皮肤专用：左栏「实验记录本」（其它皮肤 display:none）。
+           * 实验档案皮肤专用：左栏「实验记录本」（其它皮肤 display:none）。
            * 十字准星 + 扫描场 + 样本编号 + CONFIDENTIAL 印章 + DOC/REV/PAGE 页脚。
            */}
-          <aside className="kb-rhine-hero" aria-hidden>
-            <div className="kb-rhine-top">
-              <span className="kb-rhine-cross" />
+          <aside className="kb-lab-hero" aria-hidden>
+            <div className="kb-lab-top">
+              <span className="kb-lab-cross" />
               <div>
-                <div className="kb-rhine-kicker">Rhine Lab // Specimen File</div>
-                <p className="kb-rhine-title">
+                <div className="kb-lab-kicker">Lab // Specimen File</div>
+                <p className="kb-lab-title">
                   Keybox <span>Archive</span>
                 </p>
-                <p className="kb-rhine-cn">密钥保管 · 样本档案</p>
+                <p className="kb-lab-cn">密钥保管 · 样本档案</p>
               </div>
             </div>
-            <p className="kb-rhine-note">
+            <p className="kb-lab-note">
               以手机号验证码核验操作员身份。所有访问写入档案；明文仅在本次会话内存中停留，
               会话结束即擦除。
             </p>
-            <div className="kb-scan kb-rhine-scan">
-              <span className="kb-rhine-scan-cap">Ctrl field · verified</span>
+            <div className="kb-scan kb-lab-scan">
+              <span className="kb-lab-scan-cap">Ctrl field · verified</span>
             </div>
-            <div className="kb-rhine-meta">
+            <div className="kb-lab-meta">
               <div>
                 <span>Sample</span>
                 <b>KB-OP-0007</b>
@@ -148,8 +148,8 @@ export function AuthCard({
                 <b>Verified</b>
               </div>
             </div>
-            <div className="kb-rhine-stamp">Confidential</div>
-            <div className="kb-rhine-foot">
+            <div className="kb-lab-stamp">Confidential</div>
+            <div className="kb-lab-foot">
               <span>DOC KB-AC-07</span>
               <span>REV 3</span>
               <span>PAGE 1/1</span>
@@ -157,39 +157,39 @@ export function AuthCard({
           </aside>
 
           {/*
-           * 众生行记·套印图录 皮肤专用左栏（其它皮肤 display:none）。
-           * 参考「众生行记」平面设计图录：钴蓝圆盘 + 细圆环 + 坐标刻度 + 小窗框 + 条码。
+           * 套印图录 皮肤专用左栏（其它皮肤 display:none）。
+           * 参考「套印图录」平面设计图录：钴蓝圆盘 + 细圆环 + 坐标刻度 + 小窗框 + 条码。
            */}
-          <aside className="kb-atlas-hero" aria-hidden>
-            <div className="kb-atlas-coord">
+          <aside className="kb-ovp-hero" aria-hidden>
+            <div className="kb-ovp-coord">
               <span>Y2</span>
               <span>Y3</span>
               <span>Y4</span>
               <span>Y5</span>
             </div>
-            <div className="kb-atlas-body">
-              <div className="kb-atlas-caps">Arknights / 6th Anniversary</div>
-              <p className="kb-atlas-title">
-                The Masses’
-                <span>Travels</span>
+            <div className="kb-ovp-body">
+              <div className="kb-ovp-caps">KeyBox / Vault Edition</div>
+              <p className="kb-ovp-title">
+                The Vault
+                <span>Archive</span>
               </p>
-              <p className="kb-atlas-cn">众生行记 · 密钥保管</p>
-              <p className="kb-atlas-quote">
-                若祈祷无用，
+              <p className="kb-ovp-cn">密钥保管 · 图录</p>
+              <p className="kb-ovp-quote">
+                一切秘密，
                 <br />
-                那我们因何祈祷？
+                皆有其位置。
               </p>
-              <div className="kb-atlas-disc" />
-              <div className="kb-atlas-win">
-                <span className="kb-atlas-win-bar">
+              <div className="kb-ovp-disc" />
+              <div className="kb-ovp-win">
+                <span className="kb-ovp-win-bar">
                   <i />
                   <i />
                   <i />
                 </span>
                 <b>Record · 06</b>
-                <span>Laterano / Sanctum</span>
+                <span>Vault / Index</span>
               </div>
-              <div className="kb-atlas-bars">
+              <div className="kb-ovp-bars">
                 <i />
                 <i />
                 <i />
@@ -200,8 +200,8 @@ export function AuthCard({
                 <i />
                 <i />
               </div>
-              <div className="kb-atlas-foot">
-                <span>sidestory 06</span>
+              <div className="kb-ovp-foot">
+                <span>record 06</span>
                 <span>interactive edition</span>
               </div>
             </div>
@@ -240,7 +240,7 @@ export function AuthCard({
               <h4>Authorization notes</h4>
               <p>每次接入需重新校验操作员身份；明文仅在授权期间停留于内存，会话结束自动擦除。</p>
               <div className="kb-manual-sign">
-                <span>Signed · ENDFIELD IND.</span>
+                <span>Signed · KEYBOX IND.</span>
                 <span className="kb-manual-bc" />
               </div>
             </div>
@@ -288,7 +288,7 @@ export function AuthCard({
   );
 }
 
-/** 终端英雄区里的「键 / 值」单元（仅终末地皮肤可见其父容器）。 */
+/** 终端英雄区里的「键 / 值」单元（仅工业终端皮肤可见其父容器）。 */
 function Unit({ k, v }: { k: string; v: string }): JSX.Element {
   return (
     <div className="bg-kb-surface px-2.5 py-2">

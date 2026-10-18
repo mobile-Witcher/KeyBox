@@ -21,11 +21,11 @@
       (function () {
         try {
           var BG = {
-            endfield: { light: "#ede6d6", dark: "#0e0f0f" },
-            rhine: { light: "#f4f6f4", dark: "#0b1012" },
-            rhodes: { light: "#f7f7f5", dark: "#08090a" },
-            arknights: { light: "#e7eef1", dark: "#000000" },
-            atlas: { light: "#edf1ee", dark: "#0b0f12" }
+            hud: { light: "#ede6d6", dark: "#0e0f0f" },
+            lab: { light: "#f4f6f4", dark: "#0b1012" },
+            mono: { light: "#f7f7f5", dark: "#08090a" },
+            blueprint: { light: "#e7eef1", dark: "#000000" },
+            overprint: { light: "#edf1ee", dark: "#0b0f12" }
           };
           var ls = null;
           try {
@@ -33,7 +33,7 @@
           } catch (e) {
             ls = null;
           }
-          /* URL 预览参数（?skin=endfield&theme=dark）：演示/截图用，优先于存储 */
+          /* URL 预览参数（?skin=hud&theme=dark）：演示/截图用，优先于存储 */
           var q = null;
           try {
             q = new URLSearchParams(window.location.search);
@@ -55,7 +55,7 @@
               window.matchMedia &&
               window.matchMedia("(prefers-color-scheme: dark)").matches);
           var storedSkin = qSkin && BG[qSkin] ? qSkin : ls ? ls.getItem("keybox.skin") : null;
-          var skin = storedSkin && BG[storedSkin] ? storedSkin : "endfield";
+          var skin = storedSkin && BG[storedSkin] ? storedSkin : "hud";
           var root = document.documentElement;
           if (isDark) root.classList.add("dark");
           root.setAttribute("data-skin", skin);
