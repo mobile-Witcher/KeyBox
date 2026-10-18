@@ -935,7 +935,8 @@ struct Vault {
                 })
                 SkinInlineBtn({
                   label: '删除分类',
-                  kind: 'danger',
+                  // 删除类按钮：强调色实心（随皮肤变色），不用固定红色
+                  kind: 'accent',
                   btnHeight: 36,
                   onTap: () => {
                     this.showTagMenu = false;
@@ -1274,7 +1275,8 @@ struct Vault {
               Row() {
                 SkinInlineBtn({
                   label: '删除',
-                  kind: 'danger',
+                  // 删除类按钮：强调色实心（随皮肤变色）
+                  kind: 'accent',
                   btnHeight: 40,
                   onTap: () => {
                     void this.applyTagChange(this.activeTag ?? '', null);
@@ -1532,7 +1534,8 @@ struct Vault {
         Row() {
           SkinInlineBtn({
             label: '删除',
-            kind: 'danger',
+            // 删除类按钮：强调色实心（随皮肤变色），不用固定红色
+            kind: 'accent',
             btnHeight: 34,
             btnFontSize: 12,
             onTap: () => {

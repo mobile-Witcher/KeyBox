@@ -234,7 +234,7 @@ struct SkinProbe {
             }.layoutWeight(1)
             Row() {
               SkinInlineBtn({
-                label: '删除', kind: 'danger', btnHeight: 34, btnFontSize: 12,
+                label: '删除', kind: 'accent', btnHeight: 34, btnFontSize: 12,
                 onTap: () => {
                 }
               })
@@ -251,7 +251,7 @@ struct SkinProbe {
             }.layoutWeight(1)
             Row() {
               SkinInlineBtn({
-                label: '删除数据', kind: 'danger', btnHeight: 30, btnFontSize: 11,
+                label: '删除数据', kind: 'accent', btnHeight: 30, btnFontSize: 11,
                 onTap: () => {
                 }
               })

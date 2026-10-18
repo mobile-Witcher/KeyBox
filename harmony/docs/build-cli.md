@@ -51,7 +51,7 @@ entry\build\default\outputs\default\entry-default-unsigned.hap
 |---|---|
 | `SkinBar` / `SkinWordmark` / `SkinBackdrop` / `SkinSection` / `SkinCard` | 顶栏信息条 / 页头词标 / 页面底纹 / 分区标题 / 卡片卡框 |
 | `SkinButton` | 整宽主按钮（`kind: primary / ghost / danger`，`disabled`、`btnHeight`） |
-| `SkinInlineBtn` | 行内按钮（并排、表格、菜单项）；根节点宽 100%，配合外层 `Row().layoutWeight(n)` 等宽 |
+| `SkinInlineBtn` | 行内按钮（并排、表格、菜单项）；根节点宽 100%，配合外层 `Row().layoutWeight(n)` 等宽；`kind: primary / ghost / accent / warn`，其中 **accent = 删除类强调色实心**（随皮肤变色，字色用 `skinAccentInk` 保证 WCAG-AA） |
 | `SkinScrim` | 弹层遮罩层：皮肤压暗 + 逐像素点阵（hud 12px / lab 24px / blueprint 32px 网格 / mono 6px 扫描线 / overprint 16px），不拦触摸 |
 | `SkinIcon` / `SkinIconButton` | 线性图标（SVG 资源 + `fillColor` 跟随皮肤）/ 带框图标按钮 |
 | `sheetBorderColor` / `panelShadow` / `sheetTransition` / `scrimColor` | 弹层描边 / 投影 / 过渡 / 遮罩色 |

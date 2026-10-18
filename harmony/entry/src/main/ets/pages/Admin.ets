@@ -456,7 +456,8 @@ struct Admin {
                         Row() {
                           SkinInlineBtn({
                             label: '删除数据',
-                            kind: 'danger',
+                            // 删除类按钮：强调色实心（随皮肤变色）
+                            kind: 'accent',
                             btnHeight: 30,
                             btnFontSize: 11,
                             disabled: this.busy,
@@ -566,7 +567,8 @@ struct Admin {
             Row() {
               SkinInlineBtn({
                 label: actionLabel,
-                kind: 'danger',
+                // 破坏性确认（作废/停用/删除数据）：强调色实心，随皮肤变色
+                kind: 'accent',
                 btnHeight: 40,
                 onTap: () => {
                   action();

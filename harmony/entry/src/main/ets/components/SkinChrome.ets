@@ -306,6 +306,20 @@ export function skinAccentColor(skin: string): string {
   return '#f2c300';
 }
 
+/**
+ * 强调色实心块上的前景色（工具栏按钮的「删除类」实心用）。
+ * 逐套皮肤按 WCAG-AA 校过对比度（均 ≥ 4.5:1），避免默认白字在亮色块上不够清楚：
+ *   hud 信号黄 / lab 莱茵青 / blueprint 蓝图青 → 深墨字；mono 朱红 / overprint 钴蓝 → 近黑字
+ */
+export function skinAccentInk(skin: string): string {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'hud') return '#15140F';
+  if (k === 'lab') return '#04110F';
+  if (k === 'blueprint') return '#001416';
+  if (k === 'mono') return '#0A0A0A';
+  return '#0B0F12';
+}
+
 /** 卡片左上角的小标尺文字（每套皮肤一张"卡片身份"）。 */
 export function skinCardTag(skin: string): string {
   const k: SkinId = normalizeSkinId(skin);
@@ -866,7 +880,12 @@ export struct SkinWordmark {
   }
 }
 
-/** 皮肤标记色（供页面自定义装饰复用）。 */
+/**
+ * 整宽主按钮（登录/解锁/保存/生成邀请码等）。
+ * kind：primary（主操作，皮肤主色实心）/ ghost（次要、取消、编辑）/
+ *       danger（旧语义：固定 danger 红色实心，当前页面已改用 accent）/
+ *       accent（删除类强调色实心，随皮肤变色，见 skinAccentColor/skinAccentInk）
+ */
 @Component
 export struct SkinButton {
   @Prop label: string = '';
@@ -890,12 +909,14 @@ export struct SkinButton {
   }
 
   private bg(): string {
+    if (this.kind === 'accent') return skinAccentColor(this.skin);
     if (this.kind === 'danger') return this.c().danger;
     if (this.kind === 'ghost') return this.c().surface;
     return this.c().primary;
   }
 
   private fg(): string {
+    if (this.kind === 'accent') return skinAccentInk(this.skin);
     if (this.kind === 'danger') return '#ffffff';
     if (this.kind === 'ghost') return this.c().text;
     return this.c().primaryContrast;
@@ -1184,6 +1205,11 @@ export struct SkinScrim {
  *   Row() { SkinInlineBtn({ label: '取消', kind: 'ghost', onTap: ... }) }.layoutWeight(1)
  *   Row() { SkinInlineBtn({ label: '保存', kind: 'primary', onTap: ... }) }.layoutWeight(1)
  * 单列整宽场景可直接放（父容器宽度即按钮宽度）。
+ *
+ * kind：primary（皮肤主色实心）/ ghost（描边、中性底）/
+ *       accent（**删除类强调色实心**：hud 信号黄、lab 莱茵青、blueprint 蓝图青、
+ *               mono 朱红、overprint 钴蓝；字色由 skinAccentInk 保证 WCAG-AA）/
+ *       danger（旧语义：固定红色）/ warn（警示色实心）。
  */
 @Component
 export struct SkinInlineBtn {
@@ -1207,6 +1233,7 @@ export struct SkinInlineBtn {
   }
 
   private bg(): string {
+    if (this.kind === 'accent') return skinAccentColor(this.skin);
     if (this.kind === 'danger') return this.c().danger;
     if (this.kind === 'primary') return this.c().primary;
     if (this.kind === 'warn') return this.c().warning;
@@ -1214,6 +1241,7 @@ export struct SkinInlineBtn {
   }
 
   private fg(): string {
+    if (this.kind === 'accent') return skinAccentInk(this.skin);
     if (this.kind === 'danger' || this.kind === 'primary') return this.c().primaryContrast;
     if (this.kind === 'warn') return this.c().primaryContrast;
     return this.c().text;
