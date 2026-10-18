@@ -1351,9 +1351,33 @@ struct Vault {
     .height('100%')
   }
 
+  // ── 皮肤卡框令牌（每套皮肤不同的边框粗细/颜色/偏影）──
+  private cardBorderWidth(): number {
+    if (this.skin === 'hud') return 1.5;
+    return 1;
+  }
+
+  private cardBorderColor(): string {
+    if (this.skin === 'blueprint' || this.skin === 'overprint') return this.c().borderStrong;
+    return this.c().border;
+  }
+
+  private shadowOffset(): number {
+    return this.skin === 'overprint' ? 3 : 0;
+  }
+
+  private cardShadowColor(): string {
+    return this.skin === 'overprint' ? '#00000022' : '#00000000';
+  }
   @Builder
   SecretCard(it: VaultItem) {
     Column({ space: 8 }) {
+      // 皮肤卡框：顶端强调线（每套皮肤不同色）
+      Row()
+        .width('100%')
+        .height(2)
+        .backgroundColor(skinAccentColor(this.skin))
+
       // 皮肤标尺：左侧标记色 + 卡片身份 + 编号（每套皮肤不同）
       Row({ space: 6 }) {
         Text('')
@@ -1470,7 +1494,13 @@ struct Vault {
     .padding(14)
     .backgroundColor(this.c().surface)
     .borderRadius(this.c().radiusCard)
-    .border({ width: 0.5, color: this.c().border })
+    .border({ width: this.cardBorderWidth(), color: this.cardBorderColor() })
+    .shadow({
+      radius: 0,
+      color: this.cardShadowColor(),
+      offsetX: this.shadowOffset(),
+      offsetY: this.shadowOffset()
+    })
   }
 
   @Builder

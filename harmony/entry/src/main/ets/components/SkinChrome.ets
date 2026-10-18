@@ -47,7 +47,10 @@ export struct SkinBackdrop {
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
 
-  private idx: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+  private idx: number[] = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41
+  ];
 
   private skinId(): SkinId {
     return normalizeSkinId(this.skin);
@@ -56,10 +59,10 @@ export struct SkinBackdrop {
   private lineAlpha(): string {
     const dark: boolean = resolveDark(this.darkMode, this.systemDark);
     const k: SkinId = this.skinId();
-    if (k === 'blueprint') return dark ? '#0AE0F015' : '#0A8FA11A';
-    if (k === 'lab') return dark ? '#E8EDEA12' : '#10121412';
-    if (k === 'overprint') return dark ? '#E8EDEA10' : '#10141814';
-    if (k === 'hud') return dark ? '#FFFFFF0C' : '#15140F0C';
+    if (k === 'blueprint') return dark ? '#0AE0F00E' : '#0A8FA112';
+    if (k === 'lab') return dark ? '#E8EDEA0C' : '#1012140C';
+    if (k === 'overprint') return dark ? '#E8EDEA0A' : '#1014180E';
+    if (k === 'hud') return dark ? '#FFFFFF07' : '#15140F07';
     return '#00000000';
   }
 
