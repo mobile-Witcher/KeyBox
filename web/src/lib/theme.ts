@@ -33,7 +33,8 @@ export type Skin =
   | "solar" // 护眼自然
   | "sunset" // 暖阳
   | "endfield" // 终末地 · 现场终端
-  | "rhine"; // 莱茵生命 · 无菌档案
+  | "rhine" // 莱茵生命 · 无菌档案
+  | "arknights"; // 明日方舟 · 官网
 
 /** localStorage 键（与 index.html 内联脚本一致）。 */
 export const THEME_STORAGE_KEY = "keybox.theme";
@@ -52,6 +53,7 @@ export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
   sunset: { light: "#fff4ec", dark: "#1d1119" },
   endfield: { light: "#ede6d6", dark: "#0e0f0f" },
   rhine: { light: "#f4f6f4", dark: "#0b1012" },
+  arknights: { light: "#f7f7f5", dark: "#08090a" },
 };
 
 /** 可选皮肤清单（供外观选择器渲染；顺序即展示顺序）。 */
@@ -74,6 +76,11 @@ export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
     id: "rhine",
     label: "莱茵生命 · 无菌档案",
     hint: "骨白纸底 + 莱茵青，细双框与等宽编号，像实验记录本",
+  },
+  {
+    id: "arknights",
+    label: "明日方舟 · 官网",
+    hint: "近黑白 + 血红点缀，细线角标与杂志式留白，克制而锋利",
   },
 ];
 

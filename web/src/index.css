@@ -751,6 +751,151 @@ body {
   display: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   皮肤 ⑫：arknights（明日方舟 · 官网）
+   近黑白 + 血红点缀；细线角标（corner brackets）、胶片感条纹、杂志式宽字距
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-skin="arknights"] {
+  --kb-bg: #f7f7f5;
+  --kb-surface: #ffffff;
+  --kb-surface-2: #efefec;
+  --kb-text: #0a0a0a;
+  --kb-muted: #6a6e72;
+  --kb-border: #dcdcd8;
+  --kb-border-strong: #b9bab6;
+  /* 血红做唯一强调色 */
+  --kb-primary: #c8102e;
+  --kb-primary-hover: #a50d26;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #b3261e;
+  --kb-success: #4a6b52;
+  --kb-warning: #8a6a1f;
+  --kb-ring: rgba(200, 16, 46, 0.22);
+  --kb-shadow: none;
+  --kb-shadow-lg: 0 0 0 1px var(--kb-border-strong);
+  --kb-radius: 0px;
+  --kb-radius-card: 0px;
+  --kb-font-sans: "Microsoft YaHei UI", "Segoe UI", "Source Han Sans SC", sans-serif;
+  --kb-heading-tracking: 0.14em;
+  --kb-grid: rgba(10, 10, 10, 0.045);
+  --kb-ark: #c8102e;
+  --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+[data-skin="arknights"].dark {
+  --kb-bg: #08090a;
+  --kb-surface: #101113;
+  --kb-surface-2: #16181a;
+  --kb-text: #f2f2f2;
+  --kb-muted: #8a8f94;
+  --kb-border: #26292c;
+  --kb-border-strong: #3a3e42;
+  --kb-primary: #e0433c;
+  --kb-primary-hover: #f25c55;
+  --kb-primary-contrast: #0a0a0a;
+  --kb-danger: #e0433c;
+  --kb-success: #7fb08a;
+  --kb-warning: #e0c060;
+  --kb-ring: rgba(224, 67, 60, 0.28);
+  --kb-shadow: none;
+  --kb-shadow-lg: none;
+  --kb-grid: rgba(255, 255, 255, 0.03);
+  --kb-ark: #e0433c;
+  color-scheme: dark;
+}
+
+/* 胶片感扫描条纹底 */
+[data-skin="arknights"] body {
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--kb-grid) 0 1px,
+    transparent 1px 3px
+  );
+}
+/*
+ * 卡片：1px 细框 + 四角血红角标。
+ * 角标全部用背景渐变绘制（8 条 10×1 / 1×10 的细线），**不涉及 position**，
+ * 因此不会像之前的莱茵皮肤那样把 .absolute 浮层顶回文档流。
+ */
+[data-skin="arknights"] .kb-card,
+[data-skin="arknights"] .kb-card-lg {
+  border-color: var(--kb-border-strong);
+  box-shadow: none;
+  background-image:
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark)),
+    linear-gradient(var(--kb-ark), var(--kb-ark));
+  background-size:
+    10px 1px,
+    1px 10px,
+    10px 1px,
+    1px 10px,
+    10px 1px,
+    1px 10px,
+    10px 1px,
+    1px 10px;
+  background-position: left top, left top, right top, right top, left bottom, left bottom,
+    right bottom, right bottom;
+  background-repeat: no-repeat;
+}
+/* 标题：细字重 + 宽字距（杂志式） */
+[data-skin="arknights"] h1,
+[data-skin="arknights"] h2,
+[data-skin="arknights"] h3 {
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+/* 标签/按钮/表头：等宽大写 */
+[data-skin="arknights"] .kb-badge {
+  border-radius: 0;
+  font-family: var(--kb-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+[data-skin="arknights"] .kb-btn-primary,
+[data-skin="arknights"] .kb-btn-ghost,
+[data-skin="arknights"] .kb-btn-danger {
+  font-family: var(--kb-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+}
+[data-skin="arknights"] thead th {
+  font-family: var(--kb-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  border-bottom: 1px solid var(--kb-border-strong);
+}
+[data-skin="arknights"] table tbody td {
+  border-bottom: 1px solid var(--kb-border);
+}
+[data-skin="arknights"] code {
+  font-family: var(--kb-mono);
+  letter-spacing: 0.06em;
+}
+/* 后台/安全/弹窗里的通用面板 */
+[data-skin="arknights"] section.rounded-xl {
+  border-color: var(--kb-border-strong);
+  box-shadow: none;
+}
+/* 全直角（圆点/头像保留圆形） */
+[data-skin="arknights"]
+  :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 0;
+}
+/* 官网风格没有柔光 */
+[data-skin="arknights"] .blur-3xl {
+  display: none !important;
+}
+
 /* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
 [data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
   border-radius: 0 !important;

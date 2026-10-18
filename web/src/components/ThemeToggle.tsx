@@ -196,6 +196,7 @@ const SKIN_PREVIEW: Record<Skin, [string, string, string]> = {
   sunset: ["#fff4ec", "#e2622a", "#ffb347"],
   endfield: ["#ede6d6", "#f2c300", "#1d2020"],
   rhine: ["#f4f6f4", "#0e6e6b", "#2fb6b0"],
+  arknights: ["#08090a", "#c8102e", "#f2f2f2"],
 };
 
 function PaletteIcon(): JSX.Element {
