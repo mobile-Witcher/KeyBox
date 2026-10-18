@@ -818,9 +818,7 @@ struct Vault {
             Grid() {
               ForEach(this.filteredItems(), (it: VaultItem) => {
                 GridItem() {
-                  SkinCard() {
-                    this.SecretCard(it)
-                  }
+                  this.SecretCard(it)
                 }
               }, (it: VaultItem) => it.id.toString())
             }
@@ -1374,7 +1372,7 @@ struct Vault {
 
   /** 任一半透明弹层是否打开（用于压暗主内容层）。 */
   private overlayOpen(): boolean {
-    return this.showAppearance || this.showTagMenu || this.dialogMode !== 'none';
+    return this.showAppearance || this.showTagMenu || (this.dialogMode !== '' && this.dialogMode !== 'none');
   }
 
   // ── 皮肤卡框令牌（每套皮肤不同的边框粗细/颜色/偏影）──
