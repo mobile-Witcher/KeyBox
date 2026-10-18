@@ -7,11 +7,11 @@
         "material": {
           "certpath": "C:\\Users\\29396\\.ohos\\config\\default_harmony_MIRAMRhZR4d2uRBD1HHPyX8jVR1auIRDlJwk9ntkb88=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001BE1240AAAEC1705D9BB5702A1D8B966BA79AC50BFBF81B11AE12B9DA1CE714ECE9D82CCE734561C",
+          "keyPassword": "0000001B622BD18C340115A1A9F5AA6C1A35F2E169F7AD3CEFFC8E1266CB6EB2363CF6E82C256DE0550EBA",
           "profile": "C:\\Users\\29396\\.ohos\\config\\default_harmony_MIRAMRhZR4d2uRBD1HHPyX8jVR1auIRDlJwk9ntkb88=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "C:\\Users\\29396\\.ohos\\config\\default_harmony_MIRAMRhZR4d2uRBD1HHPyX8jVR1auIRDlJwk9ntkb88=.p12",
-          "storePassword": "0000001B8D8BED2BF8A4EFB1915161A3C977AD8631E0DF9305FA026083A94DE0A9A7A953C72AC4995305DF"
+          "storePassword": "0000001B2F67383A5D3D56CC588AD473D2252FB9D75F00A4D4908838656C1C9EF014B3BF7CC0031F280E99"
         }
       }
     ],
