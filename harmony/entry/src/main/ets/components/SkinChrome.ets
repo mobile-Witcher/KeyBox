@@ -1019,6 +1019,8 @@ export struct SkinIcon {
     }
     .width(24)
     .height(24)
+    // 图标几何只占 24 网格的 ~70%，做视觉放大 1.6×（不改变布局尺寸，因此仍严格居中）
+    .scale({ x: 1.6, y: 1.6 })
     .hitTestBehavior(HitTestMode.None)
   }
 }
@@ -1028,7 +1030,7 @@ export struct SkinIconButton {
   @Prop iconName: string = 'logout';
   @Prop iconSize: number = 22;
   @Prop iconColor: string = '#000000';
-  @Prop boxSize: number = 30;
+  @Prop boxSize: number = 34;
   @Prop dot: boolean = false;
   onPick: () => void = () => {};
   @StorageProp('skin') skin: string = 'hud';

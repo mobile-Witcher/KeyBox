@@ -643,7 +643,7 @@ struct Vault {
     Stack() {
       SkinBackdrop()
       Column() {
-        SkinBar({ title: '密钥库' })
+        SkinBar({ title: '密钥库·I7' })
         SkinWordmark({ count: 0 })
         // ── 顶栏：品牌 + 搜索 + 分类 + 4 个图标（同一行） ──
         Row({ space: 8 }) {
