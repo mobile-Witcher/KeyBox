@@ -10,7 +10,7 @@ import { useAppearance } from "../hooks/useAppearance";
 import { SKINS, type Skin } from "../lib/theme";
 
 export default function ThemeToggle(): JSX.Element {
-  const { theme, skin, setTheme, setSkin, toggleTheme } = useAppearance();
+  const { theme, skin, setTheme, setSkin } = useAppearance();
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,7 +47,7 @@ export default function ThemeToggle(): JSX.Element {
       </button>
 
       {open ? (
-        <div className="kb-card-lg absolute right-0 z-30 mt-2 w-72 p-3">
+        <div className="kb-card-lg absolute right-0 z-30 mt-2 w-80 p-3.5">
           <p className="kb-heading text-xs font-medium uppercase text-kb-muted">皮肤</p>
           <div className="mt-2 max-h-[52vh] space-y-1 overflow-y-auto pr-1">
             {SKINS.map((s) => (
@@ -65,12 +65,12 @@ export default function ThemeToggle(): JSX.Element {
           <p className="kb-heading mt-3 border-t border-kb-border pt-3 text-xs font-medium uppercase text-kb-muted">
             明暗
           </p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="mt-2 grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => setTheme("light")}
               className={
-                "kb-btn border text-sm " +
+                "kb-btn min-w-0 justify-center whitespace-nowrap border px-2 py-2.5 text-sm " +
                 (!isDark ? "border-kb-primary text-kb-primary" : "border-kb-border text-kb-muted")
               }
             >
@@ -81,7 +81,7 @@ export default function ThemeToggle(): JSX.Element {
               type="button"
               onClick={() => setTheme("dark")}
               className={
-                "kb-btn border text-sm " +
+                "kb-btn min-w-0 justify-center whitespace-nowrap border px-2 py-2.5 text-sm " +
                 (isDark ? "border-kb-primary text-kb-primary" : "border-kb-border text-kb-muted")
               }
             >
@@ -89,14 +89,6 @@ export default function ThemeToggle(): JSX.Element {
               深色
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="kb-hint mt-3 w-full text-left underline decoration-dotted hover:no-underline"
-          >
-            或直接切换到{isDark ? "浅色" : "深色"}
-          </button>
         </div>
       ) : null}
     </div>

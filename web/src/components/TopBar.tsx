@@ -173,8 +173,8 @@ export default function TopBar({
         </TopIconButton>
       </div>
 
-      {/* ── 账户头像（点击打开账户菜单：全端统一入口） ── */}
-      <div className="relative shrink-0" ref={acctRef}>
+      {/* ── 账户头像（移动端唯一的全功能入口；桌面端功能已在顶栏图标里，故隐藏） ── */}
+      <div className="relative shrink-0 sm:hidden" ref={acctRef}>
         <button
           type="button"
           onClick={() => setAccountOpen((v) => !v)}
