@@ -790,13 +790,14 @@ body {
   --kb-muted: #8a8f94;
   --kb-border: #26292c;
   --kb-border-strong: #3a3e42;
-  --kb-primary: #e0433c;
-  --kb-primary-hover: #f25c55;
-  --kb-primary-contrast: #0a0a0a;
+  /* 主色用血红本身（而不是提亮版）：白字对比度才够；悬停才提亮 */
+  --kb-primary: #c8102e;
+  --kb-primary-hover: #e0223f;
+  --kb-primary-contrast: #ffffff;
   --kb-danger: #e0433c;
   --kb-success: #7fb08a;
   --kb-warning: #e0c060;
-  --kb-ring: rgba(224, 67, 60, 0.28);
+  --kb-ring: rgba(200, 16, 46, 0.35);
   --kb-shadow: none;
   --kb-shadow-lg: none;
   --kb-grid: rgba(255, 255, 255, 0.03);
