@@ -107,10 +107,23 @@ export default function TopBar({
   };
 
   return (
-    <header
-      className="sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5"
-      style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
-    >
+    <>
+      {/*
+       * 终末地皮肤专用：顶栏上方的终端信息条（其它皮肤 display:none，视觉零变化；不参与 sticky）。
+       * 展开条件见 index.css「主界面（密钥舱）终端化附加元素」。
+       */}
+      <div className="kb-term-bar kb-appterm" aria-hidden="true">
+        <span className="kb-plate">Asset Bay</span>
+        <b>ENDFIELD // KEYBOX</b>
+        <span>UNIT EN-07</span>
+        <span>LINK STABLE</span>
+        <span className="ml-auto">OPERATOR {avatarText}</span>
+      </div>
+
+      <header
+        className="kb-topbar sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
       {/* ── 左：品牌标识（移动端只留图标） ── */}
       <div className="flex shrink-0 items-center gap-2">
         <span
@@ -227,6 +240,7 @@ export default function TopBar({
         ) : null}
       </div>
     </header>
+    </>
   );
 }
 

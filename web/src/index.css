@@ -963,3 +963,40 @@ body {
     padding: 22px 20px 20px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   终末地：主界面（密钥舱）终端化附加元素
+   默认隐藏 → 其它皮肤不受影响
+   ═══════════════════════════════════════════════════════════════════════════ */
+.kb-appterm,
+.kb-endfield-only {
+  display: none;
+}
+[data-skin="endfield"] .kb-appterm {
+  display: flex;
+}
+[data-skin="endfield"] .kb-endfield-only {
+  display: block;
+}
+[data-skin="endfield"] .kb-hide-in-endfield {
+  display: none;
+}
+/* 顶栏上方的终端信息条（非 sticky，独立成条） */
+[data-skin="endfield"] .kb-appterm {
+  display: flex;
+  border-bottom: 1px solid var(--kb-border);
+}
+/* 密钥舱页头：显示字体大字 + 信号黄标签牌 */
+[data-skin="endfield"] .kb-bay-title {
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  line-height: 1;
+}
+/* 解锁面板：直角 + 双线框 + 等宽小标题（沿用卡片规则，这里只补标题） */
+[data-skin="endfield"] .kb-unlock-title {
+  font-family: var(--kb-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}

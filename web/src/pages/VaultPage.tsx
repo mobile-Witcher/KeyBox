@@ -453,7 +453,19 @@ export default function VaultPage({
                 onSelect={setActiveTag}
               />
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-base font-semibold">
+                {/* 终末地皮肤专用：密钥舱页头（其它皮肤 display:none） */}
+                <div className="kb-endfield-only">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="kb-plate">Asset Bay</span>
+                    <span className="kb-eyebrow">
+                      KeyBox // 密钥舱 · 资产 {visible.length}
+                      {visible.length !== items.length ? ` / ${items.length}` : ""}
+                      {activeTag ? ` · 分类 ${activeTag}` : ""}
+                    </span>
+                  </div>
+                  <h2 className="kb-bay-title mt-2 text-2xl text-kb-text">Specimen Archive</h2>
+                </div>
+                <h2 className="kb-hide-in-endfield text-base font-semibold">
                   我的密钥（{visible.length}
                   {visible.length !== items.length ? ` / 共 ${items.length}` : ""}）
                   {activeTag ? <span className="ml-2 text-sm text-kb-muted">标签：{activeTag}</span> : null}
@@ -656,7 +668,10 @@ function UnlockPanel({
 }): JSX.Element {
   return (
     <div className="mx-auto max-w-md rounded-xl border border-kb-border bg-kb-surface p-6 shadow-sm dark:border-kb-border dark:bg-kb-surface">
-      <h2 className="text-base font-semibold">输入主密码解锁</h2>
+      <div className="kb-endfield-only mb-3">
+        <span className="kb-plate">Authorize</span>
+      </div>
+      <h2 className="kb-unlock-title text-base font-semibold">输入主密码解锁</h2>
       <p className="mt-1 text-sm text-kb-muted">
         主密码只在本机校验，云端没有任何副本。
       </p>
