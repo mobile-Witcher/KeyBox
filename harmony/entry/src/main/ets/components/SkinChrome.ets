@@ -1015,7 +1015,7 @@ export struct SkinIcon {
           .strokeLineCap(LineCapStyle.Round)
           .strokeLineJoin(LineJoinStyle.Round)
           // 只放大图形本身（容器不放大）：约 17px 图形 → 22px，仍在 34 框内
-          .scale({ x: 1.3, y: 1.3 })
+          .scale({ x: 1.35, y: 1.35 })
           .hitTestBehavior(HitTestMode.None)
       }, (d: string, i: number) => 'p' + i.toString())
     }
