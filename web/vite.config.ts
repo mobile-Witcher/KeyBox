@@ -13,6 +13,22 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    /*
+     * 文件监听白名单：编辑器/代理做原子写入时会先建临时目录（如
+     * `src/**.tmpdir/*.tmp`），chokidar 去 watch 它时在 Windows 上会拿到
+     * EBUSY（resource busy or locked）并把整个 dev server 进程带崩。
+     * 这里显式忽略临时产物，避免“改一个文件后服务直接退出”。
+     */
+    watch: {
+      ignored: [
+        "**/.*.tmpdir/**",
+        "**/*.tmp",
+        "**/*.swp",
+        "**/.git/**",
+        "**/node_modules/**",
+        "**/dist/**",
+      ],
+    },
   },
   build: {
     outDir: "dist",
