@@ -251,6 +251,13 @@ export default function SecurityPanel({
 
   return (
     <section className="space-y-4 rounded-xl border border-kb-border bg-kb-surface p-5 shadow-sm dark:border-kb-border dark:bg-kb-surface">
+      {/* 终末地皮肤专用：安全面板终端头（其它皮肤隐藏） */}
+      <div className="kb-endfield-only">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="kb-plate">Security</span>
+          <span className="kb-eyebrow">KeyBox // 安全与恢复</span>
+        </div>
+      </div>
       <h2 className="text-base font-semibold">安全</h2>
 
       {error ? (
@@ -303,6 +310,7 @@ export default function SecurityPanel({
 
       {/* R21 改主密码 */}
       <form className="space-y-2 border-t border-kb-border pt-4 dark:border-kb-border" onSubmit={handleChangeMaster}>
+        <div className="kb-hazard kb-endfield-only" />
         <h3 className="text-sm font-medium">修改主密码（R21）</h3>
         <p className="text-xs text-kb-muted">
           本机会用原主密码逐条解密、用新主密码重加密后再整批提交；任何一条失败都会整体中止，不会产生“半新半旧”。

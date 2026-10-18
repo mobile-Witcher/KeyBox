@@ -84,7 +84,19 @@ export default function SecretDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-3 sm:items-center sm:p-4">
       <div className="kb-card-lg my-auto w-full max-w-lg p-5 sm:p-6">
-        <h3 className="text-base font-semibold">{initial ? "编辑密钥" : "新增密钥"}</h3>
+        {/* 终末地皮肤专用：样本编辑终端头（其它皮肤隐藏） */}
+        <div className="kb-endfield-only mb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="kb-plate">{initial ? "Edit" : "New"}</span>
+            <span className="kb-eyebrow">KeyBox // Specimen Record</span>
+          </div>
+          <h3 className="kb-bay-title mt-2 text-xl text-kb-text">
+            {initial ? "Edit Specimen" : "New Specimen"}
+          </h3>
+        </div>
+        <h3 className="kb-hide-in-endfield text-base font-semibold">
+          {initial ? "编辑密钥" : "新增密钥"}
+        </h3>
         <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
           <DialogField label="站点名" value={site} onChange={setSite} placeholder="例如 OpenAI" />
           <DialogField
@@ -114,6 +126,7 @@ export default function SecretDialog({
             placeholder="逗号分隔，例如 工作, 个人"
           />
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <div className="kb-hazard kb-endfield-only" />
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"

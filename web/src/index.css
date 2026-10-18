@@ -1034,3 +1034,38 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.16em;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   终末地：管理后台 / 安全面板 / 密钥弹窗的通用面版与遮罩
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* 内联调色板的可见性修正：标签牌/眉眼在终末地里按各自外观显示 */
+[data-skin="endfield"] .kb-plate.kb-endfield-only {
+  display: inline-flex;
+}
+[data-skin="endfield"] .kb-eyebrow.kb-endfield-only {
+  display: inline;
+}
+/* 通用面板（后台卡片 / 安全面板 / 弹窗）→ 双线框 */
+[data-skin="endfield"] section.rounded-xl,
+[data-skin="endfield"] main section.rounded-xl {
+  border-color: var(--kb-border-strong);
+  box-shadow: inset 0 0 0 1px var(--kb-border-strong);
+}
+[data-skin="endfield"] h2,
+[data-skin="endfield"] h3,
+[data-skin="endfield"] h4 {
+  font-family: "Bahnschrift", var(--kb-font-sans);
+  letter-spacing: 0.08em;
+}
+[data-skin="endfield"] code {
+  font-family: var(--kb-mono);
+  letter-spacing: 0.08em;
+}
+[data-skin="endfield"] strong {
+  letter-spacing: 0.02em;
+}
+/* 弹窗遮罩：叠加细点阵，像设备投影罩（仅终末地） */
+[data-skin="endfield"] .fixed.inset-0.z-50 {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 12px 12px;
+}

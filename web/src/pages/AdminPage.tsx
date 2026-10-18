@@ -181,10 +181,20 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
 
   return (
     <div className="flex min-h-full flex-col">
+      {/* 终末地皮肤专用：运营控制台终端条（其它皮肤隐藏；不参与 sticky） */}
+      <div className="kb-term-bar kb-appterm" aria-hidden="true">
+        <span className="kb-plate">Command</span>
+        <b>ENDFIELD // ADMIN</b>
+        <span className="kb-term-extra">UNIT EN-07</span>
+        <span className="kb-term-extra">LINK STABLE</span>
+        <span className="kb-term-extra ml-auto">OPERATOR {username}</span>
+      </div>
+
       {/* 顶栏 */}
       <header className="flex items-center justify-between border-b border-kb-border px-6 py-3 dark:border-kb-border">
         <div className="flex items-center gap-3">
           <span className="font-semibold">KeyBox · 管理后台</span>
+          <span className="kb-eyebrow kb-endfield-only">Operations Console</span>
           <button
             type="button"
             onClick={onBack}
@@ -208,6 +218,14 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 p-6">
+        {/* 终末地皮肤专用：页面显示字（其它皮肤隐藏） */}
+        <div className="kb-endfield-only">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="kb-plate">Admin</span>
+            <span className="kb-eyebrow">KeyBox // 运营控制台 · 席位与邀请码</span>
+          </div>
+          <h1 className="kb-bay-title mt-2 text-2xl text-kb-text">Operations</h1>
+        </div>
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
             {error}
@@ -222,6 +240,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
         {/* 邀请码区（R02） */}
         <section className="rounded-xl border border-kb-border p-5 dark:border-kb-border">
           <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="kb-plate kb-endfield-only">Invite</span>
             <h2 className="text-base font-semibold">邀请码</h2>
             <div className="text-sm text-kb-muted">
               已开户 {seatCount} / 上限 {USER_LIMIT}
