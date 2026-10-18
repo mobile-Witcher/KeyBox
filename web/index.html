@@ -29,7 +29,8 @@
             kawaii: { light: "#fff5f9", dark: "#2a1a24" },
             hacker: { light: "#f2f5f0", dark: "#000000" },
             solar: { light: "#f4f0e6", dark: "#1e2318" },
-            sunset: { light: "#fff4ec", dark: "#1d1119" }
+            sunset: { light: "#fff4ec", dark: "#1d1119" },
+            endfield: { light: "#ede6d6", dark: "#0e0f0f" }
           };
           var ls = null;
           try {
@@ -37,13 +38,23 @@
           } catch (e) {
             ls = null;
           }
-          var storedTheme = ls ? ls.getItem("keybox.theme") : null;
+          /* URL 预览参数（?skin=endfield&theme=dark）：演示/截图用，优先于存储 */
+          var q = null;
+          try {
+            q = new URLSearchParams(window.location.search);
+          } catch (e) {
+            q = null;
+          }
+          var qTheme = q ? q.get("theme") : null;
+          var qSkin = q ? q.get("skin") : null;
+          var storedTheme =
+            qTheme === "light" || qTheme === "dark" ? qTheme : ls ? ls.getItem("keybox.theme") : null;
           var isDark =
             storedTheme === "dark" ||
             (storedTheme !== "light" &&
               window.matchMedia &&
               window.matchMedia("(prefers-color-scheme: dark)").matches);
-          var storedSkin = ls ? ls.getItem("keybox.skin") : null;
+          var storedSkin = qSkin && BG[qSkin] ? qSkin : ls ? ls.getItem("keybox.skin") : null;
           var skin = storedSkin && BG[storedSkin] ? storedSkin : "default";
           var root = document.documentElement;
           if (isDark) root.classList.add("dark");

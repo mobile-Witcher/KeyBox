@@ -29,27 +29,110 @@ export function AuthCard({
       </div>
 
       <div className="kb-card-lg relative w-full max-w-md p-8">
-        {/* 品牌区 */}
-        <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="grid h-9 w-9 place-items-center rounded-xl bg-kb-primary text-base font-bold text-kb-primary-contrast"
-          >
-            K
-          </span>
-          <span className="text-lg font-semibold tracking-tight text-kb-text">KeyBox</span>
+        {/*
+         * 终末地皮肤专用结构（其它皮肤通过 CSS 全部隐藏，视觉零变化）：
+         *   .kb-auth-termbar 终端顶栏 / .kb-auth-hero 左栏英雄区 / .kb-auth-boot 启动日志
+         * 展开条件：[data-skin="endfield"]，见 index.css「授权页双栏终端形态」一节。
+         */}
+        <div className="kb-term-bar kb-auth-termbar" aria-hidden>
+          <span className="kb-plate">Field Terminal</span>
+          <b>ENDFIELD // ACCESS</b>
+          <span>UNIT EN-07</span>
+          <span>LINK STABLE</span>
+          <span className="ml-auto">2026-10-18 16:20</span>
         </div>
 
-        <h1 className="mt-7 text-lg font-semibold tracking-tight text-kb-text">{title}</h1>
-        {subtitle ? (
-          <p className="mt-1.5 text-sm leading-relaxed text-kb-muted">{subtitle}</p>
-        ) : null}
+        <div className="kb-auth-grid">
+          <aside className="kb-auth-hero" aria-hidden>
+            <div>
+              <div className="kb-eyebrow">Access protocol / 001</div>
+              <p className="kb-display kb-display-outline mt-3 text-4xl text-kb-text">
+                Field
+                <br />
+                Terminal
+              </p>
+              <p className="mt-3 text-sm font-semibold text-kb-text">现场终端 · 密钥舱授权</p>
+              <p className="mt-1 text-xs leading-relaxed text-kb-muted">
+                接入后所有操作写入现场记录；密钥舱仅在授权会话中可读。
+              </p>
+            </div>
 
-        <div className="mt-6 space-y-4">{children}</div>
+            <div className="grid grid-cols-2 gap-px border border-kb-border-strong bg-kb-border-strong">
+              <Unit k="Operator" v="07 / KB-OP-0007" />
+              <Unit k="Clearance" v="CLASS III" />
+              <Unit k="Power cell" v="97% · CHARGED" />
+              <Unit k="Radio link" v="STABLE · 12 ms" />
+            </div>
 
-        {footer ? (
-          <div className="mt-6 border-t border-kb-border pt-4 text-sm text-kb-muted">{footer}</div>
-        ) : null}
+            <div className="kb-scan h-32">
+              <span className="kb-scan-cap">Palm field · sensor ok</span>
+            </div>
+
+            <div className="kb-manual">
+              <div className="kb-manual-h">
+                <span>Operator manual · p.07</span>
+                <span>Rev 3</span>
+              </div>
+              <h4>Authorization notes</h4>
+              <p>每次接入需重新校验操作员身份；明文仅在授权期间停留于内存，会话结束自动擦除。</p>
+              <div className="kb-manual-sign">
+                <span>Signed · ENDFIELD IND.</span>
+                <span className="kb-manual-bc" />
+              </div>
+            </div>
+          </aside>
+
+          <div className="kb-auth-main">
+            {/* 品牌区 */}
+            <div className="flex items-center gap-2.5">
+              <span
+                aria-hidden
+                className="grid h-9 w-9 place-items-center rounded-xl bg-kb-primary text-base font-bold text-kb-primary-contrast"
+              >
+                K
+              </span>
+              <span className="text-lg font-semibold tracking-tight text-kb-text">KeyBox</span>
+            </div>
+
+            <h1 className="mt-7 text-lg font-semibold tracking-tight text-kb-text">{title}</h1>
+            {subtitle ? (
+              <p className="mt-1.5 text-sm leading-relaxed text-kb-muted">{subtitle}</p>
+            ) : null}
+
+            <div className="mt-6 space-y-4">{children}</div>
+
+            {footer ? (
+              <div className="mt-6 border-t border-kb-border pt-4 text-sm text-kb-muted">
+                {footer}
+              </div>
+            ) : null}
+
+            <div className="kb-auth-boot" aria-hidden>
+              <div className="kb-eyebrow">Boot log / 现场记录</div>
+              <div className="kb-boot-lines">
+                <span>16:20:11 · SENSOR PALM … OK</span>
+                <span>16:20:12 · VAULT HANDSHAKE … OK</span>
+                <span>16:20:13 · OPERATOR 07 … PENDING AUTH</span>
+              </div>
+              <div className="kb-hazard mt-2" />
+              <p className="kb-boot-warn">Unauthorized access will be logged · 非授权访问将被记录</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 终端英雄区里的「键 / 值」单元（仅终末地皮肤可见其父容器）。 */
+function Unit({ k, v }: { k: string; v: string }): JSX.Element {
+  return (
+    <div className="bg-kb-surface px-2.5 py-2">
+      <div className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-kb-muted">
+        {k}
+      </div>
+      <div className="mt-1 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-kb-text">
+        {v}
       </div>
     </div>
   );

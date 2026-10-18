@@ -157,6 +157,7 @@ const SWATCH: Record<Skin, string> = {
   hacker: "linear-gradient(135deg,#20ff5f,#0a3d1a)",
   solar: "#2f6f5e",
   sunset: "linear-gradient(135deg,#ffb347,#e2622a)",
+  endfield: "linear-gradient(135deg,#f2c300 0 46%,#1d2020 46% 100%)",
 };
 
 function PaletteIcon(): JSX.Element {

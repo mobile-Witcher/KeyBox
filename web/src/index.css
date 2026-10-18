@@ -569,3 +569,397 @@ body {
     border-bottom: 3px double var(--kb-border-strong);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   皮肤 ⑩：endfield（终末地 · 现场终端）
+   浅色 = 官网式奶油纸 + 墨黑 + 信号黄；深色 = 游戏内工业 HUD（石墨 + 信号黄 + 全息青）
+   几何：全直角（radius 0）、无投影（用双线框代替）、大写等宽标签
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-skin="endfield"] {
+  /* —— 奶油纸（浅色）—— */
+  --kb-bg: #ede6d6;
+  --kb-surface: #f6f0e2;
+  --kb-surface-2: #e3dac6;
+  --kb-text: #15140f;
+  --kb-muted: #5e5747;
+  --kb-border: #c6bba3;
+  --kb-border-strong: #a99c82;
+  /* 浅色下主操作 = 墨黑块（黄作文字/描边），对比最强 */
+  --kb-primary: #1a1a17;
+  --kb-primary-hover: #000000;
+  --kb-primary-contrast: #f2c300;
+  --kb-danger: #b5342a;
+  --kb-success: #3c7a56;
+  --kb-warning: #8a6a1f;
+  --kb-ring: rgba(185, 138, 0, 0.4);
+  --kb-shadow: none;
+  --kb-shadow-lg: 0 0 0 2px #1a1a17;
+  --kb-radius: 0px;
+  --kb-radius-card: 0px;
+  --kb-font-sans: "Bahnschrift", "Microsoft YaHei UI", "Segoe UI", sans-serif;
+  --kb-heading-tracking: 0.14em;
+  /* 终末地专属令牌 */
+  --kb-signal: #b98a00;
+  --kb-holo: #1c7d82;
+  --kb-plate-ink: #141007;
+  --kb-grid: rgba(21, 20, 15, 0.055);
+  --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+[data-skin="endfield"].dark {
+  /* —— 石墨 HUD（深色）—— */
+  --kb-bg: #0e0f0f;
+  --kb-surface: #1d2020;
+  --kb-surface-2: #232626;
+  --kb-text: #f2f0e8;
+  --kb-muted: #8f8b7e;
+  --kb-border: #2a2d2a;
+  --kb-border-strong: #3a3d3a;
+  --kb-primary: #f2c300;
+  --kb-primary-hover: #ffd83d;
+  --kb-primary-contrast: #141007;
+  --kb-danger: #e03a2f;
+  --kb-success: #57c08a;
+  --kb-warning: #ff7a1a;
+  --kb-ring: rgba(242, 195, 0, 0.35);
+  --kb-shadow: none;
+  --kb-shadow-lg: none;
+  --kb-signal: #f2c300;
+  --kb-holo: #57d3d9;
+  --kb-plate-ink: #141007;
+  --kb-grid: rgba(255, 255, 255, 0.022);
+  color-scheme: dark;
+}
+
+/* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
+[data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
+  border-radius: 0 !important;
+}
+[data-skin="endfield"] :where(.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: none !important;
+}
+/* 蓝图格底（深色更明显） */
+[data-skin="endfield"] body {
+  background-image:
+    linear-gradient(var(--kb-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--kb-grid) 1px, transparent 1px);
+  background-size: 8px 8px, 8px 8px;
+}
+/* 输入框：下划线式 + 信号黄焦点 */
+[data-skin="endfield"] .kb-input {
+  border-width: 0 0 1px 0;
+  border-color: var(--kb-border-strong);
+  background-color: color-mix(in srgb, var(--kb-surface) 88%, transparent);
+  font-family: var(--kb-mono);
+  letter-spacing: 0.04em;
+  padding-left: 0.6rem;
+}
+[data-skin="endfield"] .kb-input:focus {
+  border-bottom-width: 2px;
+  border-color: var(--kb-signal);
+  box-shadow: none;
+}
+/* 按钮：直角 + 四角标记；主按钮=信号黄块（深色）/墨黑块（浅色） */
+[data-skin="endfield"] .kb-btn-primary,
+[data-skin="endfield"] .kb-btn-ghost,
+[data-skin="endfield"] .kb-btn-danger {
+  font-family: var(--kb-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  position: relative;
+  box-shadow: none;
+}
+[data-skin="endfield"] .kb-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--kb-signal) inset;
+}
+[data-skin="endfield"] .kb-badge {
+  border-radius: 0;
+  font-family: var(--kb-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+[data-skin="endfield"] .kb-hint {
+  font-family: var(--kb-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+/* 终末地：卡片用「双线框」代替圆角与投影 */
+[data-skin="endfield"] .kb-card,
+[data-skin="endfield"] .kb-card-lg {
+  box-shadow: inset 0 0 0 1px var(--kb-border-strong), inset 0 0 0 4px var(--kb-surface);
+  border-color: var(--kb-border-strong);
+}
+
+/* —— 终末地专属组件类 —— */
+@layer components {
+  /** 信号黄标签牌（全大写等宽，像设备上的丝印） */
+  .kb-plate {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--kb-signal);
+    color: var(--kb-plate-ink);
+    font-family: var(--kb-mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.55rem;
+    line-height: 1;
+  }
+  /** 小号等宽眉眼标签 */
+  .kb-eyebrow {
+    font-family: var(--kb-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--kb-muted);
+  }
+  /** 危险警示带（45° 黄黑条纹） */
+  .kb-hazard {
+    height: 6px;
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--kb-signal) 0 6px,
+      #141007 6px 12px
+    );
+  }
+  /** 终端机顶栏：等宽大写 + 底边 */
+  .kb-term-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--kb-border-strong);
+    padding: 0.55rem 0.85rem;
+    background: var(--kb-surface-2);
+    font-family: var(--kb-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--kb-muted);
+  }
+  .kb-term-bar b {
+    color: var(--kb-text);
+    font-weight: 700;
+  }
+  /** 扫描场（全息青椭圆 + 一次性扫描线） */
+  .kb-scan {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--kb-border-strong);
+    background:
+      radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--kb-holo) 16%, transparent) 0 26%, transparent 27%),
+      repeating-radial-gradient(ellipse at 50% 50%, transparent 0 14px, color-mix(in srgb, var(--kb-holo) 22%, transparent) 14px 15px),
+      var(--kb-surface);
+  }
+  .kb-scan::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--kb-holo);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--kb-holo) 70%, transparent);
+    animation: kb-scanline 2.6s cubic-bezier(0.2, 0, 0, 1) 1 both;
+  }
+  /** 显示字体（工业宽体大写） */
+  .kb-display {
+    font-family: "Bahnschrift", "D-DIN", "Segoe UI", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+}
+@keyframes kb-scanline {
+  0% {
+    top: 6%;
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  86% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   终末地：授权页（登录 / 注册 / 初始化共用的 AuthCard）双栏终端形态
+   默认隐藏全部新增结构 → 其它 9 套皮肤视觉零变化；仅 [data-skin="endfield"] 展开
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* 终末地不做柔光：隐藏登录页装饰光晕（其它皮肤保留） */
+[data-skin="endfield"] .blur-3xl {
+  display: none !important;
+}
+/* 终端化通用面版：表头大写等宽、标题字距更疏（只影响该皮肤） */
+[data-skin="endfield"] thead th {
+  font-family: var(--kb-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  border-bottom: 1px solid var(--kb-border-strong);
+}
+[data-skin="endfield"] table tbody td {
+  border-bottom: 1px solid var(--kb-border);
+}
+[data-skin="endfield"] h1,
+[data-skin="endfield"] h2,
+[data-skin="endfield"] h3 {
+  letter-spacing: 0.12em;
+}
+
+.kb-auth-termbar,
+.kb-auth-hero,
+.kb-auth-boot {
+  display: none;
+}
+
+[data-skin="endfield"] .kb-card-lg {
+  max-width: 1060px;
+  padding: 0;
+}
+[data-skin="endfield"] .kb-auth-grid {
+  display: grid;
+  grid-template-columns: 1.03fr 0.97fr;
+}
+[data-skin="endfield"] .kb-auth-termbar {
+  display: flex;
+}
+[data-skin="endfield"] .kb-auth-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 20px;
+  border-right: 1px solid var(--kb-border-strong);
+  background: var(--kb-surface-2);
+}
+[data-skin="endfield"] .kb-auth-main {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 26px 22px;
+}
+[data-skin="endfield"] .kb-auth-boot {
+  display: block;
+  margin-top: auto;
+  padding-top: 16px;
+}
+[data-skin="endfield"] .kb-display-outline {
+  /* 描边字：stroke 必须用具体色值，currentColor 会跟着 color:transparent 一起消失 */
+  -webkit-text-stroke: 1.2px var(--kb-text);
+  color: transparent;
+}
+
+/* 扫描场上的角标文案 */
+.kb-scan-cap {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+
+/* 奶油纸手册插页（终末地官网语汇，固定色值，不随明暗翻转） */
+.kb-manual {
+  background: #ede6d6;
+  color: #15140f;
+  border-left: 4px solid #f2c300;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 0 1px #c6bba3;
+}
+.kb-manual-h {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--kb-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #5e5747;
+}
+.kb-manual h4 {
+  margin: 0.55rem 0 0.35rem;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.kb-manual p {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.65;
+  color: #5e5747;
+}
+.kb-manual-sign {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 0.7rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #c6bba3;
+  font-family: var(--kb-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5e5747;
+}
+.kb-manual-bc {
+  display: block;
+  width: 72px;
+  height: 12px;
+  background: repeating-linear-gradient(
+    90deg,
+    #15140f 0 1px,
+    transparent 1px 3px,
+    #15140f 3px 5px,
+    transparent 5px 6px,
+    #15140f 6px 7px,
+    transparent 7px 9px
+  );
+  opacity: 0.8;
+}
+
+/* 启动日志（终端内） */
+.kb-boot-lines {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--kb-muted);
+}
+.kb-boot-warn {
+  margin: 7px 0 0;
+  font-family: var(--kb-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kb-warning);
+}
+
+/* 窄屏：单栏，隐藏英雄区，保持表单可用 */
+@media (max-width: 920px) {
+  [data-skin="endfield"] .kb-card-lg {
+    max-width: 34rem;
+  }
+  [data-skin="endfield"] .kb-auth-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-skin="endfield"] .kb-auth-hero {
+    display: none;
+  }
+  [data-skin="endfield"] .kb-auth-main {
+    padding: 22px 20px 20px;
+  }
+}

@@ -25,7 +25,8 @@ export type Skin =
   | "kawaii" // 可爱风
   | "hacker" // 极客终端
   | "solar" // 护眼自然
-  | "sunset"; // 暖阳
+  | "sunset" // 暖阳
+  | "endfield"; // 终末地 · 现场终端
 
 /** localStorage 键（与 index.html 内联脚本一致）。 */
 export const THEME_STORAGE_KEY = "keybox.theme";
@@ -42,6 +43,7 @@ export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
   hacker: { light: "#f2f5f0", dark: "#000000" },
   solar: { light: "#f4f0e6", dark: "#1e2318" },
   sunset: { light: "#fff4ec", dark: "#1d1119" },
+  endfield: { light: "#ede6d6", dark: "#0e0f0f" },
 };
 
 /** 可选皮肤清单（供外观选择器渲染；顺序即展示顺序）。 */
@@ -55,6 +57,11 @@ export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
   { id: "hacker", label: "极客终端", hint: "荧光绿字黑屏 + 等宽字体，终端味十足" },
   { id: "solar", label: "护眼自然", hint: "低饱和莫兰迪，长时间看最不累眼" },
   { id: "sunset", label: "暖阳", hint: "暖橙渐层，明快温暖有活力" },
+  {
+    id: "endfield",
+    label: "终末地 · 现场终端",
+    hint: "石墨 HUD / 奶油纸双底，信号黄 + 全息青，全直角工业终端",
+  },
 ];
 
 const SKIN_IDS: Skin[] = SKINS.map((s) => s.id);
@@ -71,6 +78,15 @@ function readStorage(key: string): string | null {
   }
 }
 
+/** 读取 URL 预览参数（`?skin=endfield&theme=dark`）。用于演示/截图，不写回存储。 */
+function readUrlParam(key: string): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get(key);
+  } catch {
+    return null;
+  }
+}
+
 function writeStorage(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
@@ -79,9 +95,11 @@ function writeStorage(key: string, value: string): void {
   }
 }
 
-/** 解析首屏明暗：存储优先，其次系统偏好，最后浅色。 */
+/** 解析首屏明暗：URL 预览参数 > 存储 > 系统偏好 > 浅色。 */
 export function resolveInitialTheme(): Theme {
   if (!hasWindow()) return "light";
+  const fromUrl = readUrlParam("theme");
+  if (fromUrl === "light" || fromUrl === "dark") return fromUrl;
   const stored = readStorage(THEME_STORAGE_KEY);
   if (stored === "light" || stored === "dark") return stored;
   try {
@@ -91,9 +109,11 @@ export function resolveInitialTheme(): Theme {
   }
 }
 
-/** 解析首屏皮肤：存储优先，非法值回退 default。 */
+/** 解析首屏皮肤：URL 预览参数 > 存储 > default。 */
 export function resolveInitialSkin(): Skin {
   if (!hasWindow()) return "default";
+  const fromUrl = readUrlParam("skin");
+  if (fromUrl && SKIN_IDS.indexOf(fromUrl as Skin) >= 0) return fromUrl as Skin;
   const stored = readStorage(SKIN_STORAGE_KEY);
   return SKIN_IDS.indexOf(stored as Skin) >= 0 ? (stored as Skin) : "default";
 }
