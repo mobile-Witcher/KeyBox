@@ -141,6 +141,7 @@ struct Index {
 
   build() {
     Column({ space: 14 }) {
+      SkinBar({ title: '登录' })
       Text('KeyBox')
         .fontSize(26)
         .fontWeight(FontWeight.Bold)

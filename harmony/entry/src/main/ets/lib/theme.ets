@@ -39,11 +39,13 @@ export interface ThemeColors {
   headingTracking: string;
 }
 
-/** 皮肤定义（含明暗两套颜色与展示信息）。 */
+/** 皮肤定义（含明暗两套颜色、展示信息与三色预览）。 */
 export interface SkinDef {
   id: SkinId;
   label: string;
   hint: string;
+  /** 选择器里的三色预览（底 / 主色 / 强调），与 Web 端外观面板一致。 */
+  preview: string[];
   light: ThemeColors;
   dark: ThemeColors;
 }
@@ -55,6 +57,7 @@ const SANS_DISPLAY: string = '"HarmonyOS Sans SC","HarmonyOS Sans","PingFang SC"
 export const SKINS: SkinDef[] = [
   {
     id: 'hud', label: '工业终端', hint: '石墨 HUD / 奶油纸双底，信号黄 + 全息青，全直角',
+    preview: ['#ede6d6', '#f2c300', '#1d2020'],
     light: {
       bg: '#ede6d6', surface: '#f6f0e2', surface2: '#e3dac6', text: '#15140f',
       muted: '#5e5747', border: '#c6bba3', borderStrong: '#a99c82',
@@ -72,6 +75,7 @@ export const SKINS: SkinDef[] = [
   },
   {
     id: 'lab', label: '实验档案', hint: '骨白纸底 + 淡青，细双框与等宽编号',
+    preview: ['#f4f6f4', '#0e6e6b', '#2fb6b0'],
     light: {
       bg: '#f4f6f4', surface: '#ffffff', surface2: '#e7eae6', text: '#101214',
       muted: '#6b7472', border: '#c9d0ca', borderStrong: '#aab3ac',
@@ -89,6 +93,7 @@ export const SKINS: SkinDef[] = [
   },
   {
     id: 'blueprint', label: '蓝图海报', hint: '纯黑 chrome + 青，蓝图网格与巨型词标',
+    preview: ['#000000', '#0ae0f0', '#e7eef1'],
     light: {
       bg: '#e7eef1', surface: '#ffffff', surface2: '#dce6ea', text: '#0a0d0e',
       muted: '#5c6a70', border: '#c3d2d8', borderStrong: '#8fa3ab',
@@ -106,6 +111,7 @@ export const SKINS: SkinDef[] = [
   },
   {
     id: 'mono', label: '黑白档案', hint: '近黑白 + 朱红角标，硬朗的档案秩序',
+    preview: ['#08090a', '#c8102e', '#f2f2f2'],
     light: {
       bg: '#f7f7f5', surface: '#ffffff', surface2: '#efefec', text: '#0a0a0a',
       muted: '#6a6e72', border: '#dcdcd8', borderStrong: '#b9bab6',
@@ -123,6 +129,7 @@ export const SKINS: SkinDef[] = [
   },
   {
     id: 'overprint', label: '套印图录', hint: '冷白纸 + 钴蓝圆盘 + 套印错位，细线图录',
+    preview: ['#edf1ee', '#2447c6', '#101418'],
     light: {
       bg: '#edf1ee', surface: '#ffffff', surface2: '#e3e9e6', text: '#101418',
       muted: '#5c6866', border: '#cbd5d1', borderStrong: '#9fada8',

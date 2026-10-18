@@ -196,6 +196,7 @@ struct Register {
   build() {
     Scroll() {
       Column({ space: 14 }) {
+        SkinBar({ title: '注册' })
         Text('注册 KeyBox')
           .fontSize(26)
           .fontWeight(FontWeight.Bold)

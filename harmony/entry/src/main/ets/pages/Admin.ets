@@ -249,6 +249,7 @@ struct Admin {
   build() {
     Stack() {
       Column() {
+        SkinBar({ title: '管理后台' })
         // ── 顶栏 ──
         Row({ space: 10 }) {
           Text('KeyBox · 管理后台')

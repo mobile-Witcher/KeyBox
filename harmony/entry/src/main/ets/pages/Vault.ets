@@ -641,6 +641,8 @@ struct Vault {
   build() {
     Stack() {
       Column() {
+        SkinBar({ title: '密钥库' })
+        SkinWordmark({ count: 0 })
         // ── 顶栏 ──
         Row({ space: 10 }) {
           Text('KeyBox')
@@ -947,6 +949,15 @@ struct Vault {
               Column({ space: 6 }) {
                 ForEach(SKINS, (s: SkinDef) => {
                   Row({ space: 8 }) {
+                    Row({ space: 2 }) {
+                      ForEach(s.preview, (c: string, i: number) => {
+                        Text('')
+                          .width(9)
+                          .height(20)
+                          .backgroundColor(c)
+                          .borderRadius(1)
+                      }, (c: string, i: number) => c + i.toString())
+                    }
                     Text(s.label)
                       .fontSize(14)
                       .fontColor(this.skin === s.id ? this.c().primary : this.c().text)

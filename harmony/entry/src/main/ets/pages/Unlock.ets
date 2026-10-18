@@ -232,6 +232,7 @@ struct Unlock {
   build() {
     Stack() {
       Column({ space: 14 }) {
+        SkinBar({ title: '解锁' })
         Text('KeyBox 解锁')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
