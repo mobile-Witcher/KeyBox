@@ -43,6 +43,37 @@ export function AuthCard({
         </div>
 
         <div className="kb-auth-grid">
+          {/*
+           * 明日方舟皮肤专用：左栏杂志式主视觉（其它皮肤 display:none）。
+           * 竖排 ARKNIGHTS + 超大细字标题 + SERIES 编号 + 机密封条。
+           */}
+          <aside className="kb-ark-hero" aria-hidden>
+            <div className="kb-ark-vert">Arknights · Operator Terminal</div>
+            <div className="kb-ark-body">
+              <div className="kb-ark-kicker">Ark // Operator Access</div>
+              <p className="kb-ark-title">
+                Keybox
+                <span>Terminal</span>
+              </p>
+              <p className="kb-ark-cn">密钥保管 · 操作员通道</p>
+              <p className="kb-ark-note">
+                以手机号验证码确认操作员身份。所有访问行为写入审计记录，明文仅在本次会话内存中停留。
+              </p>
+              <div className="kb-ark-serial">
+                <span>Series 07</span>
+                <span>//</span>
+                <span>Keybox 0.5.2</span>
+                <span>//</span>
+                <span>Internal</span>
+              </div>
+              <div className="kb-ark-redact">
+                <i />
+                <i />
+                <i />
+              </div>
+            </div>
+          </aside>
+
           <aside className="kb-auth-hero" aria-hidden>
             <div>
               <div className="kb-eyebrow">Access protocol / 001</div>

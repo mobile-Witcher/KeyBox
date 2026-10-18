@@ -897,6 +897,138 @@ body {
   display: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   方舟皮肤：登录 / 注册 / 初始化页的杂志式双栏主视觉
+   默认隐藏；仅 [data-skin="arknights"] 展开，窄屏自动收起
+   ═══════════════════════════════════════════════════════════════════════════ */
+.kb-ark-hero {
+  display: none;
+}
+[data-skin="arknights"] .kb-auth-page .kb-card-lg {
+  max-width: 1080px;
+  padding: 0;
+}
+[data-skin="arknights"] .kb-auth-grid {
+  display: grid;
+  grid-template-columns: 1.02fr 0.98fr;
+}
+[data-skin="arknights"] .kb-ark-hero {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 20px;
+  padding: 34px 30px 30px;
+  border-right: 1px solid var(--kb-border-strong);
+  background: var(--kb-surface);
+}
+/* 竖排刊头 */
+[data-skin="arknights"] .kb-ark-vert {
+  writing-mode: vertical-rl;
+  font-family: var(--kb-mono);
+  font-size: 9px;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  white-space: nowrap;
+}
+[data-skin="arknights"] .kb-ark-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+[data-skin="arknights"] .kb-ark-kicker {
+  font-family: var(--kb-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--kb-primary);
+}
+/* 超大细字标题：第二行做描边空心字（杂志封面感） */
+[data-skin="arknights"] .kb-ark-title {
+  margin: 14px 0 0;
+  font-family: "Bahnschrift", "D-DIN", "Segoe UI", sans-serif;
+  font-weight: 200;
+  font-size: 54px;
+  line-height: 0.9;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kb-text);
+}
+[data-skin="arknights"] .kb-ark-title span {
+  display: block;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--kb-text);
+}
+[data-skin="arknights"] .kb-ark-cn {
+  margin: 16px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--kb-text);
+}
+[data-skin="arknights"] .kb-ark-note {
+  margin: 8px 0 0;
+  max-width: 21em;
+  font-size: 11.5px;
+  line-height: 1.75;
+  color: var(--kb-muted);
+}
+[data-skin="arknights"] .kb-ark-serial {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--kb-border);
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="arknights"] .kb-ark-serial span:nth-child(2),
+[data-skin="arknights"] .kb-ark-serial span:nth-child(4) {
+  color: var(--kb-primary);
+}
+/* 机密封条：三条不等宽横条，中间一条血红 */
+[data-skin="arknights"] .kb-ark-redact {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+[data-skin="arknights"] .kb-ark-redact i {
+  display: block;
+  height: 8px;
+  background: var(--kb-text);
+  opacity: 0.82;
+}
+[data-skin="arknights"] .kb-ark-redact i:nth-child(1) {
+  width: 44%;
+}
+[data-skin="arknights"] .kb-ark-redact i:nth-child(2) {
+  width: 20%;
+  background: var(--kb-primary);
+}
+[data-skin="arknights"] .kb-ark-redact i:nth-child(3) {
+  width: 30%;
+}
+[data-skin="arknights"] .kb-auth-main {
+  padding: 32px 34px 30px;
+}
+@media (max-width: 920px) {
+  [data-skin="arknights"] .kb-auth-page .kb-card-lg {
+    max-width: 100% !important;
+    overflow: hidden;
+  }
+  [data-skin="arknights"] .kb-auth-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-skin="arknights"] .kb-ark-hero {
+    display: none !important;
+  }
+  [data-skin="arknights"] .kb-auth-main {
+    padding: 22px 18px 20px;
+  }
+}
+
 /* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
 [data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
   border-radius: 0 !important;
