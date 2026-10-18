@@ -1533,8 +1533,9 @@ struct Vault {
           .layoutWeight(1)
           .height(34)
           .fontSize(13)
-          .backgroundColor(this.c().danger)
-          .fontColor(this.c().primaryContrast)
+          .backgroundColor(this.c().surface2)
+          .fontColor(this.c().danger)
+          .border({ width: 1, color: this.c().danger })
           .onClick(() => {
             void this.remove(it);
           })
