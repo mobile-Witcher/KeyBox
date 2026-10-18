@@ -32,7 +32,8 @@ export type Skin =
   | "hacker" // 极客终端
   | "solar" // 护眼自然
   | "sunset" // 暖阳
-  | "endfield"; // 终末地 · 现场终端
+  | "endfield" // 终末地 · 现场终端
+  | "rhine"; // 莱茵生命 · 无菌档案
 
 /** localStorage 键（与 index.html 内联脚本一致）。 */
 export const THEME_STORAGE_KEY = "keybox.theme";
@@ -50,6 +51,7 @@ export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
   solar: { light: "#f4f0e6", dark: "#1e2318" },
   sunset: { light: "#fff4ec", dark: "#1d1119" },
   endfield: { light: "#ede6d6", dark: "#0e0f0f" },
+  rhine: { light: "#f4f6f4", dark: "#0b1012" },
 };
 
 /** 可选皮肤清单（供外观选择器渲染；顺序即展示顺序）。 */
@@ -67,6 +69,11 @@ export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
     id: "endfield",
     label: "终末地 · 现场终端",
     hint: "石墨 HUD / 奶油纸双底，信号黄 + 全息青，全直角工业终端",
+  },
+  {
+    id: "rhine",
+    label: "莱茵生命 · 无菌档案",
+    hint: "骨白纸底 + 莱茵青，细双框与等宽编号，像实验记录本",
   },
 ];
 

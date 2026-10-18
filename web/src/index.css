@@ -631,6 +631,119 @@ body {
   color-scheme: dark;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   皮肤 ⑪：rhine（莱茵生命 · 无菌档案）
+   骨白纸底 + 莱茵青；细双框、等宽大写标签、点阵底——像一册实验记录本
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-skin="rhine"] {
+  --kb-bg: #f4f6f4;
+  --kb-surface: #ffffff;
+  --kb-surface-2: #e7eae6;
+  --kb-text: #101214;
+  --kb-muted: #6b7472;
+  --kb-border: #c9d0ca;
+  --kb-border-strong: #aab3ac;
+  /* 莱茵青做主色：深一点保证白字对比度 */
+  --kb-primary: #0e6e6b;
+  --kb-primary-hover: #0a5754;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #c43333;
+  --kb-success: #3e8e5a;
+  --kb-warning: #a8640f;
+  --kb-ring: rgba(47, 182, 176, 0.25);
+  --kb-shadow: none;
+  --kb-shadow-lg: 0 0 0 1px var(--kb-border-strong);
+  --kb-radius: 0px;
+  --kb-radius-card: 0px;
+  --kb-font-sans: "Microsoft YaHei UI", "Segoe UI", "Source Han Sans SC", sans-serif;
+  --kb-heading-tracking: 0.08em;
+  --kb-grid: rgba(16, 18, 20, 0.055);
+  --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+[data-skin="rhine"].dark {
+  --kb-bg: #0b1012;
+  --kb-surface: #121a1d;
+  --kb-surface-2: #182226;
+  --kb-text: #e8edea;
+  --kb-muted: #8a9691;
+  --kb-border: #233034;
+  --kb-border-strong: #38484d;
+  --kb-primary: #43d6cf;
+  --kb-primary-hover: #6fe6e1;
+  --kb-primary-contrast: #06110f;
+  --kb-danger: #e5605c;
+  --kb-success: #63b881;
+  --kb-warning: #f3c55a;
+  --kb-ring: rgba(67, 214, 207, 0.3);
+  --kb-shadow: none;
+  --kb-shadow-lg: none;
+  --kb-grid: rgba(232, 237, 234, 0.05);
+  color-scheme: dark;
+}
+
+/* 点阵底：档案纸的印刷网点 */
+[data-skin="rhine"] body {
+  background-image: radial-gradient(circle, var(--kb-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+/* 卡片 = 细双框（外框 + 内缩 5px 的第二道线） */
+[data-skin="rhine"] .kb-card,
+[data-skin="rhine"] .kb-card-lg {
+  position: relative;
+  border-color: var(--kb-border-strong);
+  box-shadow: none;
+}
+[data-skin="rhine"] .kb-card::after,
+[data-skin="rhine"] .kb-card-lg::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--kb-border);
+  opacity: 0.55;
+  pointer-events: none;
+}
+/* 标签/按钮/表格头统一等宽大写 */
+[data-skin="rhine"] .kb-badge {
+  border-radius: 0;
+  font-family: var(--kb-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+[data-skin="rhine"] .kb-btn-primary,
+[data-skin="rhine"] .kb-btn-ghost,
+[data-skin="rhine"] .kb-btn-danger {
+  font-family: var(--kb-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+[data-skin="rhine"] thead th {
+  font-family: var(--kb-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  border-bottom: 1px solid var(--kb-border-strong);
+}
+[data-skin="rhine"] table tbody td {
+  border-bottom: 1px solid var(--kb-border);
+}
+[data-skin="rhine"] code {
+  font-family: var(--kb-mono);
+  letter-spacing: 0.06em;
+}
+[data-skin="rhine"] h1,
+[data-skin="rhine"] h2,
+[data-skin="rhine"] h3 {
+  letter-spacing: 0.08em;
+}
+/* 后台/安全/弹窗里的通用面板：细框、去阴影 */
+[data-skin="rhine"] section.rounded-xl {
+  border-color: var(--kb-border-strong);
+  box-shadow: none;
+}
+
 /* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
 [data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
   border-radius: 0 !important;
