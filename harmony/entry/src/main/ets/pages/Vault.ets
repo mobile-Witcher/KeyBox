@@ -835,8 +835,18 @@ struct Vault {
       .width('100%')
       .height('100%')
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      .opacity(this.overlayOpen() ? 0.55 : 1)
+      .opacity(1)
       .animation({ duration: 160, curve: Curve.EaseOut })
+
+      // ── 弹层遮罩：皮肤色半透明层（不拦截点击，各弹层自己处理关闭） ──
+      if (this.overlayOpen()) {
+        Text('')
+          .width('100%')
+          .height('100%')
+          .backgroundColor(scrimColor(this.skin))
+          .hitTestBehavior(HitTestMode.None)
+          .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
+      }
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
