@@ -123,45 +123,6 @@ export function AuthCard({
           </aside>
 
           {/*
-           * 众生行记皮肤专用：左栏「旅行手账」（其它皮肤 display:none）。
-           * 邮戳编号 + 衬线标题 + 行程三步 + 票根存根 + ARCHIVE 页脚。
-           */}
-          <aside className="kb-mass-hero" aria-hidden>
-            <div className="kb-mass-head">
-              <span className="kb-mass-stamp">Travel Log</span>
-              <span className="kb-mass-no">No.0042 / 2026</span>
-            </div>
-            <p className="kb-mass-title">
-              The Masses’
-              <span>Travels</span>
-            </p>
-            <p className="kb-mass-cn">众生行记 · 密钥保管</p>
-            <p className="kb-mass-note">
-              以验证码核验旅人身份；随身密钥仅在本次行记内展开，离册即封存。
-            </p>
-            <ol className="kb-mass-steps">
-              <li>
-                <b>01</b>身份核验
-              </li>
-              <li>
-                <b>02</b>密文交接
-              </li>
-              <li>
-                <b>03</b>归档留存
-              </li>
-            </ol>
-            <div className="kb-mass-stub">
-              <span>Keybox · Travel Permit</span>
-              <span>Admit One</span>
-            </div>
-            <div className="kb-mass-foot">
-              <span>Archive</span>
-              <span>Rev 3</span>
-              <span>Page 1/1</span>
-            </div>
-          </aside>
-
-          {/*
            * 众生行记·套印图录 皮肤专用左栏（其它皮肤 display:none）。
            * 参考「众生行记」平面设计图录：钴蓝圆盘 + 细圆环 + 坐标刻度 + 小窗框 + 条码。
            */}

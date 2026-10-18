@@ -26,7 +26,6 @@ export type Skin =
   | "endfield" // 终末地 · 现场终端
   | "rhine" // 莱茵生命 · 无菌档案
   | "arknights" // 明日方舟 · 官网
-  | "travel" // 众生行记 · 旅行手账
   | "atlas"; // 众生行记 · 套印图录
 
 /** localStorage 键（与 index.html 内联脚本一致）。 */
@@ -38,7 +37,6 @@ export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
   endfield: { light: "#ede6d6", dark: "#0e0f0f" },
   rhine: { light: "#f4f6f4", dark: "#0b1012" },
   arknights: { light: "#f7f7f5", dark: "#08090a" },
-  travel: { light: "#efe7d6", dark: "#171310" },
   atlas: { light: "#edf1ee", dark: "#0b0f12" },
 };
 
@@ -58,11 +56,6 @@ export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
     id: "arknights",
     label: "明日方舟 · 官网",
     hint: "近黑白 + 血红点缀，细线角标与杂志式留白，克制而锋利",
-  },
-  {
-    id: "travel",
-    label: "众生行记 · 旅行手账",
-    hint: "旧纸底 + 朱砂邮戳 + 虚线票根，像一册正在途中的行记",
   },
   {
     id: "atlas",
