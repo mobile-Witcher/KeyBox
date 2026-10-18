@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard, SkinButton } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -740,15 +740,14 @@ struct Vault {
             .onClick(() => {
               void this.runSync();
             })
-          Button('+ 新增')
-            .type(ButtonType.Normal)
-            .height(34)
-            .fontSize(13)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .onClick(() => {
+          SkinButton({
+            label: '+ 新增',
+            kind: 'primary',
+            btnHeight: 34,
+            onTap: () => {
               this.openNew();
-            })
+            }
+          })
         }
         .width('100%')
         .padding({ left: 16, right: 16, bottom: 4 })
@@ -1035,16 +1034,14 @@ struct Vault {
             }
             .width('100%')
 
-            Button('完成')
-              .type(ButtonType.Normal)
-              .width('100%')
-              .height(38)
-              .borderRadius(this.c().radius)
-              .backgroundColor(this.c().primary)
-              .fontColor(this.c().primaryContrast)
-              .onClick(() => {
+            SkinButton({
+              label: '完成',
+              kind: 'primary',
+              btnHeight: 38,
+              onTap: () => {
                 this.showAppearance = false;
-              })
+              }
+            })
           }
           .alignItems(HorizontalAlign.Start)
           .width('86%')

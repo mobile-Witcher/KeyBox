@@ -15,7 +15,7 @@ import { probeActivation, registerRemote, initAdminRemote, KbFnEnvelope } from '
 import { deriveKeyRaw, kb1Encrypt } from '../lib/kbcrypto';
 import { generateSaltB64 } from '../lib/kbrecovery';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar } from '../components/SkinChrome';
+import { SkinBar , SkinButton } from '../components/SkinChrome';
 
 const TAG: string = 'KeyBoxRegister';
 const VERIFIER_PLAINTEXT: string = 'KeyBox-Verify';
@@ -221,15 +221,15 @@ struct Register {
                 this.phone = value;
               })
 
-            Button('获取验证码')
-              .width('100%')
-              .height(44)
-              .backgroundColor(this.c().primary)
-              .fontColor(this.c().primaryContrast)
-              .enabled(!this.busy)
-              .onClick(() => {
+            SkinButton({
+              label: '获取验证码',
+              kind: 'primary',
+              btnHeight: 44,
+              disabled: this.busy,
+              onTap: () => {
                 void this.sendCode();
-              })
+              }
+            })
 
             this.fieldLabel('验证码')
             TextInput({ placeholder: '6 位数字' })
@@ -242,15 +242,15 @@ struct Register {
                 this.code = value;
               })
 
-            Button('验证并继续')
-              .width('100%')
-              .height(44)
-              .backgroundColor(this.c().primary)
-              .fontColor(this.c().primaryContrast)
-              .enabled(!this.busy)
-              .onClick(() => {
+            SkinButton({
+              label: '验证并继续',
+              kind: 'primary',
+              btnHeight: 44,
+              disabled: this.busy,
+              onTap: () => {
                 void this.verifyAndContinue();
-              })
+              }
+            })
           }
           .alignItems(HorizontalAlign.Start)
           .width('100%')
@@ -290,15 +290,15 @@ struct Register {
                 this.confirm = value;
               })
 
-            Button('完成注册')
-              .width('100%')
-              .height(44)
-              .backgroundColor(this.c().primary)
-              .fontColor(this.c().primaryContrast)
-              .enabled(!this.busy)
-              .onClick(() => {
+            SkinButton({
+              label: '完成注册',
+              kind: 'primary',
+              btnHeight: 44,
+              disabled: this.busy,
+              onTap: () => {
                 void this.submit();
-              })
+              }
+            })
           }
           .alignItems(HorizontalAlign.Start)
           .width('100%')
@@ -310,15 +310,15 @@ struct Register {
             .fontColor(this.statusColor)
         }
 
-        Button('返回登录页')
-          .width('100%')
-          .height(44)
-          .backgroundColor(this.c().surface)
-          .fontColor(this.c().text)
-          .enabled(!this.busy)
-          .onClick(() => {
+        SkinButton({
+          label: '返回登录页',
+          kind: 'ghost',
+          btnHeight: 44,
+          disabled: this.busy,
+          onTap: () => {
             router.replaceUrl({ url: 'pages/Index' });
-          })
+          }
+        })
       }
       .width('100%')
       .constraintSize({ minHeight: '100%' })

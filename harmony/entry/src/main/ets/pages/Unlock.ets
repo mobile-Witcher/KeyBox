@@ -18,7 +18,7 @@ import {
   initBioStore, hasBiometricLock, setupBiometric, unlockWithBiometric, getBioStatus
 } from '../lib/biometric';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar, SkinBackdrop, SkinSection } from '../components/SkinChrome';
+import { SkinBar, SkinBackdrop, SkinSection , SkinButton } from '../components/SkinChrome';
 // warning 色经 c().warning 提供
 
 const TAG: string = 'KeyBoxUnlock';
@@ -242,17 +242,15 @@ struct Unlock {
           Text('通过指纹 / 面容解锁')
             .fontSize(13)
             .fontColor(this.c().muted)
-          Button('开始认证')
-            .type(ButtonType.Normal)
-            .width('100%')
-            .height(46)
-            .borderRadius(this.c().radius)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .enabled(!this.busy)
-            .onClick(() => {
+          SkinButton({
+            label: '开始认证',
+            kind: 'primary',
+            btnHeight: 46,
+            disabled: this.busy,
+            onTap: () => {
               void this.tryBio();
-            })
+            }
+          })
           Text('使用 PIN 解锁 →')
             .fontSize(12)
             .fontColor(this.c().muted)
