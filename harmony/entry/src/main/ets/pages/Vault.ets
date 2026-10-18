@@ -1375,15 +1375,20 @@ struct Vault {
 
       // ── 安全面板（R21 改主密码 / R28 恢复码 / R29 备份导出导入） ──
       if (this.showSecurity) {
-        SecurityPanel({
-          onClose: () => {
-            this.showSecurity = false;
-          },
-          onDataChanged: () => {
-            void this.load();
-            void this.refreshAttention();
-          }
-        })
+        // 外层全尺寸容器：避免组件根节点尺寸塌陷导致整页空白
+        Column() {
+          SecurityPanel({
+            onClose: () => {
+              this.showSecurity = false;
+            },
+            onDataChanged: () => {
+              void this.load();
+              void this.refreshAttention();
+            }
+          })
+        }
+        .width('100%')
+        .height('100%')
       }
     }
     .width('100%')
