@@ -985,6 +985,6 @@ export struct SkinIcon {
     }
     .width(24)
     .height(24)
-    .scale({ x: this.iconSize / 24, y: this.iconSize / 24 })
+    .hitTestBehavior(HitTestMode.None)
   }
 }

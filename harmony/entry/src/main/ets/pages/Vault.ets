@@ -692,50 +692,31 @@ struct Vault {
         .width('100%')
         .padding({ left: 16, right: 16, top: 10, bottom: 10 })
 
-        // ── 搜索行（R19：纯本机过滤，关键词不出设备） ──
+        // ── 搜索 + 操作同一行（压缩固定区高度） ──
         Row({ space: 8 }) {
           TextInput({ placeholder: '搜索站点、接口地址、模型名…', text: this.searchKw })
             .height(36)
             .fontSize(13)
             .layoutWeight(1)
             .backgroundColor(this.c().surface2)
+            .borderRadius(this.c().radius)
             .fontColor(this.c().text)
             .placeholderColor(this.c().muted)
             .onChange((v: string) => {
               this.searchKw = v;
             })
-          if (this.searchKw !== '') {
-            Text('清除')
-              .fontSize(12)
-              .fontColor(this.c().primary)
-              .onClick(() => {
-                this.searchKw = '';
-              })
-          }
-        }
-        .width('100%')
-        .padding({ left: 16, right: 16, bottom: 8 })
-
-        // ── 工具行 ──
-        Row({ space: 8 }) {
-          Text(this.filteredItems().length === this.items.length
-            ? `我的密钥（${this.items.length}）`
-            : `我的密钥（${this.filteredItems().length} / 共 ${this.items.length}）`)
-            .fontSize(15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor(this.c().text)
-          Blank()
-          Text(this.activeTag === null ? '分类：全部 ▾' : `分类：${this.activeTag} ▾`)
-            .fontSize(13)
+          Text(this.activeTag === null ? '全部 ▾' : `${this.activeTag} ▾`)
+            .fontSize(12)
             .fontColor(this.activeTag === null ? this.c().muted : this.c().primary)
             .maxLines(1)
             .onClick(() => {
               this.showTagMenu = !this.showTagMenu;
             })
-          Button(this.syncing ? '同步中…' : '同步')
+          Button(this.syncing ? '同步中' : '同步')
             .type(ButtonType.Normal)
-            .height(34)
-            .fontSize(13)
+            .height(32)
+            .fontSize(12)
+            .borderRadius(this.c().radius)
             .backgroundColor(this.c().surface2)
             .fontColor(this.c().text)
             .enabled(!this.syncing)
@@ -743,17 +724,36 @@ struct Vault {
             .onClick(() => {
               void this.runSync();
             })
-          // 行内按钮保持原生 Button：SkinButton 是整宽组件，放进 Row 会把 同步/新增 撑长
+          // 行内按钮保持原生 Button：SkinButton 是整宽组件，放进 Row 会把同行按钮撑长
           Button('+ 新增')
             .type(ButtonType.Normal)
-            .height(34)
-            .fontSize(13)
+            .height(32)
+            .fontSize(12)
             .borderRadius(this.c().radius)
             .backgroundColor(this.c().primary)
             .fontColor(this.c().primaryContrast)
             .onClick(() => {
               this.openNew();
             })
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 4, bottom: 6 })
+
+        // ── 计数行（很矮，只占一行文字） ──
+        Row({ space: 8 }) {
+          Text(this.filteredItems().length === this.items.length
+            ? `我的密钥（${this.items.length}）`
+            : `我的密钥（${this.filteredItems().length} / 共 ${this.items.length}）`)
+            .fontSize(13)
+            .fontColor(this.c().muted)
+          if (this.searchKw !== '') {
+            Text('清除筛选')
+              .fontSize(12)
+              .fontColor(this.c().primary)
+              .onClick(() => {
+                this.searchKw = '';
+              })
+          }
         }
         .width('100%')
         .padding({ left: 16, right: 16, bottom: 4 })
