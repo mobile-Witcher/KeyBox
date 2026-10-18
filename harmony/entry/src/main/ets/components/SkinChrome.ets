@@ -947,16 +947,15 @@ export struct SkinIcon {
 
   build() {
     if (this.iconName === 'sync') {
-      // 圆形循环双箭头：两个反向圆形箭头并排
-      Row() {
-        Text('↺').fontSize(15).fontColor(this.iconColor)
-        Text('↻').fontSize(15).fontColor(this.iconColor)
-      }
-      .width(24)
-      .height(24)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(VerticalAlign.Center)
-      .hitTestBehavior(HitTestMode.None)
+      // 单字符圆形循环箭头（居中由 24 盒 + textAlign 保证）
+      Text('⟳')
+        .fontSize(21)
+        .lineHeight(24)
+        .height(24)
+        .width(24)
+        .fontColor(this.iconColor)
+        .textAlign(TextAlign.Center)
+        .hitTestBehavior(HitTestMode.None)
     } else {
       Text(this.glyph())
         .fontSize(20)
@@ -971,7 +970,7 @@ export struct SkinIcon {
 
   private glyph(): string {
     if (this.iconName === 'users') return '☰';
-    if (this.iconName === 'shield') return '⚿';
+    if (this.iconName === 'shield') return '◈';
     if (this.iconName === 'palette') return '◐';
     return '⇥';
   }
