@@ -942,46 +942,37 @@ export struct SkinButton {
 @Component
 export struct SkinIcon {
   @Prop iconName: string = 'logout';
-  @Prop iconSize: number = 22;
+  @Prop iconSize: number = 20;
   @Prop iconColor: string = '#000000';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private isDark(): boolean {
+    return resolveDark(this.darkMode, this.systemDark);
+  }
+
+  private srcDark(): ResourceStr {
+    if (this.iconName === 'users') return ('app.media.ic_users_l');
+    if (this.iconName === 'shield') return ('app.media.ic_shield_l');
+    if (this.iconName === 'palette') return ('app.media.ic_palette_l');
+    if (this.iconName === 'sync') return ('app.media.ic_sync_l');
+    return ('app.media.ic_logout_l');
+  }
+
+  private srcLight(): ResourceStr {
+    if (this.iconName === 'users') return ('app.media.ic_users_d');
+    if (this.iconName === 'shield') return ('app.media.ic_shield_d');
+    if (this.iconName === 'palette') return ('app.media.ic_palette_d');
+    if (this.iconName === 'sync') return ('app.media.ic_sync_d');
+    return ('app.media.ic_logout_d');
+  }
 
   build() {
-    if (this.iconName === 'sync') {
-      // 单字符圆形循环箭头（居中由 24 盒 + textAlign 保证）
-      Text('⟳')
-        .fontSize(21)
-        .lineHeight(24)
-        .height(24)
-        .width(24)
-        .fontColor(this.iconColor)
-        .textAlign(TextAlign.Center)
-        .hitTestBehavior(HitTestMode.None)
-    } else {
-      Text(this.glyph())
-        .fontSize(20)
-        .lineHeight(24)
-        .height(24)
-        .width(24)
-        .fontColor(this.iconColor)
-        .textAlign(TextAlign.Center)
-        .offset({ x: 0, y: this.dy() })
-        .hitTestBehavior(HitTestMode.None)
-    }
-  }
-
-  /** 逐字形垂直微调（vp）：不同字形的墨迹基线不同，只微调需要的那一个。 */
-  private dy(): number {
-    if (this.iconName === 'users') return 2;
-    if (this.iconName === 'shield') return 0;
-    if (this.iconName === 'palette') return 0;
-    return 0;
-  }
-
-  private glyph(): string {
-    if (this.iconName === 'users') return '☰';
-    if (this.iconName === 'shield') return '◆';
-    if (this.iconName === 'palette') return '◐';
-    return '⇥';
+    Image(this.isDark() ? this.srcDark() : this.srcLight())
+      .width(this.iconSize)
+      .height(this.iconSize)
+      .objectFit(ImageFit.Contain)
+      .hitTestBehavior(HitTestMode.None)
   }
 }/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
