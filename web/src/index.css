@@ -687,21 +687,19 @@ body {
   background-image: radial-gradient(circle, var(--kb-grid) 1px, transparent 1px);
   background-size: 24px 24px;
 }
-/* 卡片 = 细双框（外框 + 内缩 5px 的第二道线） */
+/*
+ * 卡片 = 细双框。
+ * ⚠️ 这里**绝不能**写 position: relative —— 外观面板/顶栏菜单等元素本身是
+ *    Tailwind 的 .absolute 浮层，皮肤选择器的优先级会盖掉 .absolute，
+ *    导致浮层变成文档流内的块，把顶栏整行往下顶（2026-10-18 实际踩过）。
+ *    因此第二道细线用 box-shadow 内描边实现，完全不影响定位。
+ */
 [data-skin="rhine"] .kb-card,
 [data-skin="rhine"] .kb-card-lg {
-  position: relative;
   border-color: var(--kb-border-strong);
-  box-shadow: none;
-}
-[data-skin="rhine"] .kb-card::after,
-[data-skin="rhine"] .kb-card-lg::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 1px solid var(--kb-border);
-  opacity: 0.55;
-  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 4px var(--kb-surface),
+    inset 0 0 0 5px var(--kb-border);
 }
 /* 标签/按钮/表格头统一等宽大写 */
 [data-skin="rhine"] .kb-badge {
