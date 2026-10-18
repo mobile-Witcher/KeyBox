@@ -941,90 +941,29 @@ export struct SkinButton {
  */
 @Component
 export struct SkinIcon {
-  @Prop iconName: string = 'shield';
-  @Prop iconSize: number = 24;
+  @Prop iconName: string = 'logout';
+  @Prop iconSize: number = 22;
   @Prop iconColor: string = '#000000';
 
-  private settings: RenderingContextSettings = new RenderingContextSettings(true);
-  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
-
-  private paths(): string[] {
-    if (this.iconName === 'users') {
-      return [
-        'M9 11.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z',
-        'M2.6 20.2c0-3.4 2.9-5.7 6.4-5.7s6.4 2.3 6.4 5.7',
-        'M16 5.4a3 3 0 0 1 0 5.6',
-        'M17.2 14.8c2.5.6 4.2 2.4 4.2 5.2'
-      ];
-    }
-    if (this.iconName === 'sync') {
-      return [
-        'M20 12a8 8 0 0 1-13.5 5.7',
-        'M20.5 7.5V12h-4.4',
-        'M4 12a8 8 0 0 1 13.5-5.7',
-        'M3.5 16.5V12h4.4'
-      ];
-    }
-    if (this.iconName === 'palette') {
-      return [
-        'M12 3.2a8.8 8.8 0 1 0 0 17.6c1.3 0 1.9-.9 1.9-1.7 0-.9-.6-1.3-.6-2.2 0-1.1.9-2 2-2h1.5A3.9 3.9 0 0 0 20.8 11c0-4.3-3.9-7.8-8.8-7.8z'
-      ];
-    }
-    if (this.iconName === 'shield') {
-      return [
-        'M12 2.9 4.9 5.6v5.2c0 4.5 2.9 8.3 7.1 10.3 4.2-2 7.1-5.8 7.1-10.3V5.6L12 2.9z',
-        'M8.9 11.9l2.2 2.2 4.1-4.4'
-      ];
-    }
-    return [
-      'M9.4 3.2H6a1.8 1.8 0 0 0-1.8 1.8v14a1.8 1.8 0 0 0 1.8 1.8h3.4',
-      'M13.6 8.2 17.4 12l-3.8 3.8',
-      'M17 12H8.6'
-    ];
-  }
-
-  private draw(): void {
-    // 用 this.iconSize 常量计算，不读 ctx.width（onReady 时布局可能还没完成，读到 0 会画不出/画偏）
-    const size: number = this.iconSize;
-    if (size <= 0) return;
-    const s: number = size / 24;
-    const c: CanvasRenderingContext2D = this.ctx;
-    c.clearRect(0, 0, size, size);
-    c.save();
-    c.scale(s, s);
-    c.strokeStyle = this.iconColor;
-    c.lineWidth = 2.2;
-    c.lineCap = 'round';
-    c.lineJoin = 'round';
-    for (const d of this.paths()) {
-      const p: Path2D = new Path2D(d);
-      c.stroke(p);
-    }
-    c.restore();
-  }
-
   build() {
-    // 用 Path 组件直接按 24×24 原生坐标绘制（不做任何缩放/Canvas），
-    // 由外层容器尺寸决定视觉大小，天然居中，避免 Canvas 首帧尺寸为 0 的问题。
-    Stack({ alignContent: Alignment.Center }) {
-      ForEach(this.paths(), (d: string, i: number) => {
-        Path({ width: 24, height: 24, commands: d })
-          .fill('#00000000')
-          .stroke(this.iconColor)
-          .strokeWidth(1.8)
-          .strokeLineCap(LineCapStyle.Round)
-          .strokeLineJoin(LineJoinStyle.Round)
-          // 只放大图形本身（容器不放大）：约 17px 图形 → 22px，仍在 34 框内
-          .scale({ x: 1.35, y: 1.35 })
-          .hitTestBehavior(HitTestMode.None)
-      }, (d: string, i: number) => 'p' + i.toString())
+    if (this.iconName === 'users') {
+      Image(('app.media.ic_users')).width(this.iconSize).height(this.iconSize)
+        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
+    } else if (this.iconName === 'shield') {
+      Image(('app.media.ic_shield')).width(this.iconSize).height(this.iconSize)
+        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
+    } else if (this.iconName === 'palette') {
+      Image(('app.media.ic_palette')).width(this.iconSize).height(this.iconSize)
+        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
+    } else if (this.iconName === 'sync') {
+      Image(('app.media.ic_sync')).width(this.iconSize).height(this.iconSize)
+        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
+    } else {
+      Image(('app.media.ic_logout')).width(this.iconSize).height(this.iconSize)
+        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
     }
-    .width(24)
-    .height(24)
-    .hitTestBehavior(HitTestMode.None)
   }
-}
-/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
+}/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
 export struct SkinIconButton {
   @Prop iconName: string = 'logout';
