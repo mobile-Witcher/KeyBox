@@ -968,6 +968,14 @@ export struct SkinIcon {
     }
   }
 
+  /** 逐字形垂直微调（vp）：不同字形的墨迹基线不同，只微调需要的那一个。 */
+  private dy(): number {
+    if (this.iconName === 'users') return 2;
+    if (this.iconName === 'shield') return 0;
+    if (this.iconName === 'palette') return 0;
+    return 0;
+  }
+
   private glyph(): string {
     if (this.iconName === 'users') return '☰';
     if (this.iconName === 'shield') return '◆';
