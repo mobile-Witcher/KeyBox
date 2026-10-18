@@ -984,7 +984,7 @@ export struct SkinIcon {
     c.save();
     c.scale(s, s);
     c.strokeStyle = this.iconColor;
-    c.lineWidth = 1.8;
+    c.lineWidth = 2.2;
     c.lineCap = 'round';
     c.lineJoin = 'round';
     for (const d of this.paths()) {

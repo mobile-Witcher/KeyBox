@@ -680,7 +680,7 @@ struct Vault {
               this.showAppearance = !this.showAppearance;
             })
           Row({ space: 4 }) {
-            SkinIcon({ iconName: 'logout', iconSize: 22, iconColor: this.c().muted })
+            SkinIcon({ iconName: 'logout', iconSize: 32, iconColor: this.c().muted })
             Text('退出登录')
               .fontSize(13)
               .fontColor(this.c().muted)
