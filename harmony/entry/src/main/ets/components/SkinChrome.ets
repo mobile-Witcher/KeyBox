@@ -976,12 +976,14 @@ export struct SkinIcon {
   }
 
   private draw(): void {
-    const size: number = this.iconSize;
-    if (size <= 0) return;
-    const s: number = size / 24;
+    const w: number = this.ctx.width;
+    const h: number = this.ctx.height;
+    if (w <= 0 || h <= 0) return;
+    const s: number = Math.min(w, h) / 24;
     const c: CanvasRenderingContext2D = this.ctx;
-    c.clearRect(0, 0, size, size);
+    c.clearRect(0, 0, w, h);
     c.save();
+    c.translate((w - 24 * s) / 2, (h - 24 * s) / 2);
     c.scale(s, s);
     c.strokeStyle = this.iconColor;
     c.lineWidth = 2.2;
@@ -1011,9 +1013,9 @@ export struct SkinIcon {
 @Component
 export struct SkinIconButton {
   @Prop iconName: string = 'logout';
-  @Prop iconSize: number = 18;
+  @Prop iconSize: number = 22;
   @Prop iconColor: string = '#000000';
-  @Prop boxSize: number = 32;
+  @Prop boxSize: number = 30;
   @Prop dot: boolean = false;
   onPick: () => void = () => {};
   @StorageProp('skin') skin: string = 'hud';
@@ -1042,7 +1044,7 @@ export struct SkinIconButton {
     }
     .width(this.boxSize)
     .height(this.boxSize)
-    .borderRadius(10)
+    .borderRadius(9)
     .border({ width: 1, color: this.c().border })
     .backgroundColor(this.c().bg)
     .onClick(() => {

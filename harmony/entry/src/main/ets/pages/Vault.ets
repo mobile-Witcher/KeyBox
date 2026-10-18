@@ -645,57 +645,15 @@ struct Vault {
       Column() {
         SkinBar({ title: '密钥库' })
         SkinWordmark({ count: 0 })
-        // ── 顶栏 ──
-        Row({ space: 10 }) {
+        // ── 顶栏：品牌 + 搜索 + 分类 + 4 个图标（同一行） ──
+        Row({ space: 8 }) {
           Text('KeyBox')
-            .fontSize(18)
+            .fontSize(16)
             .fontWeight(FontWeight.Bold)
             .fontColor(this.c().text)
-          Blank()
-          if (this.isAdmin) {
-            SkinIconButton({
-              iconName: 'users',
-              iconSize: 18,
-              iconColor: this.c().muted,
-              onPick: () => {
-                router.pushUrl({ url: 'pages/Admin' });
-              }
-            })
-          }
-          SkinIconButton({
-            iconName: 'shield',
-            iconSize: 18,
-            iconColor: this.c().muted,
-            dot: this.recoveryAttention,
-            onPick: () => {
-              this.showSecurity = true;
-            }
-          })
-          SkinIconButton({
-            iconName: 'palette',
-            iconSize: 18,
-            iconColor: this.c().muted,
-            onPick: () => {
-              this.showAppearance = !this.showAppearance;
-            }
-          })
-          SkinIconButton({
-            iconName: 'logout',
-            iconSize: 18,
-            iconColor: this.c().muted,
-            onPick: () => {
-              this.signOut();
-            }
-          })
-        }
-        .width('100%')
-        .padding({ left: 16, right: 16, top: 10, bottom: 10 })
-
-        // ── 搜索 + 操作同一行（压缩固定区高度） ──
-        Row({ space: 8 }) {
-          TextInput({ placeholder: '搜索站点、接口地址、模型名…', text: this.searchKw })
-            .height(36)
-            .fontSize(13)
+          TextInput({ placeholder: '搜索…', text: this.searchKw })
+            .height(32)
+            .fontSize(12)
             .layoutWeight(1)
             .backgroundColor(this.c().surface2)
             .borderRadius(this.c().radius)
@@ -711,32 +669,44 @@ struct Vault {
             .onClick(() => {
               this.showTagMenu = !this.showTagMenu;
             })
-          Button(this.syncing ? '同步中' : '同步')
-            .type(ButtonType.Normal)
-            .height(32)
-            .fontSize(12)
-            .borderRadius(this.c().radius)
-            .backgroundColor(this.c().surface2)
-            .fontColor(this.c().text)
-            .enabled(!this.syncing)
-            .opacity(this.syncing ? 0.5 : 1)
-            .onClick(() => {
-              void this.runSync();
+          if (this.isAdmin) {
+            SkinIconButton({
+              iconName: 'users',
+              iconSize: 22,
+              iconColor: this.c().muted,
+              onPick: () => {
+                router.pushUrl({ url: 'pages/Admin' });
+              }
             })
-          // 行内按钮保持原生 Button：SkinButton 是整宽组件，放进 Row 会把同行按钮撑长
-          Button('+ 新增')
-            .type(ButtonType.Normal)
-            .height(32)
-            .fontSize(12)
-            .borderRadius(this.c().radius)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .onClick(() => {
-              this.openNew();
-            })
+          }
+          SkinIconButton({
+            iconName: 'shield',
+            iconSize: 22,
+            iconColor: this.c().muted,
+            dot: this.recoveryAttention,
+            onPick: () => {
+              this.showSecurity = true;
+            }
+          })
+          SkinIconButton({
+            iconName: 'palette',
+            iconSize: 22,
+            iconColor: this.c().muted,
+            onPick: () => {
+              this.showAppearance = !this.showAppearance;
+            }
+          })
+          SkinIconButton({
+            iconName: 'logout',
+            iconSize: 22,
+            iconColor: this.c().muted,
+            onPick: () => {
+              this.signOut();
+            }
+          })
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 4, bottom: 6 })
+        .padding({ left: 12, right: 12, top: 8, bottom: 8 })
 
         // ── 计数行（很矮，只占一行文字） ──
         Row({ space: 8 }) {
@@ -830,7 +800,7 @@ struct Vault {
             .columnsGap(12)
             .rowsGap(12)
             .width('100%')
-            .padding({ left: 16, right: 16, bottom: 24 })
+            .padding({ left: 16, right: 16, bottom: 110 })
           }
           .layoutWeight(1)
           .align(Alignment.Top)
@@ -852,6 +822,38 @@ struct Vault {
           .hitTestBehavior(HitTestMode.None)
           .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
       }
+
+      // ── 悬浮操作（同步 / 新增）：贴右下角，主按钮更大 ──
+      Column({ space: 10 }) {
+        Button('同步')
+          .type(ButtonType.Normal)
+          .width(54)
+          .height(54)
+          .borderRadius(27)
+          .fontSize(12)
+          .backgroundColor(this.c().surface)
+          .fontColor(this.c().text)
+          .enabled(!this.syncing)
+          .opacity(this.syncing ? 0.5 : 1)
+          .shadow({ radius: 10, color: '#00000022', offsetX: 0, offsetY: 3 })
+          .onClick(() => {
+            void this.runSync();
+          })
+        Button('+')
+          .type(ButtonType.Normal)
+          .width(62)
+          .height(62)
+          .borderRadius(31)
+          .fontSize(26)
+          .backgroundColor(this.c().primary)
+          .fontColor(this.c().primaryContrast)
+          .shadow({ radius: 12, color: '#00000033', offsetX: 0, offsetY: 4 })
+          .onClick(() => {
+            this.openNew();
+          })
+      }
+      .align(Alignment.BottomEnd)
+      .margin({ right: 16, bottom: 30 })
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
