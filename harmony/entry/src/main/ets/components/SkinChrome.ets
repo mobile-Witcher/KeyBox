@@ -17,6 +17,96 @@
  */
 import { colorsOf, normalizeSkinId, resolveDark, SkinId, ThemeColors } from '../lib/theme';
 
+/** 皮肤标记色（供页面自定义装饰复用）。 */
+export function skinAccentColor(skin: string): string {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'lab') return '#2fb6b0';
+  if (k === 'blueprint') return '#0ae0f0';
+  if (k === 'mono') return '#e0433c';
+  if (k === 'overprint') return '#4c6fff';
+  return '#f2c300';
+}
+
+/** 卡片左上角的小标尺文字（每套皮肤一张"卡片身份"）。 */
+export function skinCardTag(skin: string): string {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'lab') return 'SPECIMEN';
+  if (k === 'blueprint') return 'RECORD';
+  if (k === 'mono') return 'ARCHIVE';
+  if (k === 'overprint') return 'PLATE';
+  return 'ASSET';
+}
+
+/**
+ * 皮肤底纹：铺满父容器的极细网格（放在 Stack 最底层，不拦截触摸）。
+ * blueprint / lab / overprint 双轴；hud 只有横线（扫描感）；mono 保持纯净无纹理。
+ */
+@Component
+export struct SkinBackdrop {
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private idx: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+
+  private skinId(): SkinId {
+    return normalizeSkinId(this.skin);
+  }
+
+  private lineAlpha(): string {
+    const dark: boolean = resolveDark(this.darkMode, this.systemDark);
+    const k: SkinId = this.skinId();
+    if (k === 'blueprint') return dark ? '#0AE0F015' : '#0A8FA11A';
+    if (k === 'lab') return dark ? '#E8EDEA12' : '#10121412';
+    if (k === 'overprint') return dark ? '#E8EDEA10' : '#10141814';
+    if (k === 'hud') return dark ? '#FFFFFF0C' : '#15140F0C';
+    return '#00000000';
+  }
+
+  private showV(): boolean {
+    const k: SkinId = this.skinId();
+    return k === 'blueprint' || k === 'lab' || k === 'overprint';
+  }
+
+  private showH(): boolean {
+    return this.skinId() !== 'mono';
+  }
+
+  build() {
+    Stack() {
+      if (this.showV()) {
+        Row() {
+          ForEach(this.idx, (i: number) => {
+            Text('')
+              .width(1)
+              .height('100%')
+              .backgroundColor(this.lineAlpha())
+          }, (i: number) => 'v' + i.toString())
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.SpaceBetween)
+      }
+      if (this.showH()) {
+        Column() {
+          ForEach(this.idx, (i: number) => {
+            Text('')
+              .width('100%')
+              .height(1)
+              .backgroundColor(this.lineAlpha())
+          }, (i: number) => 'h' + i.toString())
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.SpaceBetween)
+      }
+    }
+    .width('100%')
+    .height('100%')
+    .hitTestBehavior(HitTestMode.None)
+  }
+}
+
 /** 信息条：每套皮肤一句「眉标 + 元信息 + 页标」，左端带皮肤标记色。 */
 @Component
 export struct SkinBar {

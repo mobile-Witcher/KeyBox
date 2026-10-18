@@ -22,7 +22,7 @@ import {
 } from '../lib/kbapi';
 import { clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar } from '../components/SkinChrome';
+import { SkinBar, SkinBackdrop } from '../components/SkinChrome';
 
 const TAG: string = 'KeyBoxAdmin';
 
@@ -308,7 +308,9 @@ struct Admin {
 
               if (this.inviteCode === '') {
                 Button(this.isFull() ? '已满员' : '生成邀请码')
+                  .type(ButtonType.Normal)
                   .height(38)
+                  .borderRadius(this.c().radius)
                   .fontSize(13)
                   .backgroundColor(this.c().primary)
                   .fontColor(this.c().primaryContrast)
@@ -432,6 +434,7 @@ struct Admin {
                     } else {
                       Row({ space: 10 }) {
                         Button(row.status === 'active' ? '停用' : '启用')
+                          .type(ButtonType.Normal)
                           .layoutWeight(1)
                           .height(32)
                           .fontSize(12)
@@ -447,6 +450,7 @@ struct Admin {
                             }
                           })
                         Button('删除数据')
+                          .type(ButtonType.Normal)
                           .layoutWeight(1)
                           .height(32)
                           .fontSize(12)
@@ -492,6 +496,7 @@ struct Admin {
       .height('100%')
       .backgroundColor(this.c().bg)
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      SkinBackdrop()
 
       // ── 作废邀请码二次确认 ──
       if (this.confirmMode === 'revoke') {
@@ -541,6 +546,7 @@ struct Admin {
           .fontColor(this.c().text)
         Row({ space: 10 }) {
           Button('取消')
+            .type(ButtonType.Normal)
             .layoutWeight(1)
             .backgroundColor(this.c().surface2)
             .fontColor(this.c().text)
@@ -549,6 +555,7 @@ struct Admin {
               this.confirmUser = null;
             })
           Button(actionLabel)
+            .type(ButtonType.Normal)
             .layoutWeight(1)
             .backgroundColor(this.c().danger)
             .fontColor(this.c().primaryContrast)

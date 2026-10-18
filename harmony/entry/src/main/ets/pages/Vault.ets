@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -729,6 +729,7 @@ struct Vault {
               this.showTagMenu = !this.showTagMenu;
             })
           Button(this.syncing ? '同步中…' : '同步')
+            .type(ButtonType.Normal)
             .height(34)
             .fontSize(13)
             .backgroundColor(this.c().surface2)
@@ -739,6 +740,7 @@ struct Vault {
               void this.runSync();
             })
           Button('+ 新增')
+            .type(ButtonType.Normal)
             .height(34)
             .fontSize(13)
             .backgroundColor(this.c().primary)
@@ -834,6 +836,7 @@ struct Vault {
       .height('100%')
       .backgroundColor(this.c().bg)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      SkinBackdrop()
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
@@ -896,6 +899,7 @@ struct Vault {
                 .margin({ top: 4, bottom: 4 })
               Row({ space: 10 }) {
                 Button('重命名分类')
+                  .type(ButtonType.Normal)
                   .layoutWeight(1)
                   .height(34)
                   .fontSize(12)
@@ -907,6 +911,7 @@ struct Vault {
                     this.dialogMode = 'tagRename';
                   })
                 Button('删除分类')
+                  .type(ButtonType.Normal)
                   .layoutWeight(1)
                   .height(34)
                   .fontSize(12)
@@ -988,8 +993,10 @@ struct Vault {
               .margin({ top: 4 })
             Row({ space: 6 }) {
               Button('跟随系统')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .height(38)
+                .borderRadius(this.c().radius)
                 .fontSize(12)
                 .backgroundColor(this.darkMode === 'system' ? this.c().primary : this.c().surface2)
                 .fontColor(this.darkMode === 'system' ? this.c().primaryContrast : this.c().text)
@@ -998,8 +1005,10 @@ struct Vault {
                   void savePrefs(this.skin, 'system');
                 })
               Button('浅色')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .height(38)
+                .borderRadius(this.c().radius)
                 .fontSize(12)
                 .backgroundColor(this.darkMode === 'light' ? this.c().primary : this.c().surface2)
                 .fontColor(this.darkMode === 'light' ? this.c().primaryContrast : this.c().text)
@@ -1008,8 +1017,10 @@ struct Vault {
                   void savePrefs(this.skin, 'light');
                 })
               Button('深色')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .height(38)
+                .borderRadius(this.c().radius)
                 .fontSize(12)
                 .backgroundColor(this.darkMode === 'dark' ? this.c().primary : this.c().surface2)
                 .fontColor(this.darkMode === 'dark' ? this.c().primaryContrast : this.c().text)
@@ -1021,8 +1032,10 @@ struct Vault {
             .width('100%')
 
             Button('完成')
+              .type(ButtonType.Normal)
               .width('100%')
               .height(38)
+              .borderRadius(this.c().radius)
               .backgroundColor(this.c().primary)
               .fontColor(this.c().primaryContrast)
               .onClick(() => {
@@ -1104,6 +1117,7 @@ struct Vault {
                 })
               Row({ space: 10 }) {
                 Button('取消')
+                  .type(ButtonType.Normal)
                   .layoutWeight(1)
                   .backgroundColor(this.c().surface2)
                   .fontColor(this.c().text)
@@ -1111,6 +1125,7 @@ struct Vault {
                     this.closeDialog();
                   })
                 Button('保存')
+                  .type(ButtonType.Normal)
                   .layoutWeight(1)
                   .backgroundColor(this.c().primary)
                   .fontColor(this.c().primaryContrast)
@@ -1157,6 +1172,7 @@ struct Vault {
               .fontColor(this.c().muted)
             Row({ space: 10 }) {
               Button('取消')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().surface2)
                 .fontColor(this.c().text)
@@ -1164,6 +1180,7 @@ struct Vault {
                   this.closeDialog();
                 })
               Button('确认')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().primary)
                 .fontColor(this.c().primaryContrast)
@@ -1210,6 +1227,7 @@ struct Vault {
               .fontColor(this.c().text)
             Row({ space: 10 }) {
               Button('取消')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().surface2)
                 .fontColor(this.c().text)
@@ -1217,6 +1235,7 @@ struct Vault {
                   this.closeDialog();
                 })
               Button('删除')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .backgroundColor(this.c().danger)
                 .fontColor(this.c().primaryContrast)
@@ -1273,16 +1292,20 @@ struct Vault {
             .constraintSize({ maxHeight: 180 })
             Row({ space: 10 }) {
               Button('保留本机')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .height(38)
+                .borderRadius(this.c().radius)
                 .backgroundColor(this.c().primary)
                 .fontColor(this.c().primaryContrast)
                 .onClick(() => {
                   void this.resolveConflicts(false);
                 })
               Button('用服务端')
+                .type(ButtonType.Normal)
                 .layoutWeight(1)
                 .height(38)
+                .borderRadius(this.c().radius)
                 .backgroundColor(this.c().primary)
                 .fontColor(this.c().primaryContrast)
                 .onClick(() => {
@@ -1331,6 +1354,23 @@ struct Vault {
   @Builder
   SecretCard(it: VaultItem) {
     Column({ space: 8 }) {
+      // 皮肤标尺：左侧标记色 + 卡片身份 + 编号（每套皮肤不同）
+      Row({ space: 6 }) {
+        Text('')
+          .width(3)
+          .height(10)
+          .backgroundColor(skinAccentColor(this.skin))
+        Text(skinCardTag(this.skin))
+          .fontSize(8)
+          .letterSpacing(1)
+          .fontColor(this.c().muted)
+        Blank()
+        Text('#' + it.id.toString())
+          .fontSize(8)
+          .letterSpacing(1)
+          .fontColor(this.c().muted)
+      }
+      .width('100%')
       Row() {
         Text(it.site === '' ? '（未命名）' : it.site)
           .fontSize(15)
@@ -1402,6 +1442,7 @@ struct Vault {
 
       Row({ space: 10 }) {
         Button('编辑')
+          .type(ButtonType.Normal)
           .layoutWeight(1)
           .height(34)
           .fontSize(13)
@@ -1411,6 +1452,7 @@ struct Vault {
             this.openEdit(it);
           })
         Button('删除')
+          .type(ButtonType.Normal)
           .layoutWeight(1)
           .height(34)
           .fontSize(13)
