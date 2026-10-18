@@ -47,9 +47,11 @@ export default function ThemeToggle(): JSX.Element {
       </button>
 
       {open ? (
-        <div className="kb-card-lg absolute right-0 z-30 mt-2 w-80 p-3.5">
-          <p className="kb-heading text-xs font-medium uppercase text-kb-muted">皮肤</p>
-          <div className="mt-2 max-h-[52vh] space-y-1 overflow-y-auto pr-1">
+        <div className="kb-card-lg absolute right-0 z-30 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] p-4">
+          <p className="kb-heading text-[13px] font-semibold uppercase leading-none tracking-[0.18em] text-kb-muted">
+            皮肤
+          </p>
+          <div className="mt-3 max-h-[48vh] space-y-1.5 overflow-y-auto pr-1">
             {SKINS.map((s) => (
               <SkinOption
                 key={s.id}
@@ -62,15 +64,15 @@ export default function ThemeToggle(): JSX.Element {
             ))}
           </div>
 
-          <p className="kb-heading mt-3 border-t border-kb-border pt-3 text-xs font-medium uppercase text-kb-muted">
+          <p className="kb-heading mt-4 border-t border-kb-border pt-4 text-[13px] font-semibold uppercase leading-none tracking-[0.18em] text-kb-muted">
             明暗
           </p>
-          <div className="mt-2 grid grid-cols-2 gap-2.5">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setTheme("light")}
               className={
-                "kb-btn min-w-0 justify-center whitespace-nowrap border px-2 py-2.5 text-sm " +
+                "kb-btn min-h-[44px] min-w-0 justify-center gap-2 whitespace-nowrap border px-2 py-3 text-sm " +
                 (!isDark ? "border-kb-primary text-kb-primary" : "border-kb-border text-kb-muted")
               }
             >
@@ -81,7 +83,7 @@ export default function ThemeToggle(): JSX.Element {
               type="button"
               onClick={() => setTheme("dark")}
               className={
-                "kb-btn min-w-0 justify-center whitespace-nowrap border px-2 py-2.5 text-sm " +
+                "kb-btn min-h-[44px] min-w-0 justify-center gap-2 whitespace-nowrap border px-2 py-3 text-sm " +
                 (isDark ? "border-kb-primary text-kb-primary" : "border-kb-border text-kb-muted")
               }
             >
@@ -115,7 +117,7 @@ function SkinOption({
       onClick={onPick}
       aria-pressed={active}
       className={
-        "flex w-full items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition " +
+        "flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition " +
         (active
           ? "border-kb-primary bg-kb-surface-2"
           : "border-transparent hover:border-kb-border hover:bg-kb-surface-2")

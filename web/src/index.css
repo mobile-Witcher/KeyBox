@@ -821,7 +821,8 @@ body {
   display: none;
 }
 
-[data-skin="endfield"] .kb-card-lg {
+/* 只作用于登录/注册卡（AuthCard），别把其它 kb-card-lg（外观面板、弹窗）内边距也清零 */
+[data-skin="endfield"] .kb-auth-page .kb-card-lg {
   max-width: 1060px;
   padding: 0;
 }
@@ -956,7 +957,7 @@ body {
     max-width: 100vw;
     overflow-x: hidden;
   }
-  [data-skin="endfield"] .kb-card-lg {
+  [data-skin="endfield"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     width: 100% !important;
     min-width: 0 !important;
