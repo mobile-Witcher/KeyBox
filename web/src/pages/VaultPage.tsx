@@ -464,7 +464,52 @@ export default function VaultPage({
                   </div>
                   <h2 className="kb-bay-title mt-2 text-2xl text-kb-text">Specimen Archive</h2>
                 </div>
-                <h2 className="kb-hide-in-endfield text-base font-semibold">
+                {/* 莱茵生命皮肤专用：标本登记页头 */}
+                <div className="kb-rhine-hdr">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="kb-rhine-tag">Registry</span>
+                    <span className="kb-rhine-eyebrow">
+                      Specimen registry · 标本登记 {visible.length}
+                      {activeTag ? ` · ${activeTag}` : ""}
+                    </span>
+                  </div>
+                  <h2 className="kb-rhine-h2">
+                    Specimen Registry
+                    <span className="kb-rhine-count">
+                      /{String(visible.length).padStart(2, "0")}
+                    </span>
+                  </h2>
+                </div>
+                {/* 明日方舟皮肤专用：档案页头（大号细体编号） */}
+                <div className="kb-ark-hdr">
+                  <span className="kb-ark-hdr-no">01</span>
+                  <div>
+                    <span className="kb-ark-eyebrow">KeyBox // Archive</span>
+                    <h2 className="kb-ark-h2">
+                      Archive
+                      <span className="kb-ark-count">
+                        {String(visible.length).padStart(2, "0")}
+                      </span>
+                    </h2>
+                  </div>
+                </div>
+                {/* 图录皮肤专用：RECORD 页头（小窗框 + 衬线标题） */}
+                <div className="kb-atlas-hdr">
+                  <div className="kb-atlas-hdr-win">
+                    <span className="kb-atlas-hdr-bar">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <b>Record · 06</b>
+                    <span>Laterano / Sanctum</span>
+                  </div>
+                  <h2 className="kb-atlas-h2">
+                    The Archive
+                    <span className="kb-atlas-count">{String(visible.length).padStart(2, "0")}</span>
+                  </h2>
+                </div>
+                <h2 className="kb-hide-in-endfield kb-hide-when-styled text-base font-semibold">
                   我的密钥（{visible.length}
                   {visible.length !== items.length ? ` / 共 ${items.length}` : ""}）
                   {activeTag ? <span className="ml-2 text-sm text-kb-muted">标签：{activeTag}</span> : null}

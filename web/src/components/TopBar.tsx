@@ -123,6 +123,33 @@ export default function TopBar({
         <span className="kb-term-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
+      {/* 莱茵生命专用：标本舱信息条（其它皮肤隐藏） */}
+      <div className="kb-rhine-strip" aria-hidden="true">
+        <span className="kb-rhine-strip-plate">Specimen</span>
+        <b>RHINE LAB // SPECIMEN BAY</b>
+        <span className="kb-rhine-strip-extra">SAMPLE KB-OP-0007</span>
+        <span className="kb-rhine-strip-extra">REV 03</span>
+        <span className="kb-rhine-strip-extra ml-auto">OPERATOR {avatarText}</span>
+      </div>
+
+      {/* 明日方舟专用：档案条（其它皮肤隐藏） */}
+      <div className="kb-ark-strip" aria-hidden="true">
+        <b>ARKNIGHTS</b>
+        <span className="kb-ark-strip-slash">//</span>
+        <span>ARCHIVE</span>
+        <span className="kb-ark-strip-extra">SERIES 07</span>
+        <span className="kb-ark-strip-extra">NO. 0042</span>
+        <span className="kb-ark-strip-extra ml-auto">OPERATOR {avatarText}</span>
+      </div>
+
+      {/* 众生行记·图录专用：图录条（其它皮肤隐藏） */}
+      <div className="kb-atlas-strip" aria-hidden="true">
+        <b>THE MASSES // TRAVELS</b>
+        <span className="kb-atlas-strip-extra">RECORD · 06</span>
+        <span className="kb-atlas-strip-extra">+Y2 +Y3</span>
+        <span className="kb-atlas-strip-extra ml-auto">OPERATOR {avatarText}</span>
+      </div>
+
       <header
         className="kb-topbar sticky top-0 z-30 flex items-center gap-2 border-b border-kb-border bg-kb-surface px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5"
         style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
@@ -131,7 +158,7 @@ export default function TopBar({
       <div className="flex shrink-0 items-center gap-2">
         <span
           aria-hidden="true"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-kb-primary text-kb-primary-contrast"
+          className="kb-brand grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-kb-primary text-kb-primary-contrast"
         >
           <KeyIcon size={17} />
         </span>

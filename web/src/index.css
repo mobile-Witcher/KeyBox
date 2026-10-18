@@ -1581,3 +1581,325 @@ body {
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 12px 12px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   壳层风格化（莱茵 / 方舟 / 图录）
+   每个皮肤一套：顶栏信息条 + 密钥舱页头 + 卡片语汇 + 品牌块 + 微动效
+   默认全部 display:none，只有对应皮肤展开 —— 其它皮肤零影响
+   ═══════════════════════════════════════════════════════════════════════════ */
+.kb-rhine-strip,
+.kb-ark-strip,
+.kb-atlas-strip,
+.kb-rhine-hdr,
+.kb-ark-hdr,
+.kb-atlas-hdr {
+  display: none;
+}
+[data-skin="rhine"] .kb-hide-when-styled,
+[data-skin="arknights"] .kb-hide-when-styled,
+[data-skin="atlas"] .kb-hide-when-styled {
+  display: none;
+}
+
+/* ── 莱茵生命：标本舱 ───────────────────────────────────────────────── */
+[data-skin="rhine"] .kb-rhine-strip {
+  position: relative; /* 只给下面那层扫描高光定位，不涉及任何浮层 */
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.42rem 1rem;
+  border-bottom: 1px solid var(--kb-border-strong);
+  background: var(--kb-surface-2);
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  overflow: hidden;
+}
+[data-skin="rhine"] .kb-rhine-strip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--kb-primary) 16%, transparent) 45%,
+    transparent 90%
+  );
+  transform: translateX(-100%);
+  animation: kb-rhine-sweep 7s linear infinite;
+  pointer-events: none;
+}
+@keyframes kb-rhine-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+[data-skin="rhine"] .kb-rhine-strip-plate {
+  padding: 0.14rem 0.4rem;
+  border: 1px solid var(--kb-primary);
+  color: var(--kb-primary);
+  font-weight: 700;
+}
+[data-skin="rhine"] .kb-rhine-strip b {
+  color: var(--kb-text);
+  letter-spacing: 0.22em;
+}
+[data-skin="rhine"] .kb-rhine-strip-extra {
+  color: var(--kb-muted);
+}
+/* 页头：标本登记 */
+[data-skin="rhine"] .kb-rhine-hdr {
+  display: block;
+}
+[data-skin="rhine"] .kb-rhine-tag {
+  padding: 0.1rem 0.38rem;
+  border: 1px solid var(--kb-primary);
+  color: var(--kb-primary);
+  font-family: var(--kb-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+[data-skin="rhine"] .kb-rhine-eyebrow {
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="rhine"] .kb-rhine-h2 {
+  margin: 0.35rem 0 0;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kb-text);
+}
+[data-skin="rhine"] .kb-rhine-count {
+  margin-left: 0.5rem;
+  color: var(--kb-primary);
+  font-family: var(--kb-mono);
+  font-size: 0.7em;
+  letter-spacing: 0.1em;
+}
+/* 卡片语汇：细内框 + 四角准星（.kb-card 不参与浮层，可安全定位） */
+[data-skin="rhine"] .kb-card {
+  position: relative;
+  border-color: var(--kb-border-strong);
+}
+[data-skin="rhine"] .kb-card::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--kb-border);
+  opacity: 0.45;
+  pointer-events: none;
+}
+[data-skin="rhine"] .kb-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: opacity 0.18s ease;
+  background:
+    linear-gradient(var(--kb-primary), var(--kb-primary)) left top / 8px 1px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) left top / 1px 8px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) right top / 8px 1px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) right top / 1px 8px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) left bottom / 8px 1px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) left bottom / 1px 8px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) right bottom / 8px 1px no-repeat,
+    linear-gradient(var(--kb-primary), var(--kb-primary)) right bottom / 1px 8px no-repeat;
+}
+[data-skin="rhine"] .kb-card:hover::after {
+  opacity: 1;
+}
+[data-skin="rhine"] .kb-brand {
+  border-radius: 0;
+}
+
+/* ── 明日方舟：档案 ─────────────────────────────────────────────────── */
+[data-skin="arknights"] .kb-ark-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.42rem 1rem;
+  background: var(--kb-text);
+  color: var(--kb-bg);
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+[data-skin="arknights"] .kb-ark-strip b {
+  font-weight: 600;
+  letter-spacing: 0.3em;
+}
+[data-skin="arknights"] .kb-ark-strip-slash {
+  color: var(--kb-primary);
+}
+[data-skin="arknights"] .kb-ark-strip-extra {
+  opacity: 0.62;
+}
+[data-skin="arknights"] .kb-ark-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+[data-skin="arknights"] .kb-ark-hdr-no {
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 2.1rem;
+  font-weight: 200;
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+  color: var(--kb-primary);
+}
+[data-skin="arknights"] .kb-ark-eyebrow {
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="arknights"] .kb-ark-h2 {
+  margin: 0.2rem 0 0;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 1.45rem;
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--kb-text);
+}
+[data-skin="arknights"] .kb-ark-count {
+  margin-left: 0.6rem;
+  color: var(--kb-primary);
+  font-family: var(--kb-mono);
+  font-size: 0.75em;
+  letter-spacing: 0.16em;
+}
+/* 卡片：悬停时四角角标变长（角标就是底色里画的 8 条渐变，只改尺寸） */
+[data-skin="arknights"] .kb-card {
+  transition: background-size 0.2s ease;
+}
+[data-skin="arknights"] .kb-card:hover {
+  background-size:
+    18px 1px,
+    1px 18px,
+    18px 1px,
+    1px 18px,
+    18px 1px,
+    1px 18px,
+    18px 1px,
+    1px 18px;
+}
+[data-skin="arknights"] .kb-brand {
+  border-radius: 0;
+}
+
+/* ── 众生行记·图录：RECORD ─────────────────────────────────────────── */
+[data-skin="atlas"] .kb-atlas-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--kb-border-strong);
+  background: var(--kb-surface);
+  font-family: var(--kb-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="atlas"] .kb-atlas-strip b {
+  color: var(--kb-atlas-ink);
+  letter-spacing: 0.26em;
+}
+[data-skin="atlas"] .kb-atlas-strip-extra {
+  color: var(--kb-atlas-cobalt);
+}
+[data-skin="atlas"] .kb-atlas-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+[data-skin="atlas"] .kb-atlas-hdr-win {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid var(--kb-border-strong);
+  background: var(--kb-surface);
+  font-family: var(--kb-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="atlas"] .kb-atlas-hdr-bar {
+  display: flex;
+  gap: 3px;
+}
+[data-skin="atlas"] .kb-atlas-hdr-bar i {
+  width: 4px;
+  height: 4px;
+  background: var(--kb-border-strong);
+}
+[data-skin="atlas"] .kb-atlas-hdr-win b {
+  color: var(--kb-text);
+}
+[data-skin="atlas"] .kb-atlas-h2 {
+  margin: 0;
+  font-family: "Times New Roman", "Songti SC", serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--kb-atlas-ink);
+  text-shadow:
+    1.5px 0 0 color-mix(in srgb, var(--kb-atlas-cobalt) 30%, transparent),
+    -1.5px 0 0 color-mix(in srgb, var(--kb-danger) 16%, transparent);
+}
+[data-skin="atlas"] .kb-atlas-count {
+  margin-left: 0.6rem;
+  color: var(--kb-atlas-cobalt);
+  font-family: var(--kb-mono);
+  font-size: 0.62em;
+  letter-spacing: 0.18em;
+}
+/* 卡片：右上角圆盘缩略 + 悬停轻微套印位移 */
+[data-skin="atlas"] .kb-card {
+  position: relative;
+}
+[data-skin="atlas"] .kb-card::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--kb-atlas-cobalt) 45%, transparent);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--kb-atlas-cobalt) 22%, transparent) 0 55%,
+    transparent 56%
+  );
+  pointer-events: none;
+}
+[data-skin="atlas"] .kb-card:hover {
+  transform: translate(-1px, -1px);
+}
+[data-skin="atlas"] .kb-brand {
+  border-radius: 50%;
+}
+
+@media (max-width: 920px) {
+  [data-skin="rhine"] .kb-rhine-strip,
+  [data-skin="arknights"] .kb-ark-strip,
+  [data-skin="atlas"] .kb-atlas-strip {
+    display: none !important;
+  }
+}
