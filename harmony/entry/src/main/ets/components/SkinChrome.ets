@@ -952,19 +952,19 @@ export struct SkinIcon {
   }
 
   private srcDark(): ResourceStr {
-    if (this.iconName === 'users') return ('app.media.ic_users_l');
-    if (this.iconName === 'shield') return ('app.media.ic_shield_l');
-    if (this.iconName === 'palette') return ('app.media.ic_palette_l');
-    if (this.iconName === 'sync') return ('app.media.ic_sync_l');
-    return ('app.media.ic_logout_l');
+    if (this.iconName === 'users') return ('ic_users_l.png');
+    if (this.iconName === 'shield') return ('ic_shield_l.png');
+    if (this.iconName === 'palette') return ('ic_palette_l.png');
+    if (this.iconName === 'sync') return ('ic_sync_l.png');
+    return ('ic_logout_l.png');
   }
 
   private srcLight(): ResourceStr {
-    if (this.iconName === 'users') return ('app.media.ic_users_d');
-    if (this.iconName === 'shield') return ('app.media.ic_shield_d');
-    if (this.iconName === 'palette') return ('app.media.ic_palette_d');
-    if (this.iconName === 'sync') return ('app.media.ic_sync_d');
-    return ('app.media.ic_logout_d');
+    if (this.iconName === 'users') return ('ic_users_d.png');
+    if (this.iconName === 'shield') return ('ic_shield_d.png');
+    if (this.iconName === 'palette') return ('ic_palette_d.png');
+    if (this.iconName === 'sync') return ('ic_sync_d.png');
+    return ('ic_logout_d.png');
   }
 
   build() {
