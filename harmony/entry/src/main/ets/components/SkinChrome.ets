@@ -38,8 +38,15 @@ export function skinCardTag(skin: string): string {
 }
 
 /**
- * 皮肤底纹：铺满父容器的极细网格（放在 Stack 最底层，不拦截触摸）。
- * blueprint / lab / overprint 双轴；hud 只有横线（扫描感）；mono 保持纯净无纹理。
+ * 皮肤底纹：**位于页面最底层**（第一个 Stack 子节点），自带页面底色，
+ * 卡片/输入框是不透明的，会把底纹盖住 —— 所以纹理只出现在页面空白处。
+ *
+ * 每套皮肤纹理不同：
+ *   hud       工程图纸：双向网格（40 格，5–6%）
+ *   lab       实验记录：只有横向刻度线（26 条）
+ *   blueprint 蓝图：粗网格（20 格，10–12%）
+ *   mono      纯净：无纹理
+ *   overprint 图版：只要稀疏竖线（14 条）
  */
 @Component
 export struct SkinBackdrop {
@@ -47,40 +54,61 @@ export struct SkinBackdrop {
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
 
-  private idx: number[] = [
+  private idxAll: number[] = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41
+    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
   ];
 
   private skinId(): SkinId {
     return normalizeSkinId(this.skin);
   }
 
+  private c(): ThemeColors {
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
+  }
+
+  private lineCount(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'lab') return 26;
+    if (k === 'blueprint') return 20;
+    if (k === 'overprint') return 14;
+    if (k === 'mono') return 0;
+    return 40;
+  }
+
+  private idx(): number[] {
+    return this.idxAll.slice(0, this.lineCount());
+  }
+
+  private wantV(): boolean {
+    const k: SkinId = this.skinId();
+    return k === 'hud' || k === 'blueprint' || k === 'overprint';
+  }
+
+  private wantH(): boolean {
+    const k: SkinId = this.skinId();
+    return k === 'hud' || k === 'lab' || k === 'blueprint';
+  }
+
   private lineAlpha(): string {
     const dark: boolean = resolveDark(this.darkMode, this.systemDark);
     const k: SkinId = this.skinId();
-    if (k === 'blueprint') return dark ? '#0AE0F00E' : '#0A8FA112';
-    if (k === 'lab') return dark ? '#E8EDEA0C' : '#1012140C';
-    if (k === 'overprint') return dark ? '#E8EDEA0A' : '#1014180E';
-    if (k === 'hud') return dark ? '#FFFFFF07' : '#15140F07';
+    if (k === 'blueprint') return dark ? '#0AE0F018' : '#0A8FA11C';
+    if (k === 'lab') return dark ? '#E8EDEA10' : '#10121410';
+    if (k === 'overprint') return dark ? '#E8EDEA0E' : '#10141812';
+    if (k === 'hud') return dark ? '#FFFFFF08' : '#15140F0A';
     return '#00000000';
   }
 
-  private showV(): boolean {
-    const k: SkinId = this.skinId();
-    // 统一走网格：mono 保持纯净，其余四套都是竖 + 横细线
-    return k !== 'mono';
-  }
-
-  private showH(): boolean {
-    return this.skinId() !== 'mono';
+  private orn(): string {
+    return skinAccentColor(this.skin);
   }
 
   build() {
     Stack() {
-      if (this.showV()) {
+      if (this.wantV()) {
         Row() {
-          ForEach(this.idx, (i: number) => {
+          ForEach(this.idx(), (i: number) => {
             Text('')
               .width(1)
               .height('100%')
@@ -93,9 +121,9 @@ export struct SkinBackdrop {
         .justifyContent(FlexAlign.SpaceBetween)
         .hitTestBehavior(HitTestMode.None)
       }
-      if (this.showH()) {
+      if (this.wantH()) {
         Column() {
-          ForEach(this.idx, (i: number) => {
+          ForEach(this.idx(), (i: number) => {
             Text('')
               .width('100%')
               .height(1)
@@ -108,9 +136,141 @@ export struct SkinBackdrop {
         .justifyContent(FlexAlign.SpaceBetween)
         .hitTestBehavior(HitTestMode.None)
       }
+
+      // ── 主题专属装饰元素（每套不同，全部不拦截触摸）──
+      if (this.skinId() === 'hud') {
+        // 工业终端：四角 L 形角标 + 顶部信号刻度
+        Stack({ alignContent: Alignment.TopStart }) {
+          Text('')
+            .width(24)
+            .height(24)
+            .border({ width: { top: 2, left: 2 }, color: this.orn() })
+            .margin({ left: 12, top: 12 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.5)
+        .hitTestBehavior(HitTestMode.None)
+        Stack({ alignContent: Alignment.BottomEnd }) {
+          Text('')
+            .width(24)
+            .height(24)
+            .border({ width: { bottom: 2, right: 2 }, color: this.orn() })
+            .margin({ right: 12, bottom: 12 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.5)
+        .hitTestBehavior(HitTestMode.None)
+      } else if (this.skinId() === 'lab') {
+        // 实验档案：右上准星框 + 左下细圆环
+        Stack({ alignContent: Alignment.TopEnd }) {
+          Text('')
+            .width(18)
+            .height(18)
+            .border({ width: 1, color: this.orn() })
+            .margin({ right: 16, top: 16 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.6)
+        .hitTestBehavior(HitTestMode.None)
+        Stack({ alignContent: Alignment.BottomStart }) {
+          Text('')
+            .width(46)
+            .height(46)
+            .borderRadius(23)
+            .border({ width: 1, color: this.orn() })
+            .margin({ left: 14, bottom: 14 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.45)
+        .hitTestBehavior(HitTestMode.None)
+      } else if (this.skinId() === 'blueprint') {
+        // 蓝图海报：右下大圆环 + 左上小方块
+        Stack({ alignContent: Alignment.BottomEnd }) {
+          Text('')
+            .width(132)
+            .height(132)
+            .borderRadius(66)
+            .border({ width: 1.5, color: this.orn() })
+            .margin({ right: -26, bottom: -26 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.5)
+        .hitTestBehavior(HitTestMode.None)
+        Stack({ alignContent: Alignment.TopStart }) {
+          Text('')
+            .width(26)
+            .height(26)
+            .border({ width: 1, color: this.orn() })
+            .margin({ left: 14, top: 14 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.55)
+        .hitTestBehavior(HitTestMode.None)
+      } else if (this.skinId() === 'mono') {
+        // 黑白档案：左侧朱红竖栏 + 右下红色斜块
+        Stack({ alignContent: Alignment.Start }) {
+          Text('')
+            .width(3)
+            .height('100%')
+            .backgroundColor(this.orn())
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.75)
+        .hitTestBehavior(HitTestMode.None)
+        Stack({ alignContent: Alignment.BottomEnd }) {
+          Text('')
+            .width(16)
+            .height(16)
+            .backgroundColor(this.orn())
+            .margin({ right: 14, bottom: 14 })
+            .rotate({ angle: 45 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.55)
+        .hitTestBehavior(HitTestMode.None)
+      } else {
+        // 套印图录：钴蓝圆点 + 底部刻度条
+        Stack({ alignContent: Alignment.TopEnd }) {
+          Text('')
+            .width(12)
+            .height(12)
+            .borderRadius(6)
+            .backgroundColor(this.orn())
+            .margin({ right: 16, top: 16 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.7)
+        .hitTestBehavior(HitTestMode.None)
+        Stack({ alignContent: Alignment.BottomStart }) {
+          Row({ space: 5 }) {
+            ForEach(this.idxAll.slice(0, 10), (i: number) => {
+              Text('')
+                .width(4)
+                .height(i % 3 === 0 ? 14 : 8)
+                .backgroundColor(this.orn())
+            }, (i: number) => 'b' + i.toString())
+          }
+          .margin({ left: 16, bottom: 16 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.6)
+        .hitTestBehavior(HitTestMode.None)
+      }
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(this.c().bg)
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .hitTestBehavior(HitTestMode.None)
   }
 }
