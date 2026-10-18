@@ -945,23 +945,21 @@ export struct SkinIcon {
   @Prop iconSize: number = 22;
   @Prop iconColor: string = '#000000';
 
+  private glyph(): string {
+    if (this.iconName === 'users') return '管';
+    if (this.iconName === 'shield') return '安';
+    if (this.iconName === 'palette') return '外';
+    if (this.iconName === 'sync') return '⟳';
+    return '退';
+  }
+
   build() {
-    if (this.iconName === 'users') {
-      Image(('app.media.ic_users')).width(this.iconSize).height(this.iconSize)
-        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
-    } else if (this.iconName === 'shield') {
-      Image(('app.media.ic_shield')).width(this.iconSize).height(this.iconSize)
-        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
-    } else if (this.iconName === 'palette') {
-      Image(('app.media.ic_palette')).width(this.iconSize).height(this.iconSize)
-        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
-    } else if (this.iconName === 'sync') {
-      Image(('app.media.ic_sync')).width(this.iconSize).height(this.iconSize)
-        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
-    } else {
-      Image(('app.media.ic_logout')).width(this.iconSize).height(this.iconSize)
-        .fillColor(this.iconColor).hitTestBehavior(HitTestMode.None)
-    }
+    Text(this.glyph())
+      .fontSize(this.iconSize)
+      .fontColor(this.iconColor)
+      .textAlign(TextAlign.Center)
+      .width(this.iconSize + 2)
+      .hitTestBehavior(HitTestMode.None)
   }
 }/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
