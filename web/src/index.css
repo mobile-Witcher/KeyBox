@@ -743,6 +743,15 @@ body {
   border-color: var(--kb-border-strong);
   box-shadow: none;
 }
+/* 圆角统一压到 2px（保持档案卡的硬边感；头像/圆点等 .rounded-full 保留圆形） */
+[data-skin="rhine"]
+  :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 2px;
+}
+/* 无菌风格不做柔光：隐藏登录页装饰光晕 */
+[data-skin="rhine"] .blur-3xl {
+  display: none !important;
+}
 
 /* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
 [data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
