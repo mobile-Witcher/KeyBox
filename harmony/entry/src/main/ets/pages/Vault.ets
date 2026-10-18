@@ -846,18 +846,14 @@ struct Vault {
               void this.runSync();
             }
           })
-          Button('+')
-            .type(ButtonType.Normal)
-            .width(56)
-            .height(56)
-            .borderRadius(28)
-            .fontSize(24)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .shadow({ radius: 12, color: '#00000033', offsetX: 0, offsetY: 4 })
-            .onClick(() => {
+          SkinButton({
+            label: '+',
+            kind: 'primary',
+            btnHeight: 56,
+            onTap: () => {
               this.openNew();
-            })
+            }
+          })
         }
         .margin({ right: 14, bottom: 26 })
       }
@@ -925,29 +921,25 @@ struct Vault {
                 .color(this.c().border)
                 .margin({ top: 4, bottom: 4 })
               Row({ space: 10 }) {
-                Button('重命名分类')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .height(34)
-                  .fontSize(12)
-                  .backgroundColor(this.c().surface2)
-                  .fontColor(this.c().text)
-                  .onClick(() => {
+                SkinButton({
+                  label: '重命名分类',
+                  kind: 'ghost',
+                  btnHeight: 34,
+                  onTap: () => {
                     this.fTagName = this.activeTag ?? '';
                     this.showTagMenu = false;
                     this.dialogMode = 'tagRename';
-                  })
-                Button('删除分类')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .height(34)
-                  .fontSize(12)
-                  .backgroundColor(this.c().danger)
-                  .fontColor(this.c().primaryContrast)
-                  .onClick(() => {
+                  }
+                })
+                SkinButton({
+                  label: '删除分类',
+                  kind: 'primary',
+                  btnHeight: 34,
+                  onTap: () => {
                     this.showTagMenu = false;
                     this.dialogMode = 'tagDelete'; // 二次确认对话框
-                  })
+                  }
+                })
               }
               .width('100%')
             }
@@ -1022,42 +1014,33 @@ struct Vault {
               .fontColor(this.c().muted)
               .margin({ top: 4 })
             Row({ space: 6 }) {
-              Button('跟随系统')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .fontSize(12)
-                .backgroundColor(this.darkMode === 'system' ? this.c().primary : this.c().surface2)
-                .fontColor(this.darkMode === 'system' ? this.c().primaryContrast : this.c().text)
-                .onClick(() => {
+              SkinButton({
+                label: '跟随系统',
+                kind: 'primary',
+                btnHeight: 38,
+                onTap: () => {
                   AppStorage.setOrCreate('darkMode', 'system');
                   void savePrefs(this.skin, 'system');
-                })
-              Button('浅色')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .fontSize(12)
-                .backgroundColor(this.darkMode === 'light' ? this.c().primary : this.c().surface2)
-                .fontColor(this.darkMode === 'light' ? this.c().primaryContrast : this.c().text)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '浅色',
+                kind: 'primary',
+                btnHeight: 38,
+                onTap: () => {
                   AppStorage.setOrCreate('darkMode', 'light');
                   void savePrefs(this.skin, 'light');
-                })
-              Button('深色')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .fontSize(12)
-                .backgroundColor(this.darkMode === 'dark' ? this.c().primary : this.c().surface2)
-                .fontColor(this.darkMode === 'dark' ? this.c().primaryContrast : this.c().text)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '深色',
+                kind: 'primary',
+                btnHeight: 38,
+                onTap: () => {
                   AppStorage.setOrCreate('darkMode', 'dark');
                   void savePrefs(this.skin, 'dark');
-                })
+                }
+              })
             }
             .width('100%')
 
@@ -1147,22 +1130,22 @@ struct Vault {
                   this.fTags = v;
                 })
               Row({ space: 10 }) {
-                Button('取消')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .backgroundColor(this.c().surface2)
-                  .fontColor(this.c().text)
-                  .onClick(() => {
+                SkinButton({
+                  label: '取消',
+                  kind: 'ghost',
+                  btnHeight: 44,
+                  onTap: () => {
                     this.closeDialog();
-                  })
-                Button('保存')
-                  .type(ButtonType.Normal)
-                  .layoutWeight(1)
-                  .backgroundColor(this.c().primary)
-                  .fontColor(this.c().primaryContrast)
-                  .onClick(() => {
+                  }
+                })
+                SkinButton({
+                  label: '保存',
+                  kind: 'primary',
+                  btnHeight: 44,
+                  onTap: () => {
                     void this.saveDialog();
-                  })
+                  }
+                })
               }
               .width('100%')
               .margin({ top: 6 })
@@ -1205,33 +1188,33 @@ struct Vault {
               .fontSize(11)
               .fontColor(this.c().muted)
             Row({ space: 10 }) {
-              Button('取消')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .onClick(() => {
+              SkinButton({
+                label: '取消',
+                kind: 'ghost',
+                btnHeight: 44,
+                onTap: () => {
                   this.closeDialog();
-                })
-              Button('确认')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '确认',
+                kind: 'primary',
+                btnHeight: 44,
+                onTap: () => {
                   const next = this.fTagName.trim();
                   if (next === '') {
-                    this.status = '分类名不能为空';
-                    this.statusColor = this.c().danger;
-                    return;
+                  this.status = '分类名不能为空';
+                  this.statusColor = this.c().danger;
+                  return;
                   }
                   const oldName = this.activeTag ?? '';
                   if (next === oldName) {
-                    this.closeDialog();
-                    return;
+                  this.closeDialog();
+                  return;
                   }
                   void this.applyTagChange(oldName, next);
-                })
+                }
+              })
             }
             .width('100%')
           }
@@ -1263,22 +1246,22 @@ struct Vault {
               .fontSize(13)
               .fontColor(this.c().text)
             Row({ space: 10 }) {
-              Button('取消')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .onClick(() => {
+              SkinButton({
+                label: '取消',
+                kind: 'ghost',
+                btnHeight: 44,
+                onTap: () => {
                   this.closeDialog();
-                })
-              Button('删除')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().danger)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '删除',
+                kind: 'primary',
+                btnHeight: 44,
+                onTap: () => {
                   void this.applyTagChange(this.activeTag ?? '', null);
-                })
+                }
+              })
             }
             .width('100%')
           }
@@ -1331,26 +1314,22 @@ struct Vault {
             }
             .constraintSize({ maxHeight: 180 })
             Row({ space: 10 }) {
-              Button('保留本机')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
+              SkinButton({
+                label: '保留本机',
+                kind: 'primary',
+                btnHeight: 38,
+                onTap: () => {
                   void this.resolveConflicts(false);
-                })
-              Button('用服务端')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .height(38)
-                .borderRadius(this.c().radius)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '用服务端',
+                kind: 'primary',
+                btnHeight: 38,
+                onTap: () => {
                   void this.resolveConflicts(true);
-                })
+                }
+              })
             }
             .width('100%')
             Text('稍后处理')
@@ -1518,26 +1497,22 @@ struct Vault {
       .width('100%')
 
       Row({ space: 10 }) {
-        Button('编辑')
-          .type(ButtonType.Normal)
-          .layoutWeight(1)
-          .height(34)
-          .fontSize(13)
-          .backgroundColor(this.c().surface2)
-          .fontColor(this.c().text)
-          .onClick(() => {
+        SkinButton({
+          label: '编辑',
+          kind: 'ghost',
+          btnHeight: 34,
+          onTap: () => {
             this.openEdit(it);
-          })
-        Button('删除')
-          .type(ButtonType.Normal)
-          .layoutWeight(1)
-          .height(34)
-          .fontSize(13)
-          .backgroundColor(this.c().danger)
-          .fontColor(this.c().primaryContrast)
-          .onClick(() => {
+          }
+        })
+        SkinButton({
+          label: '删除',
+          kind: 'primary',
+          btnHeight: 34,
+          onTap: () => {
             void this.remove(it);
-          })
+          }
+        })
       }
       .width('100%')
       .margin({ top: 4 })
