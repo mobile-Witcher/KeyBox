@@ -16,6 +16,12 @@
  */
 export type Theme = "light" | "dark";
 
+/**
+ * 明暗**偏好**：比 Theme 多一个 "system"（跟随系统/浏览器）。
+ * 存储里存偏好；实际落到 DOM 的仍是 Theme（system 会被解析成当前系统深浅）。
+ */
+export type ThemePreference = Theme | "system";
+
 export type Skin =
   | "default" // 精致克制
   | "tech" // 现代科技感
@@ -95,18 +101,30 @@ function writeStorage(key: string, value: string): void {
   }
 }
 
-/** 解析首屏明暗：URL 预览参数 > 存储 > 系统偏好 > 浅色。 */
-export function resolveInitialTheme(): Theme {
+/** 读取系统深浅偏好（无法判断时按浅色）。 */
+export function systemPreferredTheme(): Theme {
   if (!hasWindow()) return "light";
-  const fromUrl = readUrlParam("theme");
-  if (fromUrl === "light" || fromUrl === "dark") return fromUrl;
-  const stored = readStorage(THEME_STORAGE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
   try {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } catch {
     return "light";
   }
+}
+
+/** 解析首屏明暗偏好：URL 预览参数 > 存储 > system（跟随系统）。 */
+export function resolveInitialPreference(): ThemePreference {
+  if (!hasWindow()) return "system";
+  const fromUrl = readUrlParam("theme");
+  if (fromUrl === "light" || fromUrl === "dark" || fromUrl === "system") return fromUrl;
+  const stored = readStorage(THEME_STORAGE_KEY);
+  if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  return "system";
+}
+
+/** 兼容旧调用：返回首屏**有效**明暗（不返回 "system"）。 */
+export function resolveInitialTheme(): Theme {
+  const pref = resolveInitialPreference();
+  return pref === "system" ? systemPreferredTheme() : pref;
 }
 
 /** 解析首屏皮肤：URL 预览参数 > 存储 > default。 */
@@ -121,6 +139,7 @@ export function resolveInitialSkin(): Skin {
 // ---------------------------------------------------------------------------
 // 全局 store（同屏多个开关状态一致）
 // ---------------------------------------------------------------------------
+let currentPreference: ThemePreference = "system";
 let currentTheme: Theme = "light";
 let currentSkin: Skin = "default";
 const themeListeners = new Set<(theme: Theme) => void>();
@@ -140,15 +159,32 @@ function paint(): void {
 export function getTheme(): Theme {
   return currentTheme;
 }
+
+/** 当前明暗**偏好**（可能是 "system"）。 */
+export function getThemePreference(): ThemePreference {
+  return currentPreference;
+}
 export function getSkin(): Skin {
   return currentSkin;
 }
 
-export function setTheme(next: Theme): void {
-  currentTheme = next;
+/** 落一次偏好：system → 解析成当前系统深浅；paint 后广播**有效**明暗。 */
+function applyThemePreference(next: ThemePreference, persist: boolean): void {
+  currentPreference = next;
+  currentTheme = next === "system" ? systemPreferredTheme() : next;
   paint();
-  writeStorage(THEME_STORAGE_KEY, next);
-  themeListeners.forEach((fn) => fn(next));
+  if (persist) writeStorage(THEME_STORAGE_KEY, next);
+  themeListeners.forEach((fn) => fn(currentTheme));
+}
+
+/** 设置明暗偏好（light / dark / system）。 */
+export function setThemePreference(next: ThemePreference): void {
+  applyThemePreference(next, true);
+}
+
+/** 兼容旧调用：等价于设置一个明确的 light/dark 偏好。 */
+export function setTheme(next: Theme): void {
+  applyThemePreference(next, true);
 }
 
 export function setSkin(next: Skin): void {
@@ -160,9 +196,24 @@ export function setSkin(next: Skin): void {
 
 /** 应用启动时调用：解析并落 DOM（与内联脚本结果一致，做一次幂等校正）。 */
 export function initTheme(): void {
-  currentTheme = resolveInitialTheme();
   currentSkin = resolveInitialSkin();
-  paint();
+  applyThemePreference(resolveInitialPreference(), false);
+
+  // 偏好为 system 时，跟随浏览器/系统的深浅实时切换
+  if (!hasWindow() || typeof window.matchMedia !== "function") return;
+  try {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (): void => {
+      if (currentPreference === "system") applyThemePreference("system", false);
+    };
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", onChange);
+    } else if (typeof mq.addListener === "function") {
+      mq.addListener(onChange);
+    }
+  } catch {
+    // 跟随系统不可用：保持当前有效明暗即可
+  }
 }
 
 export function subscribeTheme(fn: (theme: Theme) => void): () => void {

@@ -48,7 +48,12 @@
           var qTheme = q ? q.get("theme") : null;
           var qSkin = q ? q.get("skin") : null;
           var storedTheme =
-            qTheme === "light" || qTheme === "dark" ? qTheme : ls ? ls.getItem("keybox.theme") : null;
+            qTheme === "light" || qTheme === "dark" || qTheme === "system"
+              ? qTheme
+              : ls
+              ? ls.getItem("keybox.theme")
+              : null;
+          /* "system"（或未设置）时跟随浏览器/系统深浅 */
           var isDark =
             storedTheme === "dark" ||
             (storedTheme !== "light" &&
