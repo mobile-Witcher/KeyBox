@@ -1014,13 +1014,13 @@ export struct SkinIcon {
           .strokeWidth(1.8)
           .strokeLineCap(LineCapStyle.Round)
           .strokeLineJoin(LineJoinStyle.Round)
+          // 只放大图形本身（容器不放大）：约 17px 图形 → 22px，仍在 34 框内
+          .scale({ x: 1.3, y: 1.3 })
           .hitTestBehavior(HitTestMode.None)
       }, (d: string, i: number) => 'p' + i.toString())
     }
     .width(24)
     .height(24)
-    // 图标几何只占 24 网格的 ~70%，做视觉放大 1.6×（不改变布局尺寸，因此仍严格居中）
-    .scale({ x: 1.6, y: 1.6 })
     .hitTestBehavior(HitTestMode.None)
   }
 }
