@@ -1042,26 +1042,25 @@ export struct SkinIconButton {
   }
 
   build() {
-    Stack({ alignContent: Alignment.Center }) {
-      SkinIcon({ iconName: this.iconName, iconSize: this.iconSize, iconColor: this.iconColor })
+    Stack({ alignContent: Alignment.TopEnd }) {
+      // 用 padding 居中：按钮尺寸 = 图标 24 + 2*3 = 30，不依赖任何 Stack 对齐属性
+      Column() {
+        SkinIcon({ iconName: this.iconName, iconSize: this.iconSize, iconColor: this.iconColor })
+      }
+      .padding(3)
+      .borderRadius(9)
+      .border({ width: 1, color: this.c().border })
+      .backgroundColor(this.c().bg)
       if (this.dot) {
-        Stack({ alignContent: Alignment.TopEnd }) {
-          Text('')
-            .width(6)
-            .height(6)
-            .borderRadius(3)
-            .backgroundColor(this.c().warning)
-        }
-        .width('100%')
-        .height('100%')
-        .hitTestBehavior(HitTestMode.None)
+        Text('')
+          .width(6)
+          .height(6)
+          .borderRadius(3)
+          .backgroundColor(this.c().warning)
+          .margin({ top: 2, right: 2 })
+          .hitTestBehavior(HitTestMode.None)
       }
     }
-    .width(this.boxSize)
-    .height(this.boxSize)
-    .borderRadius(9)
-    .border({ width: 1, color: this.c().border })
-    .backgroundColor(this.c().bg)
     .onClick(() => {
       this.onPick();
     })
