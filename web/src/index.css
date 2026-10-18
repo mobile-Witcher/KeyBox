@@ -1433,6 +1433,315 @@ body {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   皮肤 ⑭：atlas（众生行记 · 套印图录）
+   参考「众生行记」平面设计图录：冷白纸 + 钴蓝圆盘 + 套印错位 + 细线刻度
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-skin="atlas"] {
+  --kb-bg: #edf1ee;
+  --kb-surface: #ffffff;
+  --kb-surface-2: #e3e9e6;
+  --kb-text: #101418;
+  --kb-muted: #5c6866;
+  --kb-border: #cbd5d1;
+  --kb-border-strong: #9fada8;
+  --kb-primary: #2447c6;
+  --kb-primary-hover: #1b3aa8;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #c0392b;
+  --kb-success: #2f7d5b;
+  --kb-warning: #9a6b12;
+  --kb-ring: rgba(36, 71, 198, 0.22);
+  --kb-shadow: none;
+  --kb-shadow-lg: 0 0 0 1px var(--kb-border-strong);
+  --kb-radius: 0px;
+  --kb-radius-card: 0px;
+  --kb-heading-tracking: 0.02em;
+  --kb-grid: rgba(16, 20, 24, 0.055);
+  --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  --kb-atlas-cobalt: #2447c6;
+  --kb-atlas-ink: #101418;
+  color-scheme: light;
+}
+[data-skin="atlas"].dark {
+  --kb-bg: #0b0f12;
+  --kb-surface: #11161a;
+  --kb-surface-2: #171e23;
+  --kb-text: #e8edea;
+  --kb-muted: #8a9793;
+  --kb-border: #232c31;
+  --kb-border-strong: #3a474d;
+  --kb-primary: #4c6fff;
+  --kb-primary-hover: #6c8bff;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #e2665b;
+  --kb-success: #5fae86;
+  --kb-warning: #d8b368;
+  --kb-ring: rgba(76, 111, 255, 0.3);
+  --kb-shadow: none;
+  --kb-shadow-lg: none;
+  --kb-grid: rgba(232, 237, 234, 0.045);
+  --kb-atlas-cobalt: #4c6fff;
+  --kb-atlas-ink: #e8edea;
+  color-scheme: dark;
+}
+/* 半调网点底（印刷网点） */
+[data-skin="atlas"] body {
+  background-image: radial-gradient(circle, var(--kb-grid) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+/* 标题：Didone 衬线 + 套印错位（青/红双色偏移，用文字阴影实现，零布局影响） */
+[data-skin="atlas"] h1,
+[data-skin="atlas"] h2,
+[data-skin="atlas"] h3 {
+  font-family: "Times New Roman", "Songti SC", "Source Han Serif SC", Georgia, serif;
+  letter-spacing: 0.02em;
+  text-shadow:
+    1.5px 0 0 color-mix(in srgb, var(--kb-atlas-cobalt) 35%, transparent),
+    -1.5px 0 0 color-mix(in srgb, var(--kb-danger) 18%, transparent);
+}
+/* 卡片：细框 + 套印硬影（3px 实心偏移，像印刷没对准） */
+[data-skin="atlas"] .kb-card,
+[data-skin="atlas"] .kb-card-lg {
+  border-color: var(--kb-border-strong);
+  box-shadow: 3px 3px 0 var(--kb-border);
+}
+/* 主按钮：浅色用墨黑块（对应图录里的「启程」），深色用钴蓝块 */
+[data-skin="atlas"] .kb-btn-primary {
+  background: var(--kb-atlas-ink);
+  color: var(--kb-bg);
+  box-shadow: none;
+}
+[data-skin="atlas"].dark .kb-btn-primary {
+  background: var(--kb-primary);
+  color: var(--kb-primary-contrast);
+}
+[data-skin="atlas"] .kb-badge {
+  border-radius: 0;
+  border-color: var(--kb-atlas-cobalt);
+  color: var(--kb-atlas-cobalt);
+  font-family: var(--kb-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+[data-skin="atlas"] .kb-btn-ghost,
+[data-skin="atlas"] .kb-btn-danger {
+  font-family: var(--kb-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+[data-skin="atlas"] thead th {
+  font-family: var(--kb-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  border-bottom: 1px solid var(--kb-border-strong);
+}
+[data-skin="atlas"] table tbody td {
+  border-bottom: 1px solid var(--kb-border);
+}
+[data-skin="atlas"] code {
+  font-family: var(--kb-mono);
+  letter-spacing: 0.06em;
+}
+[data-skin="atlas"] section.rounded-xl {
+  border-color: var(--kb-border-strong);
+  box-shadow: 3px 3px 0 var(--kb-border);
+}
+[data-skin="atlas"]
+  :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 0;
+}
+[data-skin="atlas"] .blur-3xl {
+  display: none !important;
+}
+
+/* 套印图录：登录/注册页左栏 */
+.kb-atlas-hero {
+  display: none;
+}
+[data-skin="atlas"] .kb-auth-page .kb-card-lg {
+  max-width: 1060px;
+  padding: 0;
+}
+[data-skin="atlas"] .kb-auth-grid {
+  display: grid;
+  grid-template-columns: 1.06fr 0.94fr;
+}
+[data-skin="atlas"] .kb-atlas-hero {
+  display: flex;
+  gap: 14px;
+  padding: 26px 24px 22px;
+  border-right: 1px solid var(--kb-border-strong);
+  background: linear-gradient(
+    180deg,
+    var(--kb-surface) 0%,
+    var(--kb-surface) 42%,
+    var(--kb-surface-2) 100%
+  );
+}
+[data-skin="atlas"] .kb-atlas-coord {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 2px;
+  font-family: var(--kb-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  color: var(--kb-muted);
+}
+[data-skin="atlas"] .kb-atlas-coord span::before {
+  content: "+";
+  margin-right: 3px;
+  color: var(--kb-atlas-cobalt);
+}
+[data-skin="atlas"] .kb-atlas-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+[data-skin="atlas"] .kb-atlas-caps {
+  align-self: flex-start;
+  padding: 3px 7px;
+  border: 1px solid var(--kb-border-strong);
+  font-family: var(--kb-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="atlas"] .kb-atlas-title {
+  margin: 0;
+  font-family: "Times New Roman", "Songti SC", "Source Han Serif SC", Georgia, serif;
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+  color: var(--kb-atlas-ink);
+  text-shadow:
+    1.5px 0 0 color-mix(in srgb, var(--kb-atlas-cobalt) 32%, transparent),
+    -1.5px 0 0 color-mix(in srgb, var(--kb-danger) 16%, transparent);
+}
+[data-skin="atlas"] .kb-atlas-title span {
+  display: block;
+  color: var(--kb-atlas-cobalt);
+}
+[data-skin="atlas"] .kb-atlas-cn {
+  margin: 0;
+  font-size: 12.5px;
+  letter-spacing: 0.2em;
+  color: var(--kb-text);
+}
+[data-skin="atlas"] .kb-atlas-quote {
+  margin: 0;
+  font-family: "Songti SC", "Source Han Serif SC", serif;
+  font-size: 12px;
+  line-height: 1.85;
+  color: var(--kb-muted);
+}
+/* 钴蓝圆盘 + 两道细圆环（box-shadow 画环，不涉及定位） */
+[data-skin="atlas"] .kb-atlas-disc {
+  width: 112px;
+  height: 112px;
+  margin: 4px 0 2px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 44%,
+    color-mix(in srgb, var(--kb-atlas-cobalt) 86%, #ffffff) 0 40%,
+    var(--kb-atlas-cobalt) 41% 100%
+  );
+  box-shadow:
+    0 0 0 8px var(--kb-surface),
+    0 0 0 9px var(--kb-border-strong),
+    0 0 0 16px var(--kb-surface),
+    0 0 0 17px var(--kb-border);
+}
+/* 浏览器小窗框（图录里的 RECORD·06 那种） */
+[data-skin="atlas"] .kb-atlas-win {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-self: flex-start;
+  min-width: 150px;
+  padding: 5px 7px 6px;
+  border: 1px solid var(--kb-border-strong);
+  background: var(--kb-surface);
+  font-family: var(--kb-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="atlas"] .kb-atlas-win-bar {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 2px;
+}
+[data-skin="atlas"] .kb-atlas-win-bar i {
+  width: 4px;
+  height: 4px;
+  background: var(--kb-border-strong);
+}
+[data-skin="atlas"] .kb-atlas-win b {
+  color: var(--kb-text);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+}
+/* 条码 */
+[data-skin="atlas"] .kb-atlas-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+[data-skin="atlas"] .kb-atlas-bars i {
+  display: block;
+  width: 3px;
+  height: 100%;
+  background: var(--kb-atlas-ink);
+}
+[data-skin="atlas"] .kb-atlas-bars i:nth-child(3n) {
+  height: 60%;
+}
+[data-skin="atlas"] .kb-atlas-bars i:nth-child(4n) {
+  width: 1px;
+  height: 82%;
+}
+[data-skin="atlas"] .kb-atlas-foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--kb-border);
+  font-family: var(--kb-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="atlas"] .kb-auth-main {
+  padding: 28px 30px 26px;
+}
+@media (max-width: 920px) {
+  [data-skin="atlas"] .kb-auth-page .kb-card-lg {
+    max-width: 100% !important;
+    overflow: hidden;
+  }
+  [data-skin="atlas"] .kb-auth-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-skin="atlas"] .kb-atlas-hero {
+    display: none !important;
+  }
+  [data-skin="atlas"] .kb-auth-main {
+    padding: 22px 18px 20px;
+  }
+}
+
 /* —— 终末地：全直角 + 去投影（覆盖组件里写死的 rounded-* / shadow-*）—— */
 [data-skin="endfield"] :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full) {
   border-radius: 0 !important;

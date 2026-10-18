@@ -161,6 +161,57 @@ export function AuthCard({
             </div>
           </aside>
 
+          {/*
+           * 众生行记·套印图录 皮肤专用左栏（其它皮肤 display:none）。
+           * 参考「众生行记」平面设计图录：钴蓝圆盘 + 细圆环 + 坐标刻度 + 小窗框 + 条码。
+           */}
+          <aside className="kb-atlas-hero" aria-hidden>
+            <div className="kb-atlas-coord">
+              <span>Y2</span>
+              <span>Y3</span>
+              <span>Y4</span>
+              <span>Y5</span>
+            </div>
+            <div className="kb-atlas-body">
+              <div className="kb-atlas-caps">Arknights / 6th Anniversary</div>
+              <p className="kb-atlas-title">
+                The Masses’
+                <span>Travels</span>
+              </p>
+              <p className="kb-atlas-cn">众生行记 · 密钥保管</p>
+              <p className="kb-atlas-quote">
+                若祈祷无用，
+                <br />
+                那我们因何祈祷？
+              </p>
+              <div className="kb-atlas-disc" />
+              <div className="kb-atlas-win">
+                <span className="kb-atlas-win-bar">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <b>Record · 06</b>
+                <span>Laterano / Sanctum</span>
+              </div>
+              <div className="kb-atlas-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="kb-atlas-foot">
+                <span>sidestory 06</span>
+                <span>interactive edition</span>
+              </div>
+            </div>
+          </aside>
+
           <aside className="kb-auth-hero" aria-hidden>
             <div>
               <div className="kb-eyebrow">Access protocol / 001</div>
