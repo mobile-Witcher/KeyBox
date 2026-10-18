@@ -107,14 +107,18 @@ export struct SkinSection {
   }
 }
 
-/** 弹层遮罩色（每套皮肤不同的压暗方式）。 */
+/**
+ * 弹层遮罩色（每套皮肤不同的压暗方式）。
+ * 注意：ArkUI 的 8 位十六进制颜色是 **#AARRGGBB（透明在前）**，不是 CSS 的 #RRGGBBAA。
+ * 旧版写成 #RRGGBBAA 会被解析成 alpha=前两位（≈8%），遮罩几乎不生效（表现为淡紫色蒙层）。
+ */
 export function scrimColor(skin: string): string {
   const k: SkinId = normalizeSkinId(skin);
-  if (k === 'blueprint') return '#00000099';
-  if (k === 'mono') return '#0000008C';
-  if (k === 'hud') return '#15140F80';
-  if (k === 'lab') return '#10121466';
-  return '#0B0F1273';
+  if (k === 'blueprint') return '#99000000';
+  if (k === 'mono') return '#8C000000';
+  if (k === 'hud') return '#8015140F';
+  if (k === 'lab') return '#66101214';
+  return '#730B0F12';
 }
 
 /** 弹层出现/消失的过渡（每套皮肤不同的时长、曲线与位移方向）。 */
@@ -140,22 +144,22 @@ export function sheetTransition(skin: string): TransitionEffect {
     .combine(TransitionEffect.translate({ y: 8 }).animation({ duration: 150, curve: Curve.EaseOut }));
 }
 
-/** 弹层投影（套印皮肤用硬偏影，其余按皮肤给柔和投影）。 */
+/** 弹层投影（套印皮肤用硬偏影，其余按皮肤给柔和投影）。颜色同样遵循 #AARRGGBB。 */
 export function panelShadow(skin: string): ShadowOptions {
   const k: SkinId = normalizeSkinId(skin);
   if (k === 'overprint') {
-    return { radius: 0, color: '#00000038', offsetX: 4, offsetY: 4 };
+    return { radius: 0, color: '#38000000', offsetX: 4, offsetY: 4 };
   }
   if (k === 'mono') {
-    return { radius: 0, color: '#00000044', offsetX: 3, offsetY: 3 };
+    return { radius: 0, color: '#44000000', offsetX: 3, offsetY: 3 };
   }
   if (k === 'blueprint') {
-    return { radius: 0, color: '#0AE0F030', offsetX: 0, offsetY: 2 };
+    return { radius: 0, color: '#300AE0F0', offsetX: 0, offsetY: 2 };
   }
   if (k === 'lab') {
-    return { radius: 18, color: '#10121426', offsetX: 0, offsetY: 6 };
+    return { radius: 18, color: '#26101214', offsetX: 0, offsetY: 6 };
   }
-  return { radius: 12, color: '#15140F33', offsetX: 0, offsetY: 6 };
+  return { radius: 12, color: '#3315140F', offsetX: 0, offsetY: 6 };
 }
 
 /**
@@ -969,8 +973,11 @@ export struct SkinButton {
 }
 
 /**
- * 手绘线性图标（24×24 逻辑坐标，Canvas 按 iconSize 等比缩放，笔画不会被压糊）。
- * name: users | shield | palette | logout
+ * 线性功能图标（24×24 SVG 资源 + fillColor 跟随皮肤着色）。
+ * name: users | shield | palette | sync | logout
+ *
+ * 注意：Image 的 src 必须用 `$r('app.media.xxx')`（资源对象）。
+ * 旧版误传字符串 'app.media.xxx'，会被当作网络地址/相对路径加载失败（已验证）。
  */
 @Component
 export struct SkinIcon {
@@ -978,23 +985,43 @@ export struct SkinIcon {
   @Prop iconSize: number = 20;
   @Prop iconColor: string = '#000000';
 
-  private glyph(): string {
-    if (this.iconName === 'users') return '管';
-    if (this.iconName === 'shield') return '安';
-    if (this.iconName === 'palette') return '外';
-    if (this.iconName === 'sync') return '⟳';
-    return '退';
-  }
-
   build() {
-    Text(this.glyph())
-      .fontSize(18)
-      .lineHeight(24)
-      .height(24)
-      .width(24)
-      .fontColor(this.iconColor)
-      .textAlign(TextAlign.Center)
-      .hitTestBehavior(HitTestMode.None)
+    if (this.iconName === 'users') {
+      Image($r('app.media.ic_users'))
+        .width(this.iconSize)
+        .height(this.iconSize)
+        .objectFit(ImageFit.Contain)
+        .fillColor(this.iconColor)
+        .hitTestBehavior(HitTestMode.None)
+    } else if (this.iconName === 'shield') {
+      Image($r('app.media.ic_shield'))
+        .width(this.iconSize)
+        .height(this.iconSize)
+        .objectFit(ImageFit.Contain)
+        .fillColor(this.iconColor)
+        .hitTestBehavior(HitTestMode.None)
+    } else if (this.iconName === 'palette') {
+      Image($r('app.media.ic_palette'))
+        .width(this.iconSize)
+        .height(this.iconSize)
+        .objectFit(ImageFit.Contain)
+        .fillColor(this.iconColor)
+        .hitTestBehavior(HitTestMode.None)
+    } else if (this.iconName === 'sync') {
+      Image($r('app.media.ic_sync'))
+        .width(this.iconSize)
+        .height(this.iconSize)
+        .objectFit(ImageFit.Contain)
+        .fillColor(this.iconColor)
+        .hitTestBehavior(HitTestMode.None)
+    } else {
+      Image($r('app.media.ic_logout'))
+        .width(this.iconSize)
+        .height(this.iconSize)
+        .objectFit(ImageFit.Contain)
+        .fillColor(this.iconColor)
+        .hitTestBehavior(HitTestMode.None)
+    }
   }
 }/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
@@ -1041,5 +1068,197 @@ export struct SkinIconButton {
     .onClick(() => {
       this.onPick();
     })
+  }
+}
+
+/**
+ * 弹层遮罩（点阵皮肤化）：
+ *   hud       12px 点阵 · 白 5.5%（与 Web 端 `.fixed.inset-0.z-50` 的点阵逐值一致）
+ *   lab       24px 点阵 · 莱茵青 6%
+ *   blueprint 32px 网格 · 蓝图青 7.5%
+ *   mono      6px 扫描线 · 白 4%
+ *   overprint 16px 点阵 · 钴蓝 6%
+ *
+ * 用法（放在弹层 Stack 的最底层，不拦截触摸）：
+ *   Stack() { SkinScrim(); Column() { 面板 } }
+ */
+@Component
+export struct SkinScrim {
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private settings: RenderingContextSettings = new RenderingContextSettings(true);
+  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
+
+  private skinId(): SkinId {
+    return normalizeSkinId(this.skin);
+  }
+
+  private dark(): boolean {
+    return resolveDark(this.darkMode, this.systemDark);
+  }
+
+  private dotColor(): string {
+    const k: SkinId = this.skinId();
+    if (k === 'lab') return this.dark() ? 'rgba(47,182,176,0.075)' : 'rgba(47,182,176,0.09)';
+    if (k === 'blueprint') return 'rgba(10,224,240,0.085)';
+    if (k === 'mono') return this.dark() ? 'rgba(242,242,242,0.045)' : 'rgba(242,242,242,0.05)';
+    if (k === 'overprint') return 'rgba(76,111,255,0.075)';
+    return 'rgba(255,255,255,0.055)';
+  }
+
+  private gap(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'lab') return 24;
+    if (k === 'blueprint') return 32;
+    if (k === 'mono') return 6;
+    if (k === 'overprint') return 16;
+    return 12;
+  }
+
+  /** 逐像素画点阵（Canvas 尺寸在 onReady / onAreaChange 后读取，避免首帧 0 尺寸）。 */
+  private drawDots(): void {
+    const w: number = this.ctx.width;
+    const h: number = this.ctx.height;
+    if (w <= 0 || h <= 0) return;
+    const k: SkinId = this.skinId();
+    const gap: number = this.gap();
+    const color: string = this.dotColor();
+    this.ctx.clearRect(0, 0, w, h);
+    this.ctx.fillStyle = color;
+    this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 1;
+    if (k === 'blueprint') {
+      for (let x = 0; x <= w; x += gap) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, 0);
+        this.ctx.lineTo(x, h);
+        this.ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += gap) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(w, y);
+        this.ctx.stroke();
+      }
+      return;
+    }
+    if (k === 'mono') {
+      for (let y = 0; y <= h; y += gap) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(w, y);
+        this.ctx.stroke();
+      }
+      return;
+    }
+    const r: number = k === 'hud' ? 1 : 1.5;
+    for (let x = 0; x <= w; x += gap) {
+      for (let y = 0; y <= h; y += gap) {
+        this.ctx.fillRect(x, y, r, r);
+      }
+    }
+  }
+
+  build() {
+    Canvas(this.ctx)
+      .width('100%')
+      .height('100%')
+      .backgroundColor(scrimColor(this.skin))
+      .onReady(() => {
+        this.drawDots();
+      })
+      .onAreaChange(() => {
+        this.drawDots();
+      })
+      .hitTestBehavior(HitTestMode.None)
+      .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
+  }
+}
+
+/**
+ * 行内按钮（并排/表格/卡片操作行用）：
+ * 与 SkinButton 同一套皮肤语汇（字距、圆角、按压反馈），但**不自带整宽**——
+ * 根节点 Text 宽度 100%，由调用方决定宽度：
+ *   Row() { SkinInlineBtn({ label: '取消', kind: 'ghost', onTap: ... }) }.layoutWeight(1)
+ *   Row() { SkinInlineBtn({ label: '保存', kind: 'primary', onTap: ... }) }.layoutWeight(1)
+ * 单列整宽场景可直接放（父容器宽度即按钮宽度）。
+ */
+@Component
+export struct SkinInlineBtn {
+  @Prop label: string = '';
+  @Prop kind: string = 'ghost';
+  @Prop disabled: boolean = false;
+  @Prop btnHeight: number = 40;
+  @Prop btnFontSize: number = 13;
+  onTap: () => void = () => {};
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+  @State private pressed: boolean = false;
+
+  private skinId(): SkinId {
+    return normalizeSkinId(this.skin);
+  }
+
+  private c(): ThemeColors {
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
+  }
+
+  private bg(): string {
+    if (this.kind === 'danger') return this.c().danger;
+    if (this.kind === 'primary') return this.c().primary;
+    if (this.kind === 'warn') return this.c().warning;
+    return this.c().surface;
+  }
+
+  private fg(): string {
+    if (this.kind === 'danger' || this.kind === 'primary') return this.c().primaryContrast;
+    if (this.kind === 'warn') return this.c().primaryContrast;
+    return this.c().text;
+  }
+
+  private bordered(): boolean {
+    return this.kind === 'ghost';
+  }
+
+  private track(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'mono') return 1.6;
+    if (k === 'blueprint') return 1.2;
+    if (k === 'overprint') return 1.0;
+    return 0.8;
+  }
+
+  build() {
+    Text(this.label)
+      .width('100%')
+      .height(this.btnHeight)
+      .textAlign(TextAlign.Center)
+      .fontSize(this.btnFontSize)
+      .fontWeight(FontWeight.Medium)
+      .letterSpacing(this.track())
+      .maxLines(1)
+      .fontColor(this.disabled ? this.c().muted : this.fg())
+      .backgroundColor(this.disabled ? this.c().surface2 : this.bg())
+      .borderRadius(this.c().radius)
+      .border({ width: this.bordered() ? 1 : 0, color: this.c().border })
+      .opacity(this.disabled ? 0.6 : this.pressed ? 0.82 : 1)
+      .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+      .animation({ duration: 90, curve: Curve.EaseOut })
+      .onTouch((event: TouchEvent) => {
+        if (this.disabled) return;
+        if (event.type === TouchType.Down) {
+          this.pressed = true;
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false;
+        }
+      })
+      .onClick(() => {
+        if (!this.disabled) {
+          this.onTap();
+        }
+      })
   }
 }
