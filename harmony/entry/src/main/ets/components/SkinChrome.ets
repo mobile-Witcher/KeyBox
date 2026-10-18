@@ -194,10 +194,10 @@ export struct SkinWordmark {
 
   build() {
     Row({ space: 10 }) {
-      // 左端皮肤标记：竖条
+      // 左端皮肤标记：竖条（固定高度，绝不能用百分比——父容器是整屏 Column 时会按屏高算，撑爆页头）
       Text('')
         .width(3)
-        .height('70%')
+        .height(26)
         .backgroundColor(this.accent())
 
       Column({ space: 3 }) {
