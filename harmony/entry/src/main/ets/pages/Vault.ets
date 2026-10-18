@@ -860,7 +860,7 @@ struct Vault {
                 .fontSize(12)
                 .fontColor(this.c().muted)
                 .padding({ left: 8, right: 8, top: 1, bottom: 1 })
-                .borderRadius(10)
+                .borderRadius(this.c().radius)
                 .backgroundColor(this.c().surface2)
             }
             .width('100%')
@@ -883,7 +883,7 @@ struct Vault {
                   .fontSize(12)
                   .fontColor(this.c().muted)
                   .padding({ left: 8, right: 8, top: 1, bottom: 1 })
-                  .borderRadius(10)
+                  .borderRadius(this.c().radius)
                   .backgroundColor(this.c().surface2)
               }
               .width('100%')
@@ -1450,7 +1450,7 @@ struct Vault {
               .fontSize(11)
               .fontColor(this.c().primary)
               .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-              .borderRadius(10)
+              .borderRadius(this.c().radius)
               .backgroundColor(this.c().surface2)
           }, (t: string) => t)
         }
