@@ -325,9 +325,16 @@ export function skinCardTag(skin: string): string {
  */
 @Component
 export struct SkinBackdrop {
-  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('skin') @Watch('onSkinChanged') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
+
+  private settings: RenderingContextSettings = new RenderingContextSettings(true);
+  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
+
+  private onSkinChanged(): void {
+    this.drawTexture();
+  }
 
   private idxAll: number[] = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
@@ -355,24 +362,74 @@ export struct SkinBackdrop {
     return this.idxAll.slice(0, this.lineCount());
   }
 
-  private wantV(): boolean {
-    const k: SkinId = this.skinId();
-    return k === 'hud' || k === 'blueprint' || k === 'overprint';
-  }
-
-  private wantH(): boolean {
-    const k: SkinId = this.skinId();
-    return k === 'hud' || k === 'lab' || k === 'blueprint';
-  }
-
-  private lineAlpha(): string {
+  /** 纹理颜色（与 Web 端 --kb-grid / --kb-bp-grid 对齐）。 */
+  private textureColor(): string {
     const dark: boolean = resolveDark(this.darkMode, this.systemDark);
     const k: SkinId = this.skinId();
-    if (k === 'blueprint') return dark ? '#0AE0F018' : '#0A8FA11C';
-    if (k === 'lab') return dark ? '#E8EDEA10' : '#10121410';
-    if (k === 'overprint') return dark ? '#E8EDEA0E' : '#10141812';
-    if (k === 'hud') return dark ? '#FFFFFF08' : '#15140F0A';
-    return '#00000000';
+    if (k === 'lab') return dark ? '#E8EDEA0D' : '#1012140E';
+    if (k === 'mono') return dark ? '#F2F2F208' : '#0A0A0A0B';
+    if (k === 'overprint') return dark ? '#E8EDEA0B' : '#1014180E';
+    if (k === 'blueprint') return dark ? '#0AE0F014' : '#0A8FA118';
+    return dark ? '#FFFFFF06' : '#15140F0E';
+  }
+
+  /** 逐像素绘制底纹，完全对齐 Web：hud 8px 网格 / lab 24px 点阵 / mono 3px 扫描线 / blueprint 32px 网格 / overprint 6px 网点。 */
+  private drawTexture(): void {
+    const w: number = this.ctx.width;
+    const h: number = this.ctx.height;
+    if (w <= 0 || h <= 0) return;
+    const k: SkinId = this.skinId();
+    const color: string = this.textureColor();
+    this.ctx.clearRect(0, 0, w, h);
+    this.ctx.fillStyle = color;
+    this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 1;
+    if (k === 'lab') {
+      for (let x = 0; x <= w; x += 24) {
+        for (let y = 0; y <= h; y += 24) {
+          this.ctx.fillRect(x, y, 1.5, 1.5);
+        }
+      }
+    } else if (k === 'overprint') {
+      for (let x = 0; x <= w; x += 6) {
+        for (let y = 0; y <= h; y += 6) {
+          this.ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    } else if (k === 'mono') {
+      for (let y = 0; y <= h; y += 3) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(w, y);
+        this.ctx.stroke();
+      }
+    } else if (k === 'blueprint') {
+      for (let x = 0; x <= w; x += 32) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, 0);
+        this.ctx.lineTo(x, h);
+        this.ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += 32) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(w, y);
+        this.ctx.stroke();
+      }
+    } else {
+      for (let x = 0; x <= w; x += 8) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, 0);
+        this.ctx.lineTo(x, h);
+        this.ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += 8) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(w, y);
+        this.ctx.stroke();
+      }
+    }
   }
 
   private orn(): string {
@@ -381,36 +438,17 @@ export struct SkinBackdrop {
 
   build() {
     Stack() {
-      if (this.wantV()) {
-        Row() {
-          ForEach(this.idx(), (i: number) => {
-            Text('')
-              .width(1)
-              .height('100%')
-              .backgroundColor(this.lineAlpha())
-              .hitTestBehavior(HitTestMode.None)
-          }, (i: number) => 'v' + i.toString())
-        }
+      Canvas(this.ctx)
         .width('100%')
         .height('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
+        .backgroundColor(this.c().bg)
+        .onReady(() => {
+          this.drawTexture();
+        })
+        .onAreaChange(() => {
+          this.drawTexture();
+        })
         .hitTestBehavior(HitTestMode.None)
-      }
-      if (this.wantH()) {
-        Column() {
-          ForEach(this.idx(), (i: number) => {
-            Text('')
-              .width('100%')
-              .height(1)
-              .backgroundColor(this.lineAlpha())
-              .hitTestBehavior(HitTestMode.None)
-          }, (i: number) => 'h' + i.toString())
-        }
-        .width('100%')
-        .height('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .hitTestBehavior(HitTestMode.None)
-      }
 
       // ── 主题专属装饰元素（每套不同，全部不拦截触摸）──
       if (this.skinId() === 'hud') {
