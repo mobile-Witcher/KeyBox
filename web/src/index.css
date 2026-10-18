@@ -791,7 +791,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 0.72rem;
-  position: relative;
+  /* 不要在这里加 position：按钮本身可能被用在浮层里，改定位属性易踩坑 */
   box-shadow: none;
 }
 [data-skin="endfield"] .kb-btn-primary:hover:not(:disabled) {
