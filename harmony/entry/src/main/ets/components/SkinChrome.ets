@@ -68,7 +68,8 @@ export struct SkinBackdrop {
 
   private showV(): boolean {
     const k: SkinId = this.skinId();
-    return k === 'blueprint' || k === 'lab' || k === 'overprint';
+    // 统一走网格：mono 保持纯净，其余四套都是竖 + 横细线
+    return k !== 'mono';
   }
 
   private showH(): boolean {
@@ -84,11 +85,13 @@ export struct SkinBackdrop {
               .width(1)
               .height('100%')
               .backgroundColor(this.lineAlpha())
+              .hitTestBehavior(HitTestMode.None)
           }, (i: number) => 'v' + i.toString())
         }
         .width('100%')
         .height('100%')
         .justifyContent(FlexAlign.SpaceBetween)
+        .hitTestBehavior(HitTestMode.None)
       }
       if (this.showH()) {
         Column() {
@@ -97,11 +100,13 @@ export struct SkinBackdrop {
               .width('100%')
               .height(1)
               .backgroundColor(this.lineAlpha())
+              .hitTestBehavior(HitTestMode.None)
           }, (i: number) => 'h' + i.toString())
         }
         .width('100%')
         .height('100%')
         .justifyContent(FlexAlign.SpaceBetween)
+        .hitTestBehavior(HitTestMode.None)
       }
     }
     .width('100%')
