@@ -185,15 +185,6 @@ function ThemeChoice({
 
 /** 各皮肤的三色预览（底 / 主色 / 强调），与 index.css 的令牌一致。 */
 const SKIN_PREVIEW: Record<Skin, [string, string, string]> = {
-  default: ["#f8fafc", "#4f46e5", "#0f172a"],
-  tech: ["#eef2fb", "#5b53e8", "#7dd3fc"],
-  minimal: ["#ffffff", "#111111", "#d4d4d4"],
-  paper: ["#f4efe4", "#8c2b22", "#b9ad95"],
-  cyber: ["#f7f0fb", "#d1007a", "#00c8ff"],
-  kawaii: ["#fff5f9", "#ff7ab6", "#ffd6e8"],
-  hacker: ["#000000", "#20ff5f", "#1c3a1f"],
-  solar: ["#f4f0e6", "#2f6f5e", "#c2bca8"],
-  sunset: ["#fff4ec", "#e2622a", "#ffb347"],
   endfield: ["#ede6d6", "#f2c300", "#1d2020"],
   rhine: ["#f4f6f4", "#0e6e6b", "#2fb6b0"],
   arknights: ["#08090a", "#c8102e", "#f2f2f2"],

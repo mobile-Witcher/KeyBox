@@ -5,7 +5,7 @@
  * 主题系统（2026-09-29 升级为「皮肤 × 明暗」双维度）
  *   - 明暗：<html class="dark">（Tailwind darkMode:"class"）
  *   - 皮肤：<html data-skin="default|tech|minimal|paper">
- *   - 组合：`<html data-skin="tech" class="dark">` 即"科技风·深色"
+ *   - 组合：`<html data-skin="endfield" class="dark">` 即"终末地·深色"
  *   变量只在下面集中定义，组件一律消费语义令牌（bg-kb-surface / text-kb-muted / …），
  *   因此新增皮肤**不需要改任何组件**。
  * ═══════════════════════════════════════════════════════════════════════════
@@ -18,7 +18,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ══════════════ 皮肤 ①：default（精致克制） ══════════════ */
+/* ══════════════ 基础令牌（所有皮肤共用；皮肤块只覆盖其中的变量） ══════════════ */
 :root {
   --kb-bg: #f8fafc;
   --kb-surface: #ffffff;
@@ -61,358 +61,6 @@
   --kb-ring: rgba(129, 140, 248, 0.35);
   --kb-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   --kb-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ②：tech（现代科技感） ══════════════ */
-[data-skin="tech"] {
-  --kb-bg: #eef2fb;
-  --kb-surface: #ffffff;
-  --kb-surface-2: #e8edfa;
-  --kb-text: #0d1424;
-  --kb-muted: #566178;
-  --kb-border: #d8e0f5;
-  --kb-border-strong: #b9c6ea;
-  --kb-primary: #5b53e8;
-  --kb-primary-hover: #4b43d8;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #e11d48;
-  --kb-success: #059669;
-  --kb-warning: #b45309;
-  --kb-ring: rgba(91, 83, 232, 0.35);
-  --kb-shadow: 0 2px 8px rgba(60, 80, 180, 0.1);
-  --kb-shadow-lg: 0 20px 44px rgba(60, 80, 180, 0.2);
-  --kb-radius: 12px;
-  --kb-radius-card: 18px;
-  --kb-heading-tracking: 0.01em;
-  color-scheme: light;
-}
-[data-skin="tech"].dark {
-  --kb-bg: #070b16;
-  --kb-surface: #0e1526;
-  --kb-surface-2: #131d33;
-  --kb-text: #e6ecff;
-  --kb-muted: #97a6c9;
-  --kb-border: #1e2b47;
-  --kb-border-strong: #2e3f63;
-  --kb-primary: #818cf8;
-  --kb-primary-hover: #a5b4fc;
-  --kb-primary-contrast: #06101f;
-  --kb-danger: #fb7185;
-  --kb-success: #34d399;
-  --kb-warning: #fbbf24;
-  --kb-ring: rgba(129, 140, 248, 0.45);
-  --kb-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  --kb-shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.68);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ③：minimal（极简商务） ══════════════ */
-[data-skin="minimal"] {
-  --kb-bg: #ffffff;
-  --kb-surface: #ffffff;
-  --kb-surface-2: #fafafa;
-  --kb-text: #111111;
-  --kb-muted: #8a8a8a;
-  --kb-border: #ececec;
-  --kb-border-strong: #d4d4d4;
-  /* 无彩色：主色即黑，强调靠字重与字距而非颜色 */
-  --kb-primary: #111111;
-  --kb-primary-hover: #2b2b2b;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #b91c1c;
-  --kb-success: #15803d;
-  --kb-warning: #a16207;
-  --kb-ring: rgba(0, 0, 0, 0.14);
-  --kb-shadow: none;
-  --kb-shadow-lg: none;
-  --kb-radius: 0px;
-  --kb-radius-card: 0px;
-  --kb-heading-tracking: 0.14em;
-  color-scheme: light;
-}
-[data-skin="minimal"].dark {
-  --kb-bg: #0a0a0a;
-  --kb-surface: #111111;
-  --kb-surface-2: #171717;
-  --kb-text: #f2f2f2;
-  --kb-muted: #8f8f8f;
-  --kb-border: #242424;
-  --kb-border-strong: #3a3a3a;
-  --kb-primary: #f2f2f2;
-  --kb-primary-hover: #ffffff;
-  --kb-primary-contrast: #0a0a0a;
-  --kb-danger: #f87171;
-  --kb-success: #4ade80;
-  --kb-warning: #fbbf24;
-  --kb-ring: rgba(255, 255, 255, 0.18);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ④：paper（纸质档案感） ══════════════ */
-[data-skin="paper"] {
-  --kb-bg: #f4efe4;
-  --kb-surface: #fbf8f1;
-  --kb-surface-2: #f7f2e8;
-  --kb-text: #241f16;
-  --kb-muted: #7a6f5b;
-  --kb-border: #ddd4c0;
-  --kb-border-strong: #b9ad95;
-  /* 套色＝档案红 */
-  --kb-primary: #8c2b22;
-  --kb-primary-hover: #7a251d;
-  --kb-primary-contrast: #f8f3e9;
-  --kb-danger: #9b2c1f;
-  --kb-success: #4f6b3a;
-  --kb-warning: #8a6a1f;
-  --kb-ring: rgba(140, 43, 34, 0.25);
-  /* 硬阴影（错位实心），像盖章的档案卡 */
-  --kb-shadow: 2px 2px 0 rgba(185, 173, 149, 0.5);
-  --kb-shadow-lg: 3px 3px 0 rgba(185, 173, 149, 0.55);
-  --kb-radius: 2px;
-  --kb-radius-card: 3px;
-  --kb-font-sans: Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC",
-    serif;
-  --kb-heading-tracking: 0.06em;
-  color-scheme: light;
-}
-[data-skin="paper"].dark {
-  /* 暗色档案：深褐纸 + 米黄字 + 更亮一点的红套色 */
-  --kb-bg: #1c1710;
-  --kb-surface: #241e15;
-  --kb-surface-2: #2b241a;
-  --kb-text: #ecd9b8;
-  --kb-muted: #b09a76;
-  --kb-border: #3d3324;
-  --kb-border-strong: #5a4a33;
-  --kb-primary: #c9603f;
-  --kb-primary-hover: #d9764f;
-  --kb-primary-contrast: #1c1710;
-  --kb-danger: #e0704f;
-  --kb-success: #8aa86a;
-  --kb-warning: #d9a441;
-  --kb-ring: rgba(201, 96, 63, 0.35);
-  --kb-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
-  --kb-shadow-lg: 3px 3px 0 rgba(0, 0, 0, 0.5);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ⑤：cyber（赛博朋克） ══════════════ */
-[data-skin="cyber"] {
-  --kb-bg: #f7f0fb;
-  --kb-surface: #ffffff;
-  --kb-surface-2: #f1e6f8;
-  --kb-text: #14061f;
-  --kb-muted: #6b5a7a;
-  --kb-border: #e3cff0;
-  --kb-border-strong: #c9a8e0;
-  --kb-primary: #d1007a;
-  --kb-primary-hover: #b00068;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #e01b24;
-  --kb-success: #00a878;
-  --kb-warning: #b26a00;
-  --kb-ring: rgba(209, 0, 122, 0.3);
-  --kb-shadow: 0 2px 0 rgba(209, 0, 122, 0.16), 0 0 18px rgba(0, 180, 200, 0.16);
-  --kb-shadow-lg: 0 4px 0 rgba(209, 0, 122, 0.2), 0 0 34px rgba(0, 180, 200, 0.24);
-  --kb-radius: 6px;
-  --kb-radius-card: 10px;
-  --kb-heading-tracking: 0.08em;
-  color-scheme: light;
-}
-[data-skin="cyber"].dark {
-  --kb-bg: #07020f;
-  --kb-surface: #120820;
-  --kb-surface-2: #1a0d2e;
-  --kb-text: #f5e9ff;
-  --kb-muted: #a08ec0;
-  --kb-border: #3a1f5e;
-  --kb-border-strong: #5b2f8a;
-  --kb-primary: #ff2fb0;
-  --kb-primary-hover: #ff5cc4;
-  --kb-primary-contrast: #07020f;
-  --kb-danger: #ff4d6d;
-  --kb-success: #00e5a0;
-  --kb-warning: #ffd166;
-  --kb-ring: rgba(255, 47, 176, 0.45);
-  --kb-shadow: 0 0 12px rgba(0, 229, 255, 0.28);
-  --kb-shadow-lg: 0 0 30px rgba(255, 47, 176, 0.35), 0 0 60px rgba(0, 229, 255, 0.22);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ⑥：kawaii（可爱风） ══════════════ */
-[data-skin="kawaii"] {
-  --kb-bg: #fff5f9;
-  --kb-surface: #ffffff;
-  --kb-surface-2: #ffeaf3;
-  --kb-text: #4a2b3a;
-  --kb-muted: #9a7486;
-  --kb-border: #ffd6e8;
-  --kb-border-strong: #ffb8d6;
-  --kb-primary: #ff7ab6;
-  --kb-primary-hover: #ff5aa5;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #f0567a;
-  --kb-success: #4cc38a;
-  --kb-warning: #e0a13c;
-  --kb-ring: rgba(255, 122, 182, 0.35);
-  --kb-shadow: 0 2px 0 rgba(255, 184, 214, 0.5), 0 6px 16px rgba(255, 122, 182, 0.14);
-  --kb-shadow-lg: 0 4px 0 rgba(255, 184, 214, 0.55), 0 14px 30px rgba(255, 122, 182, 0.22);
-  --kb-radius: 16px;
-  --kb-radius-card: 24px;
-  --kb-font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Nunito",
-    -apple-system, sans-serif;
-  --kb-heading-tracking: 0.02em;
-  color-scheme: light;
-}
-[data-skin="kawaii"].dark {
-  --kb-bg: #2a1a24;
-  --kb-surface: #3a2431;
-  --kb-surface-2: #472c3c;
-  --kb-text: #ffe3f0;
-  --kb-muted: #c9a2b6;
-  --kb-border: #5a3648;
-  --kb-border-strong: #7d4a64;
-  --kb-primary: #ff9ac9;
-  --kb-primary-hover: #ffb8d9;
-  --kb-primary-contrast: #2a1a24;
-  --kb-danger: #ff90ac;
-  --kb-success: #7fd6ae;
-  --kb-warning: #f0c070;
-  --kb-ring: rgba(255, 154, 201, 0.4);
-  --kb-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.3);
-  --kb-shadow-lg: 0 4px 0 rgba(0, 0, 0, 0.32), 0 16px 34px rgba(0, 0, 0, 0.42);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ⑦：hacker（极客终端） ══════════════ */
-[data-skin="hacker"] {
-  --kb-bg: #f2f5f0;
-  --kb-surface: #ffffff;
-  --kb-surface-2: #e8efe6;
-  --kb-text: #0f1a10;
-  --kb-muted: #4d6b50;
-  --kb-border: #cfe0cb;
-  --kb-border-strong: #a8c4a2;
-  --kb-primary: #12772f;
-  --kb-primary-hover: #0d5f24;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #b3261e;
-  --kb-success: #12772f;
-  --kb-warning: #8a6a1f;
-  --kb-ring: rgba(18, 119, 47, 0.3);
-  --kb-shadow: none;
-  --kb-shadow-lg: none;
-  --kb-radius: 2px;
-  --kb-radius-card: 3px;
-  --kb-font-sans: ui-monospace, "Cascadia Code", Consolas, "Sarasa Mono SC", Menlo,
-    monospace;
-  --kb-heading-tracking: 0.06em;
-  color-scheme: light;
-}
-[data-skin="hacker"].dark {
-  --kb-bg: #000000;
-  --kb-surface: #0a0f0a;
-  --kb-surface-2: #101a10;
-  --kb-text: #7bf58a;
-  --kb-muted: #4fae5d;
-  --kb-border: #1c3a1f;
-  --kb-border-strong: #2f5c34;
-  --kb-primary: #20ff5f;
-  --kb-primary-hover: #5cff8a;
-  --kb-primary-contrast: #000000;
-  --kb-danger: #ff5f5f;
-  --kb-success: #20ff5f;
-  --kb-warning: #ffd75f;
-  --kb-ring: rgba(32, 255, 95, 0.35);
-  --kb-shadow: 0 0 10px rgba(32, 255, 95, 0.22);
-  --kb-shadow-lg: 0 0 26px rgba(32, 255, 95, 0.3);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ⑧：solar（护眼自然） ══════════════ */
-[data-skin="solar"] {
-  --kb-bg: #f4f0e6;
-  --kb-surface: #fbf8f1;
-  --kb-surface-2: #ece7d9;
-  --kb-text: #3f4a44;
-  --kb-muted: #7a8577;
-  --kb-border: #dcd6c6;
-  --kb-border-strong: #c2bca8;
-  --kb-primary: #2f6f5e;
-  --kb-primary-hover: #255a4c;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #a8473c;
-  --kb-success: #4a7a52;
-  --kb-warning: #8f6f2a;
-  --kb-ring: rgba(47, 111, 94, 0.28);
-  --kb-shadow: 0 1px 2px rgba(63, 74, 68, 0.06);
-  --kb-shadow-lg: 0 8px 22px rgba(63, 74, 68, 0.1);
-  --kb-radius: 8px;
-  --kb-radius-card: 12px;
-  --kb-heading-tracking: 0.01em;
-  color-scheme: light;
-}
-[data-skin="solar"].dark {
-  --kb-bg: #1e2318;
-  --kb-surface: #252c1e;
-  --kb-surface-2: #2d3625;
-  --kb-text: #dfe6d5;
-  --kb-muted: #98a68c;
-  --kb-border: #38422d;
-  --kb-border-strong: #4d5a3e;
-  --kb-primary: #8fbf7f;
-  --kb-primary-hover: #a8d199;
-  --kb-primary-contrast: #1e2318;
-  --kb-danger: #d98b7d;
-  --kb-success: #8fbf7f;
-  --kb-warning: #d4b165;
-  --kb-ring: rgba(143, 191, 127, 0.3);
-  --kb-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --kb-shadow-lg: 0 10px 26px rgba(0, 0, 0, 0.42);
-  color-scheme: dark;
-}
-
-/* ══════════════ 皮肤 ⑨：sunset（暖阳） ══════════════ */
-[data-skin="sunset"] {
-  --kb-bg: #fff4ec;
-  --kb-surface: #ffffff;
-  --kb-surface-2: #ffead9;
-  --kb-text: #3d2517;
-  --kb-muted: #8a6852;
-  --kb-border: #f6dcc4;
-  --kb-border-strong: #e8bd9a;
-  --kb-primary: #e2622a;
-  --kb-primary-hover: #c9501d;
-  --kb-primary-contrast: #ffffff;
-  --kb-danger: #c0392b;
-  --kb-success: #3f8f5f;
-  --kb-warning: #b07620;
-  --kb-ring: rgba(226, 98, 42, 0.3);
-  --kb-shadow: 0 2px 6px rgba(226, 98, 42, 0.1);
-  --kb-shadow-lg: 0 12px 30px rgba(226, 98, 42, 0.16);
-  --kb-radius: 12px;
-  --kb-radius-card: 18px;
-  --kb-heading-tracking: 0.01em;
-  color-scheme: light;
-}
-[data-skin="sunset"].dark {
-  --kb-bg: #1d1119;
-  --kb-surface: #271a22;
-  --kb-surface-2: #33222c;
-  --kb-text: #f7e4dc;
-  --kb-muted: #c3a396;
-  --kb-border: #422c35;
-  --kb-border-strong: #5c3f4a;
-  --kb-primary: #ff8a4c;
-  --kb-primary-hover: #ffa46f;
-  --kb-primary-contrast: #1d1119;
-  --kb-danger: #ff7a6b;
-  --kb-success: #7fc79a;
-  --kb-warning: #f0bb6a;
-  --kb-ring: rgba(255, 138, 76, 0.35);
-  --kb-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-  --kb-shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 
@@ -541,17 +189,13 @@ body {
     @apply inline-flex items-center gap-1 border border-kb-border bg-kb-surface-2 px-2 py-0.5 text-xs text-kb-muted;
     border-radius: 9999px;
   }
-  /* 极简皮肤：徽标也去圆角 */
-  [data-skin="minimal"] .kb-badge {
-    border-radius: 0;
-  }
 
   /** 表单辅助说明 */
   .kb-hint {
     @apply text-xs leading-relaxed text-kb-muted;
   }
 
-  /** 标题（字距随皮肤变化：极简/纸质更疏） */
+  /** 标题（字距随皮肤变化） */
   .kb-heading {
     letter-spacing: var(--kb-heading-tracking);
   }
@@ -561,12 +205,9 @@ body {
     font-variant-numeric: tabular-nums;
   }
 
-  /** 顶部/侧边等"结构性"描边（纸张风偏爱双线，其它皮肤用单线） */
+  /** 顶部/侧边等"结构性"描边 */
   .kb-rule {
     border-bottom: 1px solid var(--kb-border);
-  }
-  [data-skin="paper"] .kb-rule {
-    border-bottom: 3px double var(--kb-border-strong);
   }
 }
 

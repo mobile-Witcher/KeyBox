@@ -3,8 +3,8 @@
  *
  * 两个正交维度：
  *   - 明暗：`light` | `dark`          → 落到 `<html class="dark">`（Tailwind darkMode:"class"）
- *   - 皮肤：9 种                        → 落到 `<html data-skin="...">`
- * 组合示例：赛博朋克·深色 = `<html data-skin="cyber" class="dark">`。
+ *   - 皮肤：5 种                        → 落到 `<html data-skin="...">`
+ * 组合示例：终末地·深色 = `<html data-skin="endfield" class="dark">`。
  * 皮肤只改 index.css 里的语义变量，因此**新增皮肤不需要改任何组件**。
  *
  * 三个目标：① 手动切换 ② 记住选择（localStorage）③ 首屏不闪。
@@ -23,15 +23,6 @@ export type Theme = "light" | "dark";
 export type ThemePreference = Theme | "system";
 
 export type Skin =
-  | "default" // 精致克制
-  | "tech" // 现代科技感
-  | "minimal" // 极简商务
-  | "paper" // 纸质档案感
-  | "cyber" // 赛博朋克
-  | "kawaii" // 可爱风
-  | "hacker" // 极客终端
-  | "solar" // 护眼自然
-  | "sunset" // 暖阳
   | "endfield" // 终末地 · 现场终端
   | "rhine" // 莱茵生命 · 无菌档案
   | "arknights" // 明日方舟 · 官网
@@ -44,15 +35,6 @@ export const SKIN_STORAGE_KEY = "keybox.skin";
 
 /** 各皮肤 × 明暗的首屏底色（三方一致，见文件头说明）。 */
 export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
-  default: { light: "#f8fafc", dark: "#0b1120" },
-  tech: { light: "#eef2fb", dark: "#070b16" },
-  minimal: { light: "#ffffff", dark: "#0a0a0a" },
-  paper: { light: "#f4efe4", dark: "#1c1710" },
-  cyber: { light: "#f7f0fb", dark: "#07020f" },
-  kawaii: { light: "#fff5f9", dark: "#2a1a24" },
-  hacker: { light: "#f2f5f0", dark: "#000000" },
-  solar: { light: "#f4f0e6", dark: "#1e2318" },
-  sunset: { light: "#fff4ec", dark: "#1d1119" },
   endfield: { light: "#ede6d6", dark: "#0e0f0f" },
   rhine: { light: "#f4f6f4", dark: "#0b1012" },
   arknights: { light: "#f7f7f5", dark: "#08090a" },
@@ -62,15 +44,6 @@ export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
 
 /** 可选皮肤清单（供外观选择器渲染；顺序即展示顺序）。 */
 export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
-  { id: "default", label: "精致克制", hint: "白/深蓝底，品牌靛蓝点缀，细边框小圆角" },
-  { id: "tech", label: "现代科技感", hint: "深邃底色 + 发光层次，突出保险箱的科技感" },
-  { id: "minimal", label: "极简商务", hint: "无圆角无阴影，靠留白与字距分层" },
-  { id: "paper", label: "纸质档案感", hint: "米黄纸底 + 衬线字 + 红色套色，像纸质密钥簿" },
-  { id: "cyber", label: "赛博朋克", hint: "霓虹品红 + 电光青，暗底发光，最张扬" },
-  { id: "kawaii", label: "可爱风", hint: "粉白底 + 超大圆角 + 柔光，圆润讨喜" },
-  { id: "hacker", label: "极客终端", hint: "荧光绿字黑屏 + 等宽字体，终端味十足" },
-  { id: "solar", label: "护眼自然", hint: "低饱和莫兰迪，长时间看最不累眼" },
-  { id: "sunset", label: "暖阳", hint: "暖橙渐层，明快温暖有活力" },
   {
     id: "endfield",
     label: "终末地 · 现场终端",
@@ -155,13 +128,13 @@ export function resolveInitialTheme(): Theme {
   return pref === "system" ? systemPreferredTheme() : pref;
 }
 
-/** 解析首屏皮肤：URL 预览参数 > 存储 > default。 */
+/** 解析首屏皮肤：URL 预览参数 > 存储 > endfield（默认皮肤）。 */
 export function resolveInitialSkin(): Skin {
-  if (!hasWindow()) return "default";
+  if (!hasWindow()) return "endfield";
   const fromUrl = readUrlParam("skin");
   if (fromUrl && SKIN_IDS.indexOf(fromUrl as Skin) >= 0) return fromUrl as Skin;
   const stored = readStorage(SKIN_STORAGE_KEY);
-  return SKIN_IDS.indexOf(stored as Skin) >= 0 ? (stored as Skin) : "default";
+  return SKIN_IDS.indexOf(stored as Skin) >= 0 ? (stored as Skin) : "endfield";
 }
 
 // ---------------------------------------------------------------------------
@@ -169,7 +142,7 @@ export function resolveInitialSkin(): Skin {
 // ---------------------------------------------------------------------------
 let currentPreference: ThemePreference = "system";
 let currentTheme: Theme = "light";
-let currentSkin: Skin = "default";
+let currentSkin: Skin = "endfield";
 const themeListeners = new Set<(theme: Theme) => void>();
 const skinListeners = new Set<(skin: Skin) => void>();
 
@@ -259,10 +232,10 @@ export function subscribeSkin(fn: (skin: Skin) => void): () => void {
 }
 
 /**
- * 兼容旧调用：仅按明暗取默认皮肤的底色。
+ * 兼容旧调用：仅按明暗取默认皮肤（endfield）的底色。
  * 新代码请用 `SKIN_BG[skin][theme]`。
  */
 export const THEME_BG: Record<Theme, string> = {
-  light: SKIN_BG.default.light,
-  dark: SKIN_BG.default.dark,
+  light: SKIN_BG.endfield.light,
+  dark: SKIN_BG.endfield.dark,
 };
