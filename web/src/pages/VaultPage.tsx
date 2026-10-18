@@ -464,6 +464,18 @@ export default function VaultPage({
                   </div>
                   <h2 className="kb-bay-title mt-2 text-2xl text-kb-text">Specimen Archive</h2>
                 </div>
+                {/* 明日方舟官网皮肤专用：巨型词标页头 */}
+                <div className="kb-off-hdr">
+                  <div>
+                    <h2 className="kb-off-wordmark">Archive</h2>
+                    <span className="kb-off-sub">
+                      RHODES ISLAND · https://ak.hypergryph.com/
+                    </span>
+                  </div>
+                  <span className="kb-off-hdr-count">
+                    {String(visible.length).padStart(2, "0")} / {String(visible.length).padStart(2, "0")}
+                  </span>
+                </div>
                 {/* 莱茵生命皮肤专用：标本登记页头 */}
                 <div className="kb-rhine-hdr">
                   <div className="flex flex-wrap items-center gap-2">

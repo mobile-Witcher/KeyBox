@@ -187,7 +187,8 @@ function ThemeChoice({
 const SKIN_PREVIEW: Record<Skin, [string, string, string]> = {
   endfield: ["#ede6d6", "#f2c300", "#1d2020"],
   rhine: ["#f4f6f4", "#0e6e6b", "#2fb6b0"],
-  arknights: ["#08090a", "#c8102e", "#f2f2f2"],
+  rhodes: ["#08090a", "#c8102e", "#f2f2f2"],
+  arknights: ["#000000", "#0ae0f0", "#e7eef1"],
   atlas: ["#edf1ee", "#2447c6", "#101418"],
 };
 

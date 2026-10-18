@@ -75,6 +75,40 @@ export function AuthCard({
           </aside>
 
           {/*
+           * 明日方舟官网皮肤专用：黑底蓝图主视觉（其它皮肤 display:none）。
+           * 巨型词标 + 双语导航对 + 计数器 + © HYPERGRYPH 页脚。
+           */}
+          <aside className="kb-off-hero" aria-hidden>
+            <div className="kb-off-hero-top">
+              <span className="kb-off-hero-kicker">Index</span>
+              <span className="kb-off-hero-count">01 / 01</span>
+            </div>
+            <p className="kb-off-hero-title">Keybox</p>
+            <p className="kb-off-hero-cn">罗德岛 · 密钥保管</p>
+            <p className="kb-off-hero-note">
+              以验证码确认操作员身份；密钥只在本次会话内解密，离册即封存。
+            </p>
+            <div className="kb-off-hero-rows">
+              <div>
+                <span>Information</span>
+                <b>情报</b>
+              </div>
+              <div>
+                <span>Operator</span>
+                <b>干员</b>
+              </div>
+              <div>
+                <span>Media</span>
+                <b>泰拉万象</b>
+              </div>
+            </div>
+            <div className="kb-off-hero-foot">
+              <span>© Hypergryph</span>
+              <span>KeyBox 0.5.2</span>
+            </div>
+          </aside>
+
+          {/*
            * 莱茵生命皮肤专用：左栏「实验记录本」（其它皮肤 display:none）。
            * 十字准星 + 扫描场 + 样本编号 + CONFIDENTIAL 印章 + DOC/REV/PAGE 页脚。
            */}

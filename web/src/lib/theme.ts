@@ -26,6 +26,7 @@ export type Skin =
   | "endfield" // 终末地 · 现场终端
   | "rhine" // 莱茵生命 · 无菌档案
   | "arknights" // 明日方舟 · 官网
+  | "rhodes" // 明日方舟 · 罗德岛终端
   | "atlas"; // 众生行记 · 套印图录
 
 /** localStorage 键（与 index.html 内联脚本一致）。 */
@@ -36,7 +37,8 @@ export const SKIN_STORAGE_KEY = "keybox.skin";
 export const SKIN_BG: Record<Skin, Record<Theme, string>> = {
   endfield: { light: "#ede6d6", dark: "#0e0f0f" },
   rhine: { light: "#f4f6f4", dark: "#0b1012" },
-  arknights: { light: "#f7f7f5", dark: "#08090a" },
+  rhodes: { light: "#f7f7f5", dark: "#08090a" },
+  arknights: { light: "#e7eef1", dark: "#000000" },
   atlas: { light: "#edf1ee", dark: "#0b0f12" },
 };
 
@@ -55,7 +57,12 @@ export const SKINS: Array<{ id: Skin; label: string; hint: string }> = [
   {
     id: "arknights",
     label: "明日方舟 · 官网",
-    hint: "近黑白 + 血红点缀，细线角标与杂志式留白，克制而锋利",
+    hint: "纯黑 chrome + 青色强调 + 蓝图线稿，巨型词标与双语导航",
+  },
+  {
+    id: "rhodes",
+    label: "明日方舟 · 罗德岛终端",
+    hint: "近黑白 + 血红角标，游戏内终端的硬朗秩序",
   },
   {
     id: "atlas",

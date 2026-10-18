@@ -123,6 +123,23 @@ export default function TopBar({
         <span className="kb-term-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
+      {/* 明日方舟官网皮肤专用：顶部导航条（双语标签 + 计数器，黑底） */}
+      <div className="kb-off-strip" aria-hidden="true">
+        <b className="kb-off-nav kb-off-nav-on">
+          INDEX<span>首页</span>
+        </b>
+        <span className="kb-off-nav">
+          ARCHIVE<span>密钥</span>
+        </span>
+        <span className="kb-off-nav">
+          OPERATOR<span>操作员</span>
+        </span>
+        <span className="kb-off-nav">
+          MEDIA<span>记录</span>
+        </span>
+        <span className="kb-off-count ml-auto">04 / 04</span>
+      </div>
+
       {/* 莱茵生命专用：标本舱信息条（其它皮肤隐藏） */}
       <div className="kb-rhine-strip" aria-hidden="true">
         <span className="kb-rhine-strip-plate">Specimen</span>

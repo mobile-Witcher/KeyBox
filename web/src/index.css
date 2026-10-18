@@ -396,10 +396,10 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   皮肤 ⑫：arknights（明日方舟 · 官网）
+   皮肤 ⑫：rhodes（明日方舟 · 罗德岛终端）
    近黑白 + 血红点缀；细线角标（corner brackets）、胶片感条纹、杂志式宽字距
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-skin="arknights"] {
+[data-skin="rhodes"] {
   --kb-bg: #f7f7f5;
   --kb-surface: #ffffff;
   --kb-surface-2: #efefec;
@@ -426,7 +426,7 @@ body {
   --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
   color-scheme: light;
 }
-[data-skin="arknights"].dark {
+[data-skin="rhodes"].dark {
   --kb-bg: #08090a;
   --kb-surface: #101113;
   --kb-surface-2: #16181a;
@@ -450,7 +450,7 @@ body {
 }
 
 /* 胶片感扫描条纹底 */
-[data-skin="arknights"] body {
+[data-skin="rhodes"] body {
   background-image: repeating-linear-gradient(
     0deg,
     var(--kb-grid) 0 1px,
@@ -462,8 +462,8 @@ body {
  * 角标全部用背景渐变绘制（8 条 10×1 / 1×10 的细线），**不涉及 position**，
  * 因此不会像之前的莱茵皮肤那样把 .absolute 浮层顶回文档流。
  */
-[data-skin="arknights"] .kb-card,
-[data-skin="arknights"] .kb-card-lg {
+[data-skin="rhodes"] .kb-card,
+[data-skin="rhodes"] .kb-card-lg {
   border-color: var(--kb-border-strong);
   box-shadow: none;
   background-image:
@@ -489,29 +489,29 @@ body {
   background-repeat: no-repeat;
 }
 /* 标题：细字重 + 宽字距（杂志式） */
-[data-skin="arknights"] h1,
-[data-skin="arknights"] h2,
-[data-skin="arknights"] h3 {
+[data-skin="rhodes"] h1,
+[data-skin="rhodes"] h2,
+[data-skin="rhodes"] h3 {
   font-weight: 300;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 /* 标签/按钮/表头：等宽大写 */
-[data-skin="arknights"] .kb-badge {
+[data-skin="rhodes"] .kb-badge {
   border-radius: 0;
   font-family: var(--kb-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-[data-skin="arknights"] .kb-btn-primary,
-[data-skin="arknights"] .kb-btn-ghost,
-[data-skin="arknights"] .kb-btn-danger {
+[data-skin="rhodes"] .kb-btn-primary,
+[data-skin="rhodes"] .kb-btn-ghost,
+[data-skin="rhodes"] .kb-btn-danger {
   font-family: var(--kb-mono);
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.7rem;
 }
-[data-skin="arknights"] thead th {
+[data-skin="rhodes"] thead th {
   font-family: var(--kb-mono);
   font-size: 0.62rem;
   letter-spacing: 0.2em;
@@ -519,44 +519,44 @@ body {
   color: var(--kb-muted);
   border-bottom: 1px solid var(--kb-border-strong);
 }
-[data-skin="arknights"] table tbody td {
+[data-skin="rhodes"] table tbody td {
   border-bottom: 1px solid var(--kb-border);
 }
-[data-skin="arknights"] code {
+[data-skin="rhodes"] code {
   font-family: var(--kb-mono);
   letter-spacing: 0.06em;
 }
 /* 后台/安全/弹窗里的通用面板 */
-[data-skin="arknights"] section.rounded-xl {
+[data-skin="rhodes"] section.rounded-xl {
   border-color: var(--kb-border-strong);
   box-shadow: none;
 }
 /* 全直角（圆点/头像保留圆形） */
-[data-skin="arknights"]
+[data-skin="rhodes"]
   :where(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
   border-radius: 0;
 }
 /* 官网风格没有柔光 */
-[data-skin="arknights"] .blur-3xl {
+[data-skin="rhodes"] .blur-3xl {
   display: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    方舟皮肤：登录 / 注册 / 初始化页的杂志式双栏主视觉
-   默认隐藏；仅 [data-skin="arknights"] 展开，窄屏自动收起
+   默认隐藏；仅 [data-skin="rhodes"] 展开，窄屏自动收起
    ═══════════════════════════════════════════════════════════════════════════ */
 .kb-ark-hero {
   display: none;
 }
-[data-skin="arknights"] .kb-auth-page .kb-card-lg {
+[data-skin="rhodes"] .kb-auth-page .kb-card-lg {
   max-width: 1080px;
   padding: 0;
 }
-[data-skin="arknights"] .kb-auth-grid {
+[data-skin="rhodes"] .kb-auth-grid {
   display: grid;
   grid-template-columns: 1.02fr 0.98fr;
 }
-[data-skin="arknights"] .kb-ark-hero {
+[data-skin="rhodes"] .kb-ark-hero {
   display: grid;
   grid-template-columns: 22px 1fr;
   gap: 20px;
@@ -565,7 +565,7 @@ body {
   background: var(--kb-surface);
 }
 /* 竖排刊头 */
-[data-skin="arknights"] .kb-ark-vert {
+[data-skin="rhodes"] .kb-ark-vert {
   writing-mode: vertical-rl;
   font-family: var(--kb-mono);
   font-size: 9px;
@@ -574,12 +574,12 @@ body {
   color: var(--kb-muted);
   white-space: nowrap;
 }
-[data-skin="arknights"] .kb-ark-body {
+[data-skin="rhodes"] .kb-ark-body {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-[data-skin="arknights"] .kb-ark-kicker {
+[data-skin="rhodes"] .kb-ark-kicker {
   font-family: var(--kb-mono);
   font-size: 0.62rem;
   letter-spacing: 0.3em;
@@ -587,7 +587,7 @@ body {
   color: var(--kb-primary);
 }
 /* 超大细字标题：第二行做描边空心字（杂志封面感） */
-[data-skin="arknights"] .kb-ark-title {
+[data-skin="rhodes"] .kb-ark-title {
   margin: 14px 0 0;
   font-family: "Bahnschrift", "D-DIN", "Segoe UI", sans-serif;
   font-weight: 200;
@@ -597,25 +597,25 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="arknights"] .kb-ark-title span {
+[data-skin="rhodes"] .kb-ark-title span {
   display: block;
   color: transparent;
   -webkit-text-stroke: 1px var(--kb-text);
 }
-[data-skin="arknights"] .kb-ark-cn {
+[data-skin="rhodes"] .kb-ark-cn {
   margin: 16px 0 0;
   font-size: 13px;
   letter-spacing: 0.2em;
   color: var(--kb-text);
 }
-[data-skin="arknights"] .kb-ark-note {
+[data-skin="rhodes"] .kb-ark-note {
   margin: 8px 0 0;
   max-width: 21em;
   font-size: 11.5px;
   line-height: 1.75;
   color: var(--kb-muted);
 }
-[data-skin="arknights"] .kb-ark-serial {
+[data-skin="rhodes"] .kb-ark-serial {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -628,47 +628,47 @@ body {
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="arknights"] .kb-ark-serial span:nth-child(2),
-[data-skin="arknights"] .kb-ark-serial span:nth-child(4) {
+[data-skin="rhodes"] .kb-ark-serial span:nth-child(2),
+[data-skin="rhodes"] .kb-ark-serial span:nth-child(4) {
   color: var(--kb-primary);
 }
 /* 机密封条：三条不等宽横条，中间一条血红 */
-[data-skin="arknights"] .kb-ark-redact {
+[data-skin="rhodes"] .kb-ark-redact {
   display: flex;
   gap: 6px;
   margin-top: 14px;
 }
-[data-skin="arknights"] .kb-ark-redact i {
+[data-skin="rhodes"] .kb-ark-redact i {
   display: block;
   height: 8px;
   background: var(--kb-text);
   opacity: 0.82;
 }
-[data-skin="arknights"] .kb-ark-redact i:nth-child(1) {
+[data-skin="rhodes"] .kb-ark-redact i:nth-child(1) {
   width: 44%;
 }
-[data-skin="arknights"] .kb-ark-redact i:nth-child(2) {
+[data-skin="rhodes"] .kb-ark-redact i:nth-child(2) {
   width: 20%;
   background: var(--kb-primary);
 }
-[data-skin="arknights"] .kb-ark-redact i:nth-child(3) {
+[data-skin="rhodes"] .kb-ark-redact i:nth-child(3) {
   width: 30%;
 }
-[data-skin="arknights"] .kb-auth-main {
+[data-skin="rhodes"] .kb-auth-main {
   padding: 32px 34px 30px;
 }
 @media (max-width: 920px) {
-  [data-skin="arknights"] .kb-auth-page .kb-card-lg {
+  [data-skin="rhodes"] .kb-auth-page .kb-card-lg {
     max-width: 100% !important;
     overflow: hidden;
   }
-  [data-skin="arknights"] .kb-auth-grid {
+  [data-skin="rhodes"] .kb-auth-grid {
     grid-template-columns: 1fr;
   }
-  [data-skin="arknights"] .kb-ark-hero {
+  [data-skin="rhodes"] .kb-ark-hero {
     display: none !important;
   }
-  [data-skin="arknights"] .kb-auth-main {
+  [data-skin="rhodes"] .kb-auth-main {
     padding: 22px 18px 20px;
   }
 }
@@ -1596,7 +1596,7 @@ body {
   display: none;
 }
 [data-skin="rhine"] .kb-hide-when-styled,
-[data-skin="arknights"] .kb-hide-when-styled,
+[data-skin="rhodes"] .kb-hide-when-styled,
 [data-skin="atlas"] .kb-hide-when-styled {
   display: none;
 }
@@ -1723,7 +1723,7 @@ body {
 }
 
 /* ── 明日方舟：档案 ─────────────────────────────────────────────────── */
-[data-skin="arknights"] .kb-ark-strip {
+[data-skin="rhodes"] .kb-ark-strip {
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -1735,22 +1735,22 @@ body {
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
-[data-skin="arknights"] .kb-ark-strip b {
+[data-skin="rhodes"] .kb-ark-strip b {
   font-weight: 600;
   letter-spacing: 0.3em;
 }
-[data-skin="arknights"] .kb-ark-strip-slash {
+[data-skin="rhodes"] .kb-ark-strip-slash {
   color: var(--kb-primary);
 }
-[data-skin="arknights"] .kb-ark-strip-extra {
+[data-skin="rhodes"] .kb-ark-strip-extra {
   opacity: 0.62;
 }
-[data-skin="arknights"] .kb-ark-hdr {
+[data-skin="rhodes"] .kb-ark-hdr {
   display: flex;
   align-items: flex-start;
   gap: 0.9rem;
 }
-[data-skin="arknights"] .kb-ark-hdr-no {
+[data-skin="rhodes"] .kb-ark-hdr-no {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 2.1rem;
   font-weight: 200;
@@ -1758,14 +1758,14 @@ body {
   letter-spacing: 0.06em;
   color: var(--kb-primary);
 }
-[data-skin="arknights"] .kb-ark-eyebrow {
+[data-skin="rhodes"] .kb-ark-eyebrow {
   font-family: var(--kb-mono);
   font-size: 0.6rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--kb-muted);
 }
-[data-skin="arknights"] .kb-ark-h2 {
+[data-skin="rhodes"] .kb-ark-h2 {
   margin: 0.2rem 0 0;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   font-size: 1.45rem;
@@ -1774,7 +1774,7 @@ body {
   text-transform: uppercase;
   color: var(--kb-text);
 }
-[data-skin="arknights"] .kb-ark-count {
+[data-skin="rhodes"] .kb-ark-count {
   margin-left: 0.6rem;
   color: var(--kb-primary);
   font-family: var(--kb-mono);
@@ -1782,10 +1782,10 @@ body {
   letter-spacing: 0.16em;
 }
 /* 卡片：悬停时四角角标变长（角标就是底色里画的 8 条渐变，只改尺寸） */
-[data-skin="arknights"] .kb-card {
+[data-skin="rhodes"] .kb-card {
   transition: background-size 0.2s ease;
 }
-[data-skin="arknights"] .kb-card:hover {
+[data-skin="rhodes"] .kb-card:hover {
   background-size:
     18px 1px,
     1px 18px,
@@ -1796,7 +1796,7 @@ body {
     18px 1px,
     1px 18px;
 }
-[data-skin="arknights"] .kb-brand {
+[data-skin="rhodes"] .kb-brand {
   border-radius: 0;
 }
 
@@ -1898,8 +1898,324 @@ body {
 
 @media (max-width: 920px) {
   [data-skin="rhine"] .kb-rhine-strip,
-  [data-skin="arknights"] .kb-ark-strip,
-  [data-skin="atlas"] .kb-atlas-strip {
+  [data-skin="rhodes"] .kb-ark-strip,
+  [data-skin="atlas"] .kb-atlas-strip,
+  [data-skin="arknights"] .kb-off-strip {
     display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   皮肤 ⑮：arknights（明日方舟 · 官网）
+   依据 ak.hypergryph.com 实拍：纯黑 chrome + 青色强调 + 蓝图线稿 +
+   巨型重字词标 + 双语导航（INDEX/首页）+ 06/06 计数器
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-skin="arknights"] {
+  --kb-bg: #e7eef1;
+  --kb-surface: #ffffff;
+  --kb-surface-2: #dce6ea;
+  --kb-text: #0a0d0e;
+  --kb-muted: #5c6a70;
+  --kb-border: #c3d2d8;
+  --kb-border-strong: #8fa3ab;
+  /* 浅底上青要压深，白字才够对比 */
+  --kb-primary: #0a8fa1;
+  --kb-primary-hover: #07707f;
+  --kb-primary-contrast: #ffffff;
+  --kb-danger: #c8332b;
+  --kb-success: #1f7a5c;
+  --kb-warning: #8a6a12;
+  --kb-ring: rgba(10, 224, 240, 0.3);
+  --kb-shadow: none;
+  --kb-shadow-lg: 0 0 0 1px var(--kb-border-strong);
+  --kb-radius: 4px;
+  --kb-radius-card: 4px;
+  --kb-heading-tracking: 0.02em;
+  --kb-grid: rgba(10, 13, 14, 0.06);
+  --kb-off-grid: rgba(10, 13, 14, 0.07);
+  --kb-off-cyan: #0aa8bd;
+  --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+[data-skin="arknights"].dark {
+  --kb-bg: #000000;
+  --kb-surface: #0b0e0f;
+  --kb-surface-2: #12181a;
+  --kb-text: #f2f6f7;
+  --kb-muted: #8b979c;
+  --kb-border: #1f272a;
+  --kb-border-strong: #39464b;
+  --kb-primary: #0ae0f0;
+  --kb-primary-hover: #4ff0f8;
+  --kb-primary-contrast: #001416;
+  --kb-danger: #ff5a4d;
+  --kb-success: #43d9a3;
+  --kb-warning: #f3c94a;
+  --kb-ring: rgba(10, 224, 240, 0.35);
+  --kb-shadow: none;
+  --kb-shadow-lg: none;
+  --kb-grid: rgba(255, 255, 255, 0.045);
+  --kb-off-grid: rgba(255, 255, 255, 0.055);
+  --kb-off-cyan: #0ae0f0;
+  color-scheme: dark;
+}
+/* 蓝图网格底 */
+[data-skin="arknights"] body {
+  background-image:
+    linear-gradient(to right, var(--kb-off-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--kb-off-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+[data-skin="arknights"] h1,
+[data-skin="arknights"] h2,
+[data-skin="arknights"] h3 {
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  letter-spacing: 0.02em;
+}
+[data-skin="arknights"] .kb-card,
+[data-skin="arknights"] .kb-card-lg {
+  border-color: var(--kb-border-strong);
+  box-shadow: none;
+}
+[data-skin="arknights"] .kb-card:hover {
+  border-color: var(--kb-off-cyan);
+}
+[data-skin="arknights"] .kb-badge {
+  border-radius: 0;
+  border-color: var(--kb-off-cyan);
+  color: var(--kb-off-cyan);
+  font-family: var(--kb-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+[data-skin="arknights"] .kb-btn-ghost,
+[data-skin="arknights"] .kb-btn-danger {
+  font-family: var(--kb-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+[data-skin="arknights"] thead th {
+  font-family: var(--kb-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+  border-bottom: 1px solid var(--kb-border-strong);
+}
+[data-skin="arknights"] code {
+  font-family: var(--kb-mono);
+  letter-spacing: 0.06em;
+}
+[data-skin="arknights"] section.rounded-xl {
+  border-color: var(--kb-border-strong);
+  box-shadow: none;
+}
+[data-skin="arknights"] .blur-3xl {
+  display: none !important;
+}
+/* 品牌块：黑底圆角方块 + 青字（对应官网右上角的 App 方块按钮） */
+[data-skin="arknights"] .kb-brand {
+  border-radius: 8px;
+  background: #000;
+  color: var(--kb-off-cyan);
+}
+
+/* ── 顶部导航条（黑底 + 双语标签 + 计数器） ── */
+.kb-off-strip,
+.kb-off-hdr,
+.kb-off-hero {
+  display: none;
+}
+[data-skin="arknights"] .kb-off-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 0.5rem 1rem;
+  background: #000;
+  color: #fff;
+}
+[data-skin="arknights"] .kb-off-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+[data-skin="arknights"] .kb-off-nav span {
+  font-family: var(--kb-mono);
+  font-size: 0.5rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-skin="arknights"] .kb-off-nav-on,
+[data-skin="arknights"] .kb-off-nav-on span {
+  color: var(--kb-off-cyan);
+}
+[data-skin="arknights"] .kb-off-nav-on span {
+  opacity: 0.75;
+}
+[data-skin="arknights"] .kb-off-count {
+  font-family: var(--kb-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--kb-off-cyan);
+}
+
+/* ── 密钥舱页头：巨型重字词标 + 计数器 ── */
+[data-skin="arknights"] .kb-off-hdr {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+[data-skin="arknights"] .kb-off-wordmark {
+  margin: 0;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--kb-text);
+}
+[data-skin="arknights"] .kb-off-sub {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--kb-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kb-muted);
+}
+[data-skin="arknights"] .kb-off-hdr-count {
+  font-family: var(--kb-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--kb-off-cyan);
+}
+
+/* ── 登录页左栏：黑底蓝图主视觉 ── */
+[data-skin="arknights"] .kb-auth-page .kb-card-lg {
+  max-width: 1080px;
+  padding: 0;
+}
+[data-skin="arknights"] .kb-auth-grid {
+  display: grid;
+  grid-template-columns: 1.04fr 0.96fr;
+}
+[data-skin="arknights"] .kb-off-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 28px 26px 22px;
+  background-color: #000;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: #f2f6f7;
+}
+[data-skin="arknights"] .kb-off-hero-top {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+[data-skin="arknights"] .kb-off-hero-kicker {
+  font-family: var(--kb-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #0ae0f0;
+}
+[data-skin="arknights"] .kb-off-hero-count {
+  font-family: var(--kb-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: #0ae0f0;
+}
+[data-skin="arknights"] .kb-off-hero-title {
+  margin: 0.6rem 0 0;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+[data-skin="arknights"] .kb-off-hero-cn {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: #ffffff;
+}
+[data-skin="arknights"] .kb-off-hero-note {
+  margin: 0;
+  max-width: 22em;
+  font-size: 0.7rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.6);
+}
+[data-skin="arknights"] .kb-off-hero-rows {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+}
+[data-skin="arknights"] .kb-off-hero-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+[data-skin="arknights"] .kb-off-hero-rows span {
+  font-family: var(--kb-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+[data-skin="arknights"] .kb-off-hero-rows b {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+}
+[data-skin="arknights"] .kb-off-hero-foot {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--kb-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-skin="arknights"] .kb-auth-main {
+  padding: 28px 30px 26px;
+}
+@media (max-width: 920px) {
+  [data-skin="arknights"] .kb-auth-page .kb-card-lg {
+    max-width: 100% !important;
+    overflow: hidden;
+  }
+  [data-skin="arknights"] .kb-auth-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-skin="arknights"] .kb-off-hero {
+    display: none !important;
+  }
+  [data-skin="arknights"] .kb-auth-main {
+    padding: 22px 18px 20px;
   }
 }
