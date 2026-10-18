@@ -376,22 +376,22 @@ struct Unlock {
               Text(this.bioSetupErr).fontSize(12).fontColor(this.c().danger)
             }
             Row({ space: 10 }) {
-              Button('跳过')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .onClick(() => {
+              SkinButton({
+                label: '跳过',
+                kind: 'ghost',
+                btnHeight: 44,
+                onTap: () => {
                   this.skipBioSetup();
-                })
-              Button('开启')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '开启',
+                kind: 'primary',
+                btnHeight: 44,
+                onTap: () => {
                   void this.enableBiometric();
-                })
+                }
+              })
             }
             .width('100%')
             .margin({ top: 6 })
@@ -441,22 +441,22 @@ struct Unlock {
                 .fontColor(this.c().danger)
             }
             Row({ space: 10 }) {
-              Button('跳过')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .onClick(() => {
+              SkinButton({
+                label: '跳过',
+                kind: 'ghost',
+                btnHeight: 44,
+                onTap: () => {
                   this.skipPinSetup();
-                })
-              Button('保存 PIN')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
+                }
+              })
+              SkinButton({
+                label: '保存 PIN',
+                kind: 'primary',
+                btnHeight: 44,
+                onTap: () => {
                   void this.savePinSetup();
-                })
+                }
+              })
             }
             .width('100%')
             .margin({ top: 6 })

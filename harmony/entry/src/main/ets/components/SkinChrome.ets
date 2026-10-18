@@ -869,6 +869,8 @@ export struct SkinButton {
   @Prop kind: string = 'primary';
   @Prop disabled: boolean = false;
   @Prop btnHeight: number = 44;
+  /** fit=true 时宽度自适应内容（用于行内并排），否则整宽 */
+  @Prop fit: boolean = false;
   onTap: () => void = () => {};
   @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';

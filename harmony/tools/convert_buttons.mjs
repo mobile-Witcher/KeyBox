@@ -65,6 +65,13 @@ function convert(path) {
     const chainText = chain.map((c) => c.trim()).join(' ');
     const lw = /\.layoutWeight\((\d+)\)/.exec(chainText);
     const flexWeight = lw ? Number(lw[1]) : 0;
+    // 固定宽度按钮（如悬浮新增）不动，避免撑坏布局
+    if (/\.width\(\d/.test(chainText)) {
+      skipped += 1;
+      out.push(line);
+      i += 1;
+      continue;
+    }
 
     let kind = 'ghost';
     if (chainText.includes('this.c().primary')) {
