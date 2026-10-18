@@ -74,6 +74,93 @@ export function AuthCard({
             </div>
           </aside>
 
+          {/*
+           * 莱茵生命皮肤专用：左栏「实验记录本」（其它皮肤 display:none）。
+           * 十字准星 + 扫描场 + 样本编号 + CONFIDENTIAL 印章 + DOC/REV/PAGE 页脚。
+           */}
+          <aside className="kb-rhine-hero" aria-hidden>
+            <div className="kb-rhine-top">
+              <span className="kb-rhine-cross" />
+              <div>
+                <div className="kb-rhine-kicker">Rhine Lab // Specimen File</div>
+                <p className="kb-rhine-title">
+                  Keybox <span>Archive</span>
+                </p>
+                <p className="kb-rhine-cn">密钥保管 · 样本档案</p>
+              </div>
+            </div>
+            <p className="kb-rhine-note">
+              以手机号验证码核验操作员身份。所有访问写入档案；明文仅在本次会话内存中停留，
+              会话结束即擦除。
+            </p>
+            <div className="kb-scan kb-rhine-scan">
+              <span className="kb-rhine-scan-cap">Ctrl field · verified</span>
+            </div>
+            <div className="kb-rhine-meta">
+              <div>
+                <span>Sample</span>
+                <b>KB-OP-0007</b>
+              </div>
+              <div>
+                <span>Rev</span>
+                <b>03</b>
+              </div>
+              <div>
+                <span>Cycle</span>
+                <b>30 D</b>
+              </div>
+              <div>
+                <span>Control</span>
+                <b>Verified</b>
+              </div>
+            </div>
+            <div className="kb-rhine-stamp">Confidential</div>
+            <div className="kb-rhine-foot">
+              <span>DOC KB-AC-07</span>
+              <span>REV 3</span>
+              <span>PAGE 1/1</span>
+            </div>
+          </aside>
+
+          {/*
+           * 众生行记皮肤专用：左栏「旅行手账」（其它皮肤 display:none）。
+           * 邮戳编号 + 衬线标题 + 行程三步 + 票根存根 + ARCHIVE 页脚。
+           */}
+          <aside className="kb-mass-hero" aria-hidden>
+            <div className="kb-mass-head">
+              <span className="kb-mass-stamp">Travel Log</span>
+              <span className="kb-mass-no">No.0042 / 2026</span>
+            </div>
+            <p className="kb-mass-title">
+              The Masses
+              <span>’ Travels</span>
+            </p>
+            <p className="kb-mass-cn">众生行记 · 密钥保管</p>
+            <p className="kb-mass-note">
+              以验证码核验旅人身份；随身密钥仅在本次行记内展开，离册即封存。
+            </p>
+            <ol className="kb-mass-steps">
+              <li>
+                <b>01</b>身份核验
+              </li>
+              <li>
+                <b>02</b>密文交接
+              </li>
+              <li>
+                <b>03</b>归档留存
+              </li>
+            </ol>
+            <div className="kb-mass-stub">
+              <span>Keybox · Travel Permit</span>
+              <span>Admit One</span>
+            </div>
+            <div className="kb-mass-foot">
+              <span>Archive</span>
+              <span>Rev 3</span>
+              <span>Page 1/1</span>
+            </div>
+          </aside>
+
           <aside className="kb-auth-hero" aria-hidden>
             <div>
               <div className="kb-eyebrow">Access protocol / 001</div>
