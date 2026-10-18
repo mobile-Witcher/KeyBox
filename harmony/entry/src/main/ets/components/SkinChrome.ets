@@ -644,6 +644,16 @@ export struct SkinBar {
     return this.hardBar() ? '#f2f2f2' : this.c().text;
   }
 
+  /** 品牌块形状：hud/lab 描边方框、mono 实心方、blueprint 圆环、overprint 实心圆。 */
+  private logoRadius(): number {
+    const k: SkinId = this.skinId();
+    return k === 'blueprint' || k === 'overprint' ? 7 : 0;
+  }
+
+  private logoFilled(): boolean {
+    const k: SkinId = this.skinId();
+    return k === 'mono' || k === 'overprint';
+  }
   /** 皮肤标记色：信号黄 / 莱茵青 / 蓝图青 / 朱红 / 钴蓝。 */
   private accent(): string {
     const k: SkinId = this.skinId();
@@ -656,6 +666,20 @@ export struct SkinBar {
 
   build() {
     Row({ space: 8 }) {
+      // 品牌块：每套皮肤形状不同
+      if (this.logoFilled()) {
+        Text('')
+          .width(14)
+          .height(14)
+          .borderRadius(this.logoRadius())
+          .backgroundColor(this.accent())
+      } else {
+        Text('')
+          .width(14)
+          .height(14)
+          .borderRadius(this.logoRadius())
+          .border({ width: 1.5, color: this.accent() })
+      }
       Text('')
         .width(3)
         .height(12)
