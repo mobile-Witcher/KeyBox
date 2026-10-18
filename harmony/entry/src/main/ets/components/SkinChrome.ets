@@ -877,6 +877,8 @@ export struct SkinButton {
   @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
+  /** 按压态：触屏没有 hover，用缩放 + 压暗模拟 Web 的按钮反馈。 */
+  @State private pressed: boolean = false;
 
   private skinId(): SkinId {
     return normalizeSkinId(this.skin);
@@ -918,7 +920,17 @@ export struct SkinButton {
       .backgroundColor(this.disabled ? this.c().surface2 : this.bg())
       .borderRadius(this.c().radius)
       .border({ width: this.kind === 'ghost' ? 1 : 0, color: this.c().border })
-      .opacity(this.disabled ? 0.6 : 1)
+      .opacity(this.disabled ? 0.6 : this.pressed ? 0.82 : 1)
+      .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+      .animation({ duration: 90, curve: Curve.EaseOut })
+      .onTouch((event: TouchEvent) => {
+        if (this.disabled) return;
+        if (event.type === TouchType.Down) {
+          this.pressed = true;
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false;
+        }
+      })
       .onClick(() => {
         if (!this.disabled) {
           this.onTap();
