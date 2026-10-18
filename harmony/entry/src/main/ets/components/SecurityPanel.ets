@@ -24,7 +24,7 @@ import { setMasterKeyRaw, getMasterKeyRaw } from '../lib/session';
 import { clearPinLock } from '../lib/pinlock';
 import { clearBiometricLock } from '../lib/biometric';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinSection } from './SkinChrome';
+import { SkinSection, SkinButton, SkinInlineBtn, SkinScrim, sheetBorderColor, panelShadow } from './SkinChrome';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 
 const TAG: string = 'KeyBoxSecurity';
@@ -394,12 +394,13 @@ export struct SecurityPanel {
 
   build() {
     Stack() {
-      // 遮罩（点击空白处关闭；busy 中不响应，防误触打断）
+      // 遮罩点阵：皮肤压暗 + 逐像素点阵（不拦截触摸）
+      SkinScrim()
+      // 点击空白处关闭（叠在点阵之上、面板之下；busy 中不响应，防误触打断）
       Column() {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('rgba(0,0,0,0.5)')
       .onClick(() => {
         if (!this.busy) {
           this.onClose();
@@ -453,15 +454,17 @@ export struct SecurityPanel {
                   .fontSize(12)
                   .fontColor(this.c().warning)
                   .width('100%')
-                Button('我已抄下并自行保管')
-                  .height(36)
-                  .fontSize(13)
-                  .backgroundColor(this.c().warning)
-                  .fontColor(this.c().primaryContrast)
-                  .enabled(!this.busy)
-                  .onClick(() => {
+                // 注：该按钮原为 warning 底色；SkinButton 目前未实现 warn 分支（会回落 primary），
+                // 故用支持 warn 的 SkinInlineBtn 单列整宽渲染（根节点 Text 宽 100%）。
+                SkinInlineBtn({
+                  label: '我已抄下并自行保管',
+                  kind: 'warn',
+                  btnHeight: 36,
+                  disabled: this.busy,
+                  onTap: () => {
                     void this.handleAckRecovery();
-                  })
+                  }
+                })
               } else {
                 Text('恢复码已确认妥善保管。')
                   .fontSize(12)
@@ -490,26 +493,32 @@ export struct SecurityPanel {
               .fontColor(this.c().muted)
               .width('100%')
             Row({ space: 10 }) {
-              Button(this.busy ? '处理中…' : '导出备份')
-                .layoutWeight(1)
-                .height(36)
-                .fontSize(13)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .enabled(!this.busy)
-                .onClick(() => {
-                  this.showExportConfirm = true; // 导出前明文警告
+              Row() {
+                SkinInlineBtn({
+                  label: this.busy ? '处理中…' : '导出备份',
+                  kind: 'ghost',
+                  btnHeight: 36,
+                  btnFontSize: 13,
+                  disabled: this.busy,
+                  onTap: () => {
+                    this.showExportConfirm = true; // 导出前明文警告
+                  }
                 })
-              Button('导入备份')
-                .layoutWeight(1)
-                .height(36)
-                .fontSize(13)
-                .backgroundColor(this.c().surface2)
-                .fontColor(this.c().text)
-                .enabled(!this.busy)
-                .onClick(() => {
-                  void this.doImport();
+              }
+              .layoutWeight(1)
+              Row() {
+                SkinInlineBtn({
+                  label: '导入备份',
+                  kind: 'ghost',
+                  btnHeight: 36,
+                  btnFontSize: 13,
+                  disabled: this.busy,
+                  onTap: () => {
+                    void this.doImport();
+                  }
                 })
+              }
+              .layoutWeight(1)
             }
             .width('100%')
           }
@@ -571,15 +580,15 @@ export struct SecurityPanel {
                   this.recoveryCode = v;
                 })
             }
-            Button(this.busy ? '处理中…' : '修改主密码')
-              .height(40)
-              .fontSize(13)
-              .backgroundColor(this.c().primary)
-              .fontColor(this.c().primaryContrast)
-              .enabled(!this.busy)
-              .onClick(() => {
+            SkinButton({
+              label: this.busy ? '处理中…' : '修改主密码',
+              kind: 'primary',
+              btnHeight: 40,
+              disabled: this.busy,
+              onTap: () => {
                 this.handleChangeMaster();
-              })
+              }
+            })
           }
           .alignItems(HorizontalAlign.Start)
           .width('100%')
@@ -591,91 +600,121 @@ export struct SecurityPanel {
       .width('90%')
       .constraintSize({ maxHeight: '88%' })
       .backgroundColor(this.c().surface)
+      .border({ width: 1, color: sheetBorderColor(this.skin) })
       .borderRadius(this.c().radiusCard)
+      .shadow(panelShadow(this.skin))
       .align(Alignment.Top)
 
       // ── 改主密码确认对话框（硬约束：保留「所有设备退出登录」提示） ──
       if (this.showRotateConfirm) {
-        Column() {
-          Column({ space: 12 }) {
-            Text('确认修改主密码？')
-              .fontSize(15)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.c().text)
-            Text(`即将修改主密码：本机会用原主密码逐条解密、用新主密码重加密后整批提交。\n\n${RELOGIN_CONFIRM_LINE}\n\n确认继续？`)
-              .fontSize(12)
-              .fontColor(this.c().text)
-            Row({ space: 10 }) {
-              Button('取消')
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
+        Stack() {
+          SkinScrim()
+          Column() {
+            Column({ space: 12 }) {
+              Text('确认修改主密码？')
+                .fontSize(15)
+                .fontWeight(FontWeight.Medium)
                 .fontColor(this.c().text)
-                .onClick(() => {
-                  this.showRotateConfirm = false;
-                })
-              Button('确认')
+              Text(`即将修改主密码：本机会用原主密码逐条解密、用新主密码重加密后整批提交。\n\n${RELOGIN_CONFIRM_LINE}\n\n确认继续？`)
+                .fontSize(12)
+                .fontColor(this.c().text)
+              Row({ space: 10 }) {
+                Row() {
+                  SkinInlineBtn({
+                    label: '取消',
+                    kind: 'ghost',
+                    btnHeight: 40,
+                    onTap: () => {
+                      this.showRotateConfirm = false;
+                    }
+                  })
+                }
                 .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.doRotate();
-                })
+                Row() {
+                  SkinInlineBtn({
+                    label: '确认',
+                    kind: 'primary',
+                    btnHeight: 40,
+                    onTap: () => {
+                      void this.doRotate();
+                    }
+                  })
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
             }
-            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .width('86%')
+            .padding(18)
+            .backgroundColor(this.c().surface)
+            .border({ width: 1, color: sheetBorderColor(this.skin) })
+            .borderRadius(this.c().radiusCard)
+            .shadow(panelShadow(this.skin))
           }
-          .alignItems(HorizontalAlign.Start)
-          .width('86%')
-          .padding(18)
-          .backgroundColor(this.c().surface)
-          .borderRadius(this.c().radiusCard)
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+          .align(Alignment.Center)
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
-        .justifyContent(FlexAlign.Center)
-        .align(Alignment.Center)
       }
 
       // ── 导出前明文警告确认对话框 ──
       if (this.showExportConfirm) {
-        Column() {
-          Column({ space: 12 }) {
-            Text('确认导出备份？')
-              .fontSize(15)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.c().text)
-            Text('导出的是【明文】JSON 文件，包含全部密钥明文、接口地址等敏感信息。请妥善保管，导出后建议尽快删除。确认导出？')
-              .fontSize(12)
-              .fontColor(this.c().text)
-            Row({ space: 10 }) {
-              Button('取消')
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
+        Stack() {
+          SkinScrim()
+          Column() {
+            Column({ space: 12 }) {
+              Text('确认导出备份？')
+                .fontSize(15)
+                .fontWeight(FontWeight.Medium)
                 .fontColor(this.c().text)
-                .onClick(() => {
-                  this.showExportConfirm = false;
-                })
-              Button('确认导出')
+              Text('导出的是【明文】JSON 文件，包含全部密钥明文、接口地址等敏感信息。请妥善保管，导出后建议尽快删除。确认导出？')
+                .fontSize(12)
+                .fontColor(this.c().text)
+              Row({ space: 10 }) {
+                Row() {
+                  SkinInlineBtn({
+                    label: '取消',
+                    kind: 'ghost',
+                    btnHeight: 40,
+                    onTap: () => {
+                      this.showExportConfirm = false;
+                    }
+                  })
+                }
                 .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.doExport();
-                })
+                Row() {
+                  SkinInlineBtn({
+                    label: '确认导出',
+                    kind: 'primary',
+                    btnHeight: 40,
+                    onTap: () => {
+                      void this.doExport();
+                    }
+                  })
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
             }
-            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .width('86%')
+            .padding(18)
+            .backgroundColor(this.c().surface)
+            .border({ width: 1, color: sheetBorderColor(this.skin) })
+            .borderRadius(this.c().radiusCard)
+            .shadow(panelShadow(this.skin))
           }
-          .alignItems(HorizontalAlign.Start)
-          .width('86%')
-          .padding(18)
-          .backgroundColor(this.c().surface)
-          .borderRadius(this.c().radiusCard)
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+          .align(Alignment.Center)
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
-        .justifyContent(FlexAlign.Center)
-        .align(Alignment.Center)
       }
     }
     .width('100%')

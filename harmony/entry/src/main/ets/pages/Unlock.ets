@@ -18,7 +18,9 @@ import {
   initBioStore, hasBiometricLock, setupBiometric, unlockWithBiometric, getBioStatus
 } from '../lib/biometric';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar, SkinBackdrop, SkinSection , SkinButton } from '../components/SkinChrome';
+import {
+  SkinBar, SkinBackdrop, SkinSection, SkinButton, SkinInlineBtn, SkinScrim, sheetBorderColor, panelShadow
+} from '../components/SkinChrome';
 // warning 色经 c().warning 提供
 
 const TAG: string = 'KeyBoxUnlock';
@@ -282,17 +284,15 @@ struct Unlock {
             .onChange((value: string) => {
               this.pin = value;
             })
-          Button(this.busy ? '校验中…' : '解锁')
-            .type(ButtonType.Normal)
-            .width('100%')
-            .height(44)
-            .borderRadius(this.c().radius)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .enabled(!this.busy)
-            .onClick(() => {
+          SkinButton({
+            label: this.busy ? '校验中…' : '解锁',
+            kind: 'primary',
+            btnHeight: 44,
+            disabled: this.busy,
+            onTap: () => {
               void this.tryPin();
-            })
+            }
+          })
           if (this.bioAvailable && this.hasBioLock) {
             Text('使用指纹 / 面容解锁 →')
               .fontSize(12)
@@ -324,17 +324,15 @@ struct Unlock {
             .onChange((value: string) => {
               this.masterPassword = value;
             })
-          Button(this.busy ? '校验中…' : '解锁')
-            .type(ButtonType.Normal)
-            .width('100%')
-            .height(44)
-            .borderRadius(this.c().radius)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .enabled(!this.busy)
-            .onClick(() => {
+          SkinButton({
+            label: this.busy ? '校验中…' : '解锁',
+            kind: 'primary',
+            btnHeight: 44,
+            disabled: this.busy,
+            onTap: () => {
               void this.unlockWithPassword();
-            })
+            }
+          })
           Text('主密码只在本机派生密钥，云端没有任何副本。')
             .fontSize(12)
             .fontColor(this.c().muted)
@@ -363,114 +361,140 @@ struct Unlock {
 
       // ── 生物识别设置引导（主密码解锁成功后，设备支持时优先弹这个） ──
       if (this.showBioSetup) {
-        Column() {
-          Column({ space: 10 }) {
-            Text('开启指纹 / 面容解锁')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.c().text)
-            Text('主密钥将由设备安全芯片保护，之后打开 App 只需验证指纹或面容。安全性高于 PIN。')
-              .fontSize(12)
-              .fontColor(this.c().muted)
-            if (this.bioSetupErr !== '') {
-              Text(this.bioSetupErr).fontSize(12).fontColor(this.c().danger)
-            }
-            Row({ space: 10 }) {
-              Button('跳过')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
-                .backgroundColor(this.c().surface2)
+        Stack() {
+          SkinScrim()
+          Column() {
+            Column({ space: 10 }) {
+              Text('开启指纹 / 面容解锁')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
                 .fontColor(this.c().text)
-                .onClick(() => {
-                  this.skipBioSetup();
-                })
-              Button('开启')
-                .type(ButtonType.Normal)
+              Text('主密钥将由设备安全芯片保护，之后打开 App 只需验证指纹或面容。安全性高于 PIN。')
+                .fontSize(12)
+                .fontColor(this.c().muted)
+              if (this.bioSetupErr !== '') {
+                Text(this.bioSetupErr).fontSize(12).fontColor(this.c().danger)
+              }
+              Row({ space: 10 }) {
+                Row() {
+                  SkinInlineBtn({
+                    label: '跳过',
+                    kind: 'ghost',
+                    btnHeight: 40,
+                    onTap: () => {
+                      this.skipBioSetup();
+                    }
+                  })
+                }
                 .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.enableBiometric();
-                })
+                Row() {
+                  SkinInlineBtn({
+                    label: '开启',
+                    kind: 'primary',
+                    btnHeight: 40,
+                    onTap: () => {
+                      void this.enableBiometric();
+                    }
+                  })
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
+              .margin({ top: 6 })
             }
-            .width('100%')
-            .margin({ top: 6 })
+            .alignItems(HorizontalAlign.Start)
+            .width('86%')
+            .padding(18)
+            .backgroundColor(this.c().surface)
+            .border({ width: 1, color: sheetBorderColor(this.skin) })
+            .borderRadius(16)
+            .shadow(panelShadow(this.skin))
           }
-          .alignItems(HorizontalAlign.Start)
-          .width('86%')
-          .padding(18)
-          .backgroundColor(this.c().surface)
-          .borderRadius(16)
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+          .align(Alignment.Center)
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
-        .justifyContent(FlexAlign.Center)
       }
 
       // ── PIN 设置对话框（设备不支持生物识别时的引导） ──
       if (this.showPinSetup) {
-        Column() {
-          Column({ space: 10 }) {
-            Text('设置快捷 PIN')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.c().text)
-            Text('之后打开 App 只需输入 PIN，不必再输主密码。连错 5 次 PIN 将被销毁。')
-              .fontSize(12)
-              .fontColor(this.c().muted)
-            TextInput({ placeholder: 'PIN（4-6 位数字）' })
-              .type(InputType.Number)
-              .height(42)
-              .backgroundColor(this.c().surface2)
-              .fontColor(this.c().text)
-              .onChange((v: string) => {
-                this.pinNew = v;
-              })
-            TextInput({ placeholder: '确认 PIN' })
-              .type(InputType.Number)
-              .height(42)
-              .backgroundColor(this.c().surface2)
-              .fontColor(this.c().text)
-              .onChange((v: string) => {
-                this.pinConfirm = v;
-              })
-            if (this.pinSetupErr !== '') {
-              Text(this.pinSetupErr)
+        Stack() {
+          SkinScrim()
+          Column() {
+            Column({ space: 10 }) {
+              Text('设置快捷 PIN')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(this.c().text)
+              Text('之后打开 App 只需输入 PIN，不必再输主密码。连错 5 次 PIN 将被销毁。')
                 .fontSize(12)
-                .fontColor(this.c().danger)
-            }
-            Row({ space: 10 }) {
-              Button('跳过')
-                .type(ButtonType.Normal)
-                .layoutWeight(1)
+                .fontColor(this.c().muted)
+              TextInput({ placeholder: 'PIN（4-6 位数字）' })
+                .type(InputType.Number)
+                .height(42)
                 .backgroundColor(this.c().surface2)
                 .fontColor(this.c().text)
-                .onClick(() => {
-                  this.skipPinSetup();
+                .onChange((v: string) => {
+                  this.pinNew = v;
                 })
-              Button('保存 PIN')
-                .type(ButtonType.Normal)
+              TextInput({ placeholder: '确认 PIN' })
+                .type(InputType.Number)
+                .height(42)
+                .backgroundColor(this.c().surface2)
+                .fontColor(this.c().text)
+                .onChange((v: string) => {
+                  this.pinConfirm = v;
+                })
+              if (this.pinSetupErr !== '') {
+                Text(this.pinSetupErr)
+                  .fontSize(12)
+                  .fontColor(this.c().danger)
+              }
+              Row({ space: 10 }) {
+                Row() {
+                  SkinInlineBtn({
+                    label: '跳过',
+                    kind: 'ghost',
+                    btnHeight: 40,
+                    onTap: () => {
+                      this.skipPinSetup();
+                    }
+                  })
+                }
                 .layoutWeight(1)
-                .backgroundColor(this.c().primary)
-                .fontColor(this.c().primaryContrast)
-                .onClick(() => {
-                  void this.savePinSetup();
-                })
+                Row() {
+                  SkinInlineBtn({
+                    label: '保存 PIN',
+                    kind: 'primary',
+                    btnHeight: 40,
+                    onTap: () => {
+                      void this.savePinSetup();
+                    }
+                  })
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
+              .margin({ top: 6 })
             }
-            .width('100%')
-            .margin({ top: 6 })
+            .alignItems(HorizontalAlign.Start)
+            .width('86%')
+            .padding(18)
+            .backgroundColor(this.c().surface)
+            .border({ width: 1, color: sheetBorderColor(this.skin) })
+            .borderRadius(16)
+            .shadow(panelShadow(this.skin))
           }
-          .alignItems(HorizontalAlign.Start)
-          .width('86%')
-          .padding(18)
-          .backgroundColor(this.c().surface)
-          .borderRadius(16)
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+          .align(Alignment.Center)
         }
         .width('100%')
         .height('100%')
-        .backgroundColor('rgba(0,0,0,0.45)')
-        .justifyContent(FlexAlign.Center)
       }
     }
     .width('100%')

@@ -22,7 +22,9 @@ import {
 } from '../lib/kbapi';
 import { clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar, SkinBackdrop } from '../components/SkinChrome';
+import {
+  SkinBar, SkinBackdrop, SkinButton, SkinInlineBtn, SkinScrim, sheetBorderColor, panelShadow
+} from '../components/SkinChrome';
 
 const TAG: string = 'KeyBoxAdmin';
 
@@ -309,17 +311,15 @@ struct Admin {
               }
 
               if (this.inviteCode === '') {
-                Button(this.isFull() ? '已满员' : '生成邀请码')
-                  .type(ButtonType.Normal)
-                  .height(38)
-                  .borderRadius(this.c().radius)
-                  .fontSize(13)
-                  .backgroundColor(this.c().primary)
-                  .fontColor(this.c().primaryContrast)
-                  .enabled(!this.busy && !this.isFull())
-                  .onClick(() => {
+                SkinButton({
+                  label: this.isFull() ? '已满员' : '生成邀请码',
+                  kind: 'primary',
+                  btnHeight: 38,
+                  disabled: this.busy || this.isFull(),
+                  onTap: () => {
                     void this.createInvite();
-                  })
+                  }
+                })
                 Text('尚未生成邀请码。')
                   .fontSize(12)
                   .fontColor(this.c().muted)
@@ -435,34 +435,38 @@ struct Admin {
                         .width('100%')
                     } else {
                       Row({ space: 10 }) {
-                        Button(row.status === 'active' ? '停用' : '启用')
-                          .type(ButtonType.Normal)
-                          .layoutWeight(1)
-                          .height(32)
-                          .fontSize(12)
-                          .backgroundColor(this.c().surface2)
-                          .fontColor(this.c().text)
-                          .enabled(!this.busy)
-                          .onClick(() => {
-                            this.confirmUser = row;
-                            this.confirmMode = row.status === 'active' ? 'disable' : '';
-                            if (this.confirmMode === '') {
-                              // 启用无破坏性，直接执行（与 Web 端一致：仅停用需确认）
-                              void this.toggleStatus(row);
+                        Row() {
+                          SkinInlineBtn({
+                            label: row.status === 'active' ? '停用' : '启用',
+                            kind: 'ghost',
+                            btnHeight: 30,
+                            btnFontSize: 11,
+                            disabled: this.busy,
+                            onTap: () => {
+                              this.confirmUser = row;
+                              this.confirmMode = row.status === 'active' ? 'disable' : '';
+                              if (this.confirmMode === '') {
+                                // 启用无破坏性，直接执行（与 Web 端一致：仅停用需确认）
+                                void this.toggleStatus(row);
+                              }
                             }
                           })
-                        Button('删除数据')
-                          .type(ButtonType.Normal)
-                          .layoutWeight(1)
-                          .height(32)
-                          .fontSize(12)
-                          .backgroundColor(this.c().danger)
-                          .fontColor(this.c().primaryContrast)
-                          .enabled(!this.busy)
-                          .onClick(() => {
-                            this.confirmUser = row;
-                            this.confirmMode = 'delete'; // 二次确认
+                        }
+                        .layoutWeight(1)
+                        Row() {
+                          SkinInlineBtn({
+                            label: '删除数据',
+                            kind: 'danger',
+                            btnHeight: 30,
+                            btnFontSize: 11,
+                            disabled: this.busy,
+                            onTap: () => {
+                              this.confirmUser = row;
+                              this.confirmMode = 'delete'; // 二次确认
+                            }
                           })
+                        }
+                        .layoutWeight(1)
                       }
                       .width('100%')
                     }
@@ -535,46 +539,58 @@ struct Admin {
 
   @Builder
   ConfirmDialog(title: string, body: string, actionLabel: string, action: () => void) {
-    Column() {
-      Column({ space: 12 }) {
-        Text(title)
-          .fontSize(15)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.c().text)
-        Text(body)
-          .fontSize(12)
-          .fontColor(this.c().text)
-        Row({ space: 10 }) {
-          Button('取消')
-            .type(ButtonType.Normal)
-            .layoutWeight(1)
-            .backgroundColor(this.c().surface2)
+    Stack() {
+      SkinScrim()
+      Column() {
+        Column({ space: 12 }) {
+          Text(title)
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
             .fontColor(this.c().text)
-            .onClick(() => {
-              this.confirmMode = '';
-              this.confirmUser = null;
-            })
-          Button(actionLabel)
-            .type(ButtonType.Normal)
+          Text(body)
+            .fontSize(12)
+            .fontColor(this.c().text)
+          Row({ space: 10 }) {
+            Row() {
+              SkinInlineBtn({
+                label: '取消',
+                kind: 'ghost',
+                btnHeight: 40,
+                onTap: () => {
+                  this.confirmMode = '';
+                  this.confirmUser = null;
+                }
+              })
+            }
             .layoutWeight(1)
-            .backgroundColor(this.c().danger)
-            .fontColor(this.c().primaryContrast)
-            .onClick(() => {
-              action();
-            })
+            Row() {
+              SkinInlineBtn({
+                label: actionLabel,
+                kind: 'danger',
+                btnHeight: 40,
+                onTap: () => {
+                  action();
+                }
+              })
+            }
+            .layoutWeight(1)
+          }
+          .width('100%')
         }
-        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+        .width('86%')
+        .padding(18)
+        .backgroundColor(this.c().surface)
+        .border({ width: 1, color: sheetBorderColor(this.skin) })
+        .borderRadius(this.c().radiusCard)
+        .shadow(panelShadow(this.skin))
       }
-      .alignItems(HorizontalAlign.Start)
-      .width('86%')
-      .padding(18)
-      .backgroundColor(this.c().surface)
-      .borderRadius(this.c().radiusCard)
+      .width('100%')
+      .height('100%')
+      .justifyContent(FlexAlign.Center)
+      .align(Alignment.Center)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('rgba(0,0,0,0.45)')
-    .justifyContent(FlexAlign.Center)
-    .align(Alignment.Center)
   }
 }
