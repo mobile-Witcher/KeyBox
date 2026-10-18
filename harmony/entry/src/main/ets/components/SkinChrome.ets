@@ -936,14 +936,17 @@ export struct SkinButton {
 }
 
 /**
- * 手绘线性图标（24×24，stroke 1.6，圆头圆角），不需要任何图片资源。
+ * 手绘线性图标（24×24 逻辑坐标，Canvas 按 iconSize 等比缩放，笔画不会被压糊）。
  * name: users | shield | palette | logout
  */
 @Component
 export struct SkinIcon {
   @Prop iconName: string = 'shield';
-  @Prop iconSize: number = 16;
+  @Prop iconSize: number = 24;
   @Prop iconColor: string = '#000000';
+
+  private settings: RenderingContextSettings = new RenderingContextSettings(true);
+  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
 
   private paths(): string[] {
     if (this.iconName === 'users') {
@@ -972,19 +975,35 @@ export struct SkinIcon {
     ];
   }
 
-  build() {
-    Stack() {
-      ForEach(this.paths(), (d: string, i: number) => {
-        Path({ width: 24, height: 24, commands: d })
-          .fill('#00000000')
-          .stroke(this.iconColor)
-          .strokeWidth(1.6)
-          .strokeLineCap(LineCapStyle.Round)
-          .strokeLineJoin(LineJoinStyle.Round)
-      }, (d: string, i: number) => 'p' + i.toString())
+  private draw(): void {
+    const size: number = this.iconSize;
+    if (size <= 0) return;
+    const s: number = size / 24;
+    const c: CanvasRenderingContext2D = this.ctx;
+    c.clearRect(0, 0, size, size);
+    c.save();
+    c.scale(s, s);
+    c.strokeStyle = this.iconColor;
+    c.lineWidth = 1.8;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    for (const d of this.paths()) {
+      const p: Path2D = new Path2D(d);
+      c.stroke(p);
     }
-    .width(24)
-    .height(24)
-    .hitTestBehavior(HitTestMode.None)
+    c.restore();
+  }
+
+  build() {
+    Canvas(this.ctx)
+      .width(this.iconSize)
+      .height(this.iconSize)
+      .hitTestBehavior(HitTestMode.None)
+      .onReady(() => {
+        this.draw();
+      })
+      .onAreaChange(() => {
+        this.draw();
+      })
   }
 }
