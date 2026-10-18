@@ -948,19 +948,53 @@ body {
   color: var(--kb-warning);
 }
 
-/* 窄屏：单栏，隐藏英雄区，保持表单可用 */
+/* 窄屏：单栏，隐藏英雄区与装饰终端条，保持表单可用（窄屏下功能性优先） */
 @media (max-width: 920px) {
+  [data-skin="endfield"] .kb-auth-page {
+    padding: 12px !important;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
   [data-skin="endfield"] .kb-card-lg {
-    max-width: 34rem;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden;
   }
   [data-skin="endfield"] .kb-auth-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
   }
-  [data-skin="endfield"] .kb-auth-hero {
-    display: none;
+  [data-skin="endfield"] .kb-auth-hero,
+  [data-skin="endfield"] .kb-auth-termbar,
+  [data-skin="endfield"] .kb-appterm {
+    display: none !important;
   }
   [data-skin="endfield"] .kb-auth-main {
-    padding: 22px 20px 20px;
+    padding: 18px 14px 16px;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  [data-skin="endfield"] .kb-auth-main form,
+  [data-skin="endfield"] .kb-auth-main label,
+  [data-skin="endfield"] .kb-auth-main .kb-input {
+    min-width: 0;
+    max-width: 100%;
+  }
+  [data-skin="endfield"] .kb-boot-lines span {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  [data-skin="endfield"] .kb-boot-warn {
+    font-size: 0.52rem;
+    letter-spacing: 0.06em;
+    overflow-wrap: anywhere;
+  }
+  [data-skin="endfield"] .kb-input {
+    font-size: 0.82rem;
   }
 }
 

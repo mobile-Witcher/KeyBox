@@ -115,9 +115,9 @@ export default function TopBar({
       <div className="kb-term-bar kb-appterm" aria-hidden="true">
         <span className="kb-plate">Asset Bay</span>
         <b>ENDFIELD // KEYBOX</b>
-        <span>UNIT EN-07</span>
-        <span>LINK STABLE</span>
-        <span className="ml-auto">OPERATOR {avatarText}</span>
+        <span className="kb-term-extra">UNIT EN-07</span>
+        <span className="kb-term-extra">LINK STABLE</span>
+        <span className="kb-term-extra ml-auto">OPERATOR {avatarText}</span>
       </div>
 
       <header

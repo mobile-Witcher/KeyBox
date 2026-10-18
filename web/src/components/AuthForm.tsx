@@ -22,7 +22,7 @@ export function AuthCard({
   footer?: ReactNode;
 }): JSX.Element {
   return (
-    <div className="relative flex min-h-full items-center justify-center overflow-hidden p-6">
+    <div className="kb-auth-page relative flex min-h-full items-center justify-center overflow-hidden p-6">
       {/* 纯装饰背景光晕：极淡的品牌色，营造层次而不喧闹 */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-[-22%] h-[440px] w-[640px] -translate-x-1/2 rounded-full bg-kb-primary opacity-[0.07] blur-3xl" />
@@ -37,9 +37,9 @@ export function AuthCard({
         <div className="kb-term-bar kb-auth-termbar" aria-hidden>
           <span className="kb-plate">Field Terminal</span>
           <b>ENDFIELD // ACCESS</b>
-          <span>UNIT EN-07</span>
-          <span>LINK STABLE</span>
-          <span className="ml-auto">2026-10-18 16:20</span>
+          <span className="kb-term-extra">UNIT EN-07</span>
+          <span className="kb-term-extra">LINK STABLE</span>
+          <span className="kb-term-extra ml-auto">2026-10-18 16:20</span>
         </div>
 
         <div className="kb-auth-grid">
