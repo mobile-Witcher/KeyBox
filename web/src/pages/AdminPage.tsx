@@ -205,13 +205,7 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-kb-muted">{username}</span>
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="rounded px-2 py-1 text-kb-muted hover:bg-kb-surface-2 dark:text-kb-muted dark:hover:brightness-110"
-          >
-            退出登录
-          </button>
+          {/* 退出登录已移到页面底部「会话」区：与用户名相邻时太容易误触 */}
           {/* 主题切换固定在右上角（与用户端同一位置） */}
           <ThemeToggle />
         </div>
@@ -312,6 +306,24 @@ export default function AdminPage({ username, onSignOut, onBack }: AdminPageProp
             />
           )}
         </section>
+
+        {/* 会话/账号操作：放在内容末尾，与顶栏的展示项分离，避免误触 */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-kb-border pt-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="kb-plate kb-endfield-only">Session</span>
+            <span className="kb-eyebrow kb-endfield-only">KeyBox // 管理员会话</span>
+            <span className="text-sm text-kb-muted">
+              已登录：{username}（管理员）
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="rounded-lg border border-kb-border px-3 py-1.5 text-sm text-kb-muted transition hover:border-kb-border-strong hover:text-kb-text dark:hover:brightness-110"
+          >
+            退出登录
+          </button>
+        </div>
       </main>
 
       <footer className="border-t border-kb-border px-6 py-2 text-center text-xs text-kb-muted dark:border-kb-border">
