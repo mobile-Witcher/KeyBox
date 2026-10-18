@@ -969,10 +969,10 @@ export struct SkinIcon {
   }
 
   private glyph(): string {
-    if (this.iconName === 'users') return '☰';
-    if (this.iconName === 'shield') return '◈';
-    if (this.iconName === 'palette') return '◐';
-    return '⇥';
+    if (this.iconName === 'users') return '管';
+    if (this.iconName === 'shield') return '安';
+    if (this.iconName === 'palette') return '外';
+    return '退';
   }
 }/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
@@ -1014,6 +1014,8 @@ export struct SkinIconButton {
           .hitTestBehavior(HitTestMode.None)
       }
     }
+    .width(30)
+    .height(30)
     .onClick(() => {
       this.onPick();
     })
