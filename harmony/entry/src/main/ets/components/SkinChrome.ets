@@ -869,13 +869,12 @@ export struct SkinButton {
   @Prop kind: string = 'primary';
   @Prop disabled: boolean = false;
   @Prop btnHeight: number = 44;
-  /** fit=true 时宽度自适应内容（用于行内并排），否则整宽 */
+  /** fit=true：宽度自适应内容（用于行内并排），否则整宽 */
   @Prop fit: boolean = false;
   onTap: () => void = () => {};
   @StorageProp('skin') skin: string = 'hud';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
-  /** 按压态：触屏没有 hover，用缩放 + 压暗模拟 Web 的按钮反馈。 */
   @State private pressed: boolean = false;
 
   private skinId(): SkinId {
@@ -907,33 +906,65 @@ export struct SkinButton {
   }
 
   build() {
-    Text(this.label)
-      .width('100%')
-      .height(this.btnHeight)
-      .textAlign(TextAlign.Center)
-      .fontSize(13)
-      .fontWeight(FontWeight.Medium)
-      .letterSpacing(this.track())
-      .fontColor(this.disabled ? this.c().muted : this.fg())
-      .backgroundColor(this.disabled ? this.c().surface2 : this.bg())
-      .borderRadius(this.c().radius)
-      .border({ width: this.kind === 'ghost' ? 1 : 0, color: this.c().border })
-      .opacity(this.disabled ? 0.6 : this.pressed ? 0.82 : 1)
-      .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
-      .animation({ duration: 90, curve: Curve.EaseOut })
-      .onTouch((event: TouchEvent) => {
-        if (this.disabled) return;
-        if (event.type === TouchType.Down) {
-          this.pressed = true;
-        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-          this.pressed = false;
-        }
-      })
-      .onClick(() => {
-        if (!this.disabled) {
-          this.onTap();
-        }
-      })
+    if (this.fit) {
+      Row() {
+        Text(this.label)
+        .height(this.btnHeight)
+        .textAlign(TextAlign.Center)
+        .fontSize(13)
+        .fontWeight(FontWeight.Medium)
+        .letterSpacing(this.track())
+        .fontColor(this.disabled ? this.c().muted : this.fg())
+        .backgroundColor(this.disabled ? this.c().surface2 : this.bg())
+        .borderRadius(this.c().radius)
+        .border({ width: this.kind === 'ghost' ? 1 : 0, color: this.c().border })
+        .opacity(this.disabled ? 0.6 : this.pressed ? 0.82 : 1)
+        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+        .animation({ duration: 90, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (this.disabled) return;
+          if (event.type === TouchType.Down) {
+            this.pressed = true;
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressed = false;
+          }
+        })
+        .onClick(() => {
+          if (!this.disabled) {
+            this.onTap();
+          }
+        })
+      }
+      .padding({ left: 14, right: 14 })
+    } else {
+      Text(this.label)
+        .width('100%')
+        .height(this.btnHeight)
+        .textAlign(TextAlign.Center)
+        .fontSize(13)
+        .fontWeight(FontWeight.Medium)
+        .letterSpacing(this.track())
+        .fontColor(this.disabled ? this.c().muted : this.fg())
+        .backgroundColor(this.disabled ? this.c().surface2 : this.bg())
+        .borderRadius(this.c().radius)
+        .border({ width: this.kind === 'ghost' ? 1 : 0, color: this.c().border })
+        .opacity(this.disabled ? 0.6 : this.pressed ? 0.82 : 1)
+        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+        .animation({ duration: 90, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (this.disabled) return;
+          if (event.type === TouchType.Down) {
+            this.pressed = true;
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressed = false;
+          }
+        })
+        .onClick(() => {
+          if (!this.disabled) {
+            this.onTap();
+          }
+        })
+    }
   }
 }
 
