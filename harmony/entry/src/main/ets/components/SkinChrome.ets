@@ -107,6 +107,191 @@ export struct SkinSection {
   }
 }
 
+/** 弹层遮罩色（每套皮肤不同的压暗方式）。 */
+export function scrimColor(skin: string): string {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'blueprint') return '#00000099';
+  if (k === 'mono') return '#0000008C';
+  if (k === 'hud') return '#15140F80';
+  if (k === 'lab') return '#10121466';
+  return '#0B0F1273';
+}
+
+/** 弹层出现/消失的过渡（每套皮肤不同的时长、曲线与位移方向）。 */
+export function sheetTransition(skin: string): TransitionEffect {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'blueprint') {
+    return TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.Friction })
+      .combine(TransitionEffect.translate({ y: -10 }).animation({ duration: 160, curve: Curve.Friction }));
+  }
+  if (k === 'mono') {
+    return TransitionEffect.OPACITY.animation({ duration: 120, curve: Curve.Sharp })
+      .combine(TransitionEffect.translate({ x: 12 }).animation({ duration: 120, curve: Curve.Sharp }));
+  }
+  if (k === 'lab') {
+    return TransitionEffect.OPACITY.animation({ duration: 220, curve: Curve.EaseOut })
+      .combine(TransitionEffect.scale({ x: 0.98, y: 0.98 }).animation({ duration: 220, curve: Curve.EaseOut }));
+  }
+  if (k === 'overprint') {
+    return TransitionEffect.OPACITY.animation({ duration: 260, curve: Curve.EaseInOut })
+      .combine(TransitionEffect.translate({ y: 14 }).animation({ duration: 260, curve: Curve.EaseInOut }));
+  }
+  return TransitionEffect.OPACITY.animation({ duration: 150, curve: Curve.EaseOut })
+    .combine(TransitionEffect.translate({ y: 8 }).animation({ duration: 150, curve: Curve.EaseOut }));
+}
+
+/** 弹层投影（套印皮肤用硬偏影，其余按皮肤给柔和投影）。 */
+export function panelShadow(skin: string): ShadowOptions {
+  const k: SkinId = normalizeSkinId(skin);
+  if (k === 'overprint') {
+    return { radius: 0, color: '#00000038', offsetX: 4, offsetY: 4 };
+  }
+  if (k === 'mono') {
+    return { radius: 0, color: '#00000044', offsetX: 3, offsetY: 3 };
+  }
+  if (k === 'blueprint') {
+    return { radius: 0, color: '#0AE0F030', offsetX: 0, offsetY: 2 };
+  }
+  if (k === 'lab') {
+    return { radius: 18, color: '#10121426', offsetX: 0, offsetY: 6 };
+  }
+  return { radius: 12, color: '#15140F33', offsetX: 0, offsetY: 6 };
+}
+
+/**
+ * 卡片外框：对应 Web 端各皮肤的卡片语汇
+ *   hud       四角括号（1.5px 墨色，22px）
+ *   lab       四角括号（1px 淡青）+ 右上小准星框
+ *   blueprint 四角括号（2px 青）+ 右上圆环
+ *   mono      四角括号（1px 朱红）+ 左上红色小方块
+ *   overprint 右上钴蓝圆环（硬边）
+ *
+ * 用法：SkinCard() { 你的卡片内容 }   —— 括号层不拦截点击（hitTestBehavior None）
+ */
+@Component
+export struct SkinCard {
+  @BuilderParam content: () => void;
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private skinId(): SkinId {
+    return normalizeSkinId(this.skin);
+  }
+
+  private c(): ThemeColors {
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
+  }
+
+  private bracketColor(): string {
+    const k: SkinId = this.skinId();
+    if (k === 'lab') return '#2fb6b0';
+    if (k === 'blueprint') return '#0ae0f0';
+    if (k === 'mono') return '#c8102e';
+    if (k === 'overprint') return '#4c6fff';
+    return this.c().text;
+  }
+
+  private bracketW(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'blueprint') return 2;
+    if (k === 'hud') return 1.5;
+    return 1;
+  }
+
+  private bracketSize(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'blueprint') return 20;
+    return 16;
+  }
+
+  build() {
+    Stack() {
+      Column() {
+        this.content()
+      }
+      .width('100%')
+
+      // 四角括号
+      Stack({ alignContent: Alignment.TopStart }) {
+        Text('')
+          .width(this.bracketSize())
+          .height(this.bracketSize())
+          .border({ width: { top: this.bracketW(), left: this.bracketW() }, color: this.bracketColor() })
+      }
+      .width('100%')
+      .height('100%')
+      .opacity(0.75)
+      .hitTestBehavior(HitTestMode.None)
+
+      Stack({ alignContent: Alignment.TopEnd }) {
+        Text('')
+          .width(this.bracketSize())
+          .height(this.bracketSize())
+          .border({ width: { top: this.bracketW(), right: this.bracketW() }, color: this.bracketColor() })
+      }
+      .width('100%')
+      .height('100%')
+      .opacity(0.75)
+      .hitTestBehavior(HitTestMode.None)
+
+      Stack({ alignContent: Alignment.BottomStart }) {
+        Text('')
+          .width(this.bracketSize())
+          .height(this.bracketSize())
+          .border({ width: { bottom: this.bracketW(), left: this.bracketW() }, color: this.bracketColor() })
+      }
+      .width('100%')
+      .height('100%')
+      .opacity(0.75)
+      .hitTestBehavior(HitTestMode.None)
+
+      Stack({ alignContent: Alignment.BottomEnd }) {
+        Text('')
+          .width(this.bracketSize())
+          .height(this.bracketSize())
+          .border({ width: { bottom: this.bracketW(), right: this.bracketW() }, color: this.bracketColor() })
+      }
+      .width('100%')
+      .height('100%')
+      .opacity(0.75)
+      .hitTestBehavior(HitTestMode.None)
+
+      // overprint：右上钴蓝圆环
+      if (this.skinId() === 'overprint') {
+        Stack({ alignContent: Alignment.TopEnd }) {
+          Text('')
+            .width(22)
+            .height(22)
+            .borderRadius(11)
+            .border({ width: 1, color: '#4c6fff' })
+            .margin({ right: 8, top: 8 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.5)
+        .hitTestBehavior(HitTestMode.None)
+      }
+
+      // mono：左上朱红小方块
+      if (this.skinId() === 'mono') {
+        Stack({ alignContent: Alignment.TopStart }) {
+          Text('')
+            .width(6)
+            .height(6)
+            .backgroundColor('#c8102e')
+            .margin({ left: 6, top: 6 })
+        }
+        .width('100%')
+        .height('100%')
+        .opacity(0.8)
+        .hitTestBehavior(HitTestMode.None)
+      }
+    }
+    .width('100%')
+  }
+}
+
 /** 皮肤标记色（供页面自定义装饰复用）。 */
 export function skinAccentColor(skin: string): string {
   const k: SkinId = normalizeSkinId(skin);

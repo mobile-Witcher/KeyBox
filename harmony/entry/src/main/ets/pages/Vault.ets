@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -818,7 +818,9 @@ struct Vault {
             Grid() {
               ForEach(this.filteredItems(), (it: VaultItem) => {
                 GridItem() {
-                  this.SecretCard(it)
+                  SkinCard() {
+                    this.SecretCard(it)
+                  }
                 }
               }, (it: VaultItem) => it.id.toString())
             }
@@ -836,6 +838,8 @@ struct Vault {
       .width('100%')
       .height('100%')
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .opacity(this.overlayOpen() ? 0.55 : 1)
+      .animation({ duration: 160, curve: Curve.EaseOut })
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
@@ -929,6 +933,8 @@ struct Vault {
           .padding(14)
           .backgroundColor(this.c().surface)
           .border({ width: 1, color: sheetBorderColor(this.skin) })
+          .shadow(panelShadow(this.skin))
+          .transition(sheetTransition(this.skin))
           .borderRadius(12)
           .border({ width: 0.5, color: this.c().border })
         }
@@ -1047,6 +1053,8 @@ struct Vault {
           .padding(16)
           .backgroundColor(this.c().surface)
           .border({ width: 1, color: sheetBorderColor(this.skin) })
+          .shadow(panelShadow(this.skin))
+          .transition(sheetTransition(this.skin))
           .borderRadius(16)
         }
         .width('100%')
@@ -1145,6 +1153,8 @@ struct Vault {
           .constraintSize({ maxHeight: '86%' })
           .backgroundColor(this.c().surface)
           .border({ width: 1, color: sheetBorderColor(this.skin) })
+          .shadow(panelShadow(this.skin))
+          .transition(sheetTransition(this.skin))
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1208,6 +1218,8 @@ struct Vault {
           .padding(18)
           .backgroundColor(this.c().surface)
           .border({ width: 1, color: sheetBorderColor(this.skin) })
+          .shadow(panelShadow(this.skin))
+          .transition(sheetTransition(this.skin))
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1253,6 +1265,8 @@ struct Vault {
           .padding(18)
           .backgroundColor(this.c().surface)
           .border({ width: 1, color: sheetBorderColor(this.skin) })
+          .shadow(panelShadow(this.skin))
+          .transition(sheetTransition(this.skin))
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1330,6 +1344,8 @@ struct Vault {
           .padding(18)
           .backgroundColor(this.c().surface)
           .border({ width: 1, color: sheetBorderColor(this.skin) })
+          .shadow(panelShadow(this.skin))
+          .transition(sheetTransition(this.skin))
           .borderRadius(this.c().radiusCard)
         }
         .width('100%')
@@ -1354,6 +1370,11 @@ struct Vault {
     }
     .width('100%')
     .height('100%')
+  }
+
+  /** 任一半透明弹层是否打开（用于压暗主内容层）。 */
+  private overlayOpen(): boolean {
+    return this.showAppearance || this.showTagMenu || this.dialogMode !== 'none';
   }
 
   // ── 皮肤卡框令牌（每套皮肤不同的边框粗细/颜色/偏影）──
@@ -1499,6 +1520,8 @@ struct Vault {
     .padding(14)
     .backgroundColor(this.c().surface)
     .border({ width: 1, color: sheetBorderColor(this.skin) })
+    .shadow(panelShadow(this.skin))
+    .transition(sheetTransition(this.skin))
     .borderRadius(this.c().radiusCard)
     .border({ width: this.cardBorderWidth(), color: this.cardBorderColor() })
     .shadow({
