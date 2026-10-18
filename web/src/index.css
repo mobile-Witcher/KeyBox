@@ -652,7 +652,11 @@ body {
   background-color: color-mix(in srgb, var(--kb-surface) 88%, transparent);
   font-family: var(--kb-mono);
   letter-spacing: 0.04em;
-  padding-left: 0.6rem;
+  /*
+   * 注意：这里**不要**写 padding-left/right。
+   * 顶栏搜索框靠 pl-9 给放大镜图标留位（见 TopBar），
+   * 一旦在此覆盖内边距，图标就会压在占位文字上。
+   */
 }
 [data-skin="endfield"] .kb-input:focus {
   border-bottom-width: 2px;
