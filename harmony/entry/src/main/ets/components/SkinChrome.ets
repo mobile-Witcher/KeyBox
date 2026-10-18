@@ -984,14 +984,13 @@ export struct SkinIcon {
   }
 
   private draw(): void {
-    const w: number = this.ctx.width;
-    const h: number = this.ctx.height;
-    if (w <= 0 || h <= 0) return;
-    const s: number = Math.min(w, h) / 24;
+    // 用 this.iconSize 常量计算，不读 ctx.width（onReady 时布局可能还没完成，读到 0 会画不出/画偏）
+    const size: number = this.iconSize;
+    if (size <= 0) return;
+    const s: number = size / 24;
     const c: CanvasRenderingContext2D = this.ctx;
-    c.clearRect(0, 0, w, h);
+    c.clearRect(0, 0, size, size);
     c.save();
-    c.translate((w - 24 * s) / 2, (h - 24 * s) / 2);
     c.scale(s, s);
     c.strokeStyle = this.iconColor;
     c.lineWidth = 2.2;

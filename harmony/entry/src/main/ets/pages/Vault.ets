@@ -823,43 +823,47 @@ struct Vault {
           .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
       }
 
-      // ── 悬浮操作（同步 / 新增）：贴右下角，主按钮更大 ──
-      Column({ space: 10 }) {
-        Stack({ alignContent: Alignment.Center }) {
-          SkinIcon({
-            iconName: 'sync',
-            iconSize: 24,
-            iconColor: this.syncing ? this.c().muted : this.c().text
-          })
-        }
-        .width(54)
-        .height(54)
-        .borderRadius(27)
-        .border({ width: 1, color: this.c().border })
-        .backgroundColor(this.c().surface)
-        .opacity(this.syncing ? 0.6 : 1)
-        .shadow({ radius: 10, color: '#00000022', offsetX: 0, offsetY: 3 })
-        .accessibilityText(this.syncing ? '同步中' : '同步')
-        .onClick(() => {
-          if (!this.syncing) {
-            void this.runSync();
+      // ── 悬浮操作（同步 / 新增）：全屏对齐层内贴右下角，两个按钮同尺寸 56 ──
+      Stack({ alignContent: Alignment.BottomEnd }) {
+        Column({ space: 10 }) {
+          Stack({ alignContent: Alignment.Center }) {
+            SkinIcon({
+              iconName: 'sync',
+              iconSize: 26,
+              iconColor: this.syncing ? this.c().muted : this.c().text
+            })
           }
-        })
-        Button('+')
-          .type(ButtonType.Normal)
-          .width(62)
-          .height(62)
-          .borderRadius(31)
-          .fontSize(26)
-          .backgroundColor(this.c().primary)
-          .fontColor(this.c().primaryContrast)
-          .shadow({ radius: 12, color: '#00000033', offsetX: 0, offsetY: 4 })
+          .width(56)
+          .height(56)
+          .borderRadius(28)
+          .border({ width: 1, color: this.c().border })
+          .backgroundColor(this.c().surface)
+          .opacity(this.syncing ? 0.6 : 1)
+          .shadow({ radius: 10, color: '#00000022', offsetX: 0, offsetY: 3 })
+          .accessibilityText(this.syncing ? '同步中' : '同步')
           .onClick(() => {
-            this.openNew();
+            if (!this.syncing) {
+              void this.runSync();
+            }
           })
+          Button('+')
+            .type(ButtonType.Normal)
+            .width(56)
+            .height(56)
+            .borderRadius(28)
+            .fontSize(24)
+            .backgroundColor(this.c().primary)
+            .fontColor(this.c().primaryContrast)
+            .shadow({ radius: 12, color: '#00000033', offsetX: 0, offsetY: 4 })
+            .onClick(() => {
+              this.openNew();
+            })
+        }
+        .margin({ right: 14, bottom: 26 })
       }
-      .align(Alignment.BottomEnd)
-      .margin({ right: 16, bottom: 30 })
+      .width('100%')
+      .height('100%')
+      .hitTestBehavior(HitTestMode.Transparent)
 
       // ── 分类选择下拉弹层（R18） ──
       if (this.showTagMenu) {
