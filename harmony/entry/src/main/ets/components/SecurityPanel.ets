@@ -410,7 +410,10 @@ export struct SecurityPanel {
       Scroll() {
         Column({ space: 14 }) {
           Row() {
-            SkinSection({ title: '安全', extra: 'SECURITY' })
+            Text('安全')
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.c().text)
             Blank()
             Text('关闭')
               .fontSize(13)

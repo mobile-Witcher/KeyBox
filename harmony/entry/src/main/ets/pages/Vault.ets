@@ -825,20 +825,26 @@ struct Vault {
 
       // ── 悬浮操作（同步 / 新增）：贴右下角，主按钮更大 ──
       Column({ space: 10 }) {
-        Button('同步')
-          .type(ButtonType.Normal)
-          .width(54)
-          .height(54)
-          .borderRadius(27)
-          .fontSize(12)
-          .backgroundColor(this.c().surface)
-          .fontColor(this.c().text)
-          .enabled(!this.syncing)
-          .opacity(this.syncing ? 0.5 : 1)
-          .shadow({ radius: 10, color: '#00000022', offsetX: 0, offsetY: 3 })
-          .onClick(() => {
-            void this.runSync();
+        Stack({ alignContent: Alignment.Center }) {
+          SkinIcon({
+            iconName: 'sync',
+            iconSize: 24,
+            iconColor: this.syncing ? this.c().muted : this.c().text
           })
+        }
+        .width(54)
+        .height(54)
+        .borderRadius(27)
+        .border({ width: 1, color: this.c().border })
+        .backgroundColor(this.c().surface)
+        .opacity(this.syncing ? 0.6 : 1)
+        .shadow({ radius: 10, color: '#00000022', offsetX: 0, offsetY: 3 })
+        .accessibilityText(this.syncing ? '同步中' : '同步')
+        .onClick(() => {
+          if (!this.syncing) {
+            void this.runSync();
+          }
+        })
         Button('+')
           .type(ButtonType.Normal)
           .width(62)
