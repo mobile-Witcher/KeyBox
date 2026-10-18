@@ -945,22 +945,35 @@ export struct SkinIcon {
   @Prop iconSize: number = 22;
   @Prop iconColor: string = '#000000';
 
-  private glyph(): string {
-    // U+FE0E：强制文本呈现（单色），避免系统把字符渲染成彩色 emoji
-    if (this.iconName === 'users') return '☰';
-    if (this.iconName === 'shield') return '⚿\uFE0E';
-    if (this.iconName === 'palette') return '◐\uFE0E';
-    if (this.iconName === 'sync') return '⇄';
-    return '⇥\uFE0E';
+  build() {
+    if (this.iconName === 'sync') {
+      // 圆形循环双箭头：两个反向圆形箭头并排
+      Row() {
+        Text('↺').fontSize(15).fontColor(this.iconColor)
+        Text('↻').fontSize(15).fontColor(this.iconColor)
+      }
+      .width(24)
+      .height(24)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(VerticalAlign.Center)
+      .hitTestBehavior(HitTestMode.None)
+    } else {
+      Text(this.glyph())
+        .fontSize(20)
+        .lineHeight(24)
+        .height(24)
+        .width(24)
+        .fontColor(this.iconColor)
+        .textAlign(TextAlign.Center)
+        .hitTestBehavior(HitTestMode.None)
+    }
   }
 
-  build() {
-    Text(this.glyph())
-      .fontSize(this.iconSize)
-      .fontColor(this.iconColor)
-      .textAlign(TextAlign.Center)
-      .width(this.iconSize + 2)
-      .hitTestBehavior(HitTestMode.None)
+  private glyph(): string {
+    if (this.iconName === 'users') return '☰';
+    if (this.iconName === 'shield') return '⚿';
+    if (this.iconName === 'palette') return '◐';
+    return '⇥';
   }
 }/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
@@ -981,11 +994,14 @@ export struct SkinIconButton {
 
   build() {
     Stack({ alignContent: Alignment.TopEnd }) {
-      // 用 padding 居中：按钮尺寸 = 图标 24 + 2*3 = 30，不依赖任何 Stack 对齐属性
+      // 固定 30×30 矩形圆角，内容居中（尺寸写死，保证四个框一致）
       Column() {
         SkinIcon({ iconName: this.iconName, iconSize: this.iconSize, iconColor: this.iconColor })
       }
-      .padding(3)
+      .width(30)
+      .height(30)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
       .borderRadius(9)
       .border({ width: 1, color: this.c().border })
       .backgroundColor(this.c().bg)
