@@ -946,6 +946,8 @@ export struct SkinIcon {
   @Prop iconColor: string = '#000000';
   @StorageProp('darkMode') darkMode: string = 'system';
   @StorageProp('systemDark') systemDark: boolean = false;
+  /** 图片加载失败时降级为字形，避免出现空白框 */
+  @State private imgFailed: boolean = false;
 
   private isDark(): boolean {
     return resolveDark(this.darkMode, this.systemDark);
@@ -967,12 +969,38 @@ export struct SkinIcon {
     return ('ic_logout_d.png');
   }
 
+  private fallbackGlyph(): string {
+    if (this.iconName === 'users') return '管';
+    if (this.iconName === 'shield') return '安';
+    if (this.iconName === 'palette') return '外';
+    if (this.iconName === 'sync') return '⟳';
+    return '退';
+  }
+
   build() {
-    Image(this.isDark() ? this.srcDark() : this.srcLight())
-      .width(this.iconSize)
-      .height(this.iconSize)
-      .objectFit(ImageFit.Contain)
-      .hitTestBehavior(HitTestMode.None)
+    Stack({ alignContent: Alignment.Center }) {
+      if (this.imgFailed) {
+        Text(this.fallbackGlyph())
+          .fontSize(19)
+          .fontColor(this.iconColor)
+          .textAlign(TextAlign.Center)
+          .width(24)
+          .height(24)
+          .hitTestBehavior(HitTestMode.None)
+      } else {
+        Image(this.isDark() ? this.srcDark() : this.srcLight())
+          .width(this.iconSize)
+          .height(this.iconSize)
+          .objectFit(ImageFit.Contain)
+          .hitTestBehavior(HitTestMode.None)
+          .onError(() => {
+            this.imgFailed = true;
+          })
+      }
+    }
+    .width(24)
+    .height(24)
+    .hitTestBehavior(HitTestMode.None)
   }
 }/** 图标按钮：32×32 方框 + 10 圆角 + 1px 皮肤边框，图标居中（18px）。 */
 @Component
