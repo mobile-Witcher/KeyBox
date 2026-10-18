@@ -22,7 +22,7 @@ import {
 } from '../lib/kbapi';
 import { clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar, SkinBackdrop, SkinButton } from '../components/SkinChrome';
+import { SkinBar, SkinBackdrop } from '../components/SkinChrome';
 
 const TAG: string = 'KeyBoxAdmin';
 
@@ -451,16 +451,18 @@ struct Admin {
                               void this.toggleStatus(row);
                             }
                           })
-                        SkinButton({
-                          label: '删除数据',
-                          kind: 'primary',
-                          btnHeight: 32,
-                          disabled: this.busy,
-                          onTap: () => {
+                        Button('删除数据')
+                          .type(ButtonType.Normal)
+                          .layoutWeight(1)
+                          .height(32)
+                          .fontSize(12)
+                          .backgroundColor(this.c().danger)
+                          .fontColor(this.c().primaryContrast)
+                          .enabled(!this.busy)
+                          .onClick(() => {
                             this.confirmUser = row;
                             this.confirmMode = 'delete'; // 二次确认
-                          }
-                        })
+                          })
                       }
                       .width('100%')
                     }
@@ -543,15 +545,15 @@ struct Admin {
           .fontSize(12)
           .fontColor(this.c().text)
         Row({ space: 10 }) {
-          SkinButton({
-            label: '取消',
-            kind: 'ghost',
-            btnHeight: 44,
-            onTap: () => {
+          Button('取消')
+            .type(ButtonType.Normal)
+            .layoutWeight(1)
+            .backgroundColor(this.c().surface2)
+            .fontColor(this.c().text)
+            .onClick(() => {
               this.confirmMode = '';
               this.confirmUser = null;
-            }
-          })
+            })
           Button(actionLabel)
             .type(ButtonType.Normal)
             .layoutWeight(1)

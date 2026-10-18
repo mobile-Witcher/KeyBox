@@ -376,22 +376,22 @@ struct Unlock {
               Text(this.bioSetupErr).fontSize(12).fontColor(this.c().danger)
             }
             Row({ space: 10 }) {
-              SkinButton({
-                label: '跳过',
-                kind: 'ghost',
-                btnHeight: 44,
-                onTap: () => {
+              Button('跳过')
+                .type(ButtonType.Normal)
+                .layoutWeight(1)
+                .backgroundColor(this.c().surface2)
+                .fontColor(this.c().text)
+                .onClick(() => {
                   this.skipBioSetup();
-                }
-              })
-              SkinButton({
-                label: '开启',
-                kind: 'primary',
-                btnHeight: 44,
-                onTap: () => {
+                })
+              Button('开启')
+                .type(ButtonType.Normal)
+                .layoutWeight(1)
+                .backgroundColor(this.c().primary)
+                .fontColor(this.c().primaryContrast)
+                .onClick(() => {
                   void this.enableBiometric();
-                }
-              })
+                })
             }
             .width('100%')
             .margin({ top: 6 })
@@ -441,22 +441,22 @@ struct Unlock {
                 .fontColor(this.c().danger)
             }
             Row({ space: 10 }) {
-              SkinButton({
-                label: '跳过',
-                kind: 'ghost',
-                btnHeight: 44,
-                onTap: () => {
+              Button('跳过')
+                .type(ButtonType.Normal)
+                .layoutWeight(1)
+                .backgroundColor(this.c().surface2)
+                .fontColor(this.c().text)
+                .onClick(() => {
                   this.skipPinSetup();
-                }
-              })
-              SkinButton({
-                label: '保存 PIN',
-                kind: 'primary',
-                btnHeight: 44,
-                onTap: () => {
+                })
+              Button('保存 PIN')
+                .type(ButtonType.Normal)
+                .layoutWeight(1)
+                .backgroundColor(this.c().primary)
+                .fontColor(this.c().primaryContrast)
+                .onClick(() => {
                   void this.savePinSetup();
-                }
-              })
+                })
             }
             .width('100%')
             .margin({ top: 6 })
