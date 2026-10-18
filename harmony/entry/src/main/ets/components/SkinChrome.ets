@@ -862,11 +862,7 @@ export struct SkinWordmark {
   }
 }
 
-/**
- * 自绘按钮：ArkUI 的 Button 不支持 letterSpacing，这里用 Text + 背景实现，
- * 从而做到 Web 端一致的「等宽小字 + 字距 + 每套皮肤圆角/配色」。
- *   kind: primary | ghost | danger
- */
+/** 皮肤标记色（供页面自定义装饰复用）。 */
 @Component
 export struct SkinButton {
   @Prop label: string = '';
@@ -936,5 +932,59 @@ export struct SkinButton {
           this.onTap();
         }
       })
+  }
+}
+
+/**
+ * 手绘线性图标（24×24，stroke 1.6，圆头圆角），不需要任何图片资源。
+ * name: users | shield | palette | logout
+ */
+@Component
+export struct SkinIcon {
+  @Prop iconName: string = 'shield';
+  @Prop iconSize: number = 16;
+  @Prop iconColor: string = '#000000';
+
+  private paths(): string[] {
+    if (this.iconName === 'users') {
+      return [
+        'M9 11.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z',
+        'M2.6 20.2c0-3.4 2.9-5.7 6.4-5.7s6.4 2.3 6.4 5.7',
+        'M16 5.4a3 3 0 0 1 0 5.6',
+        'M17.2 14.8c2.5.6 4.2 2.4 4.2 5.2'
+      ];
+    }
+    if (this.iconName === 'palette') {
+      return [
+        'M12 3.2a8.8 8.8 0 1 0 0 17.6c1.3 0 1.9-.9 1.9-1.7 0-.9-.6-1.3-.6-2.2 0-1.1.9-2 2-2h1.5A3.9 3.9 0 0 0 20.8 11c0-4.3-3.9-7.8-8.8-7.8z'
+      ];
+    }
+    if (this.iconName === 'shield') {
+      return [
+        'M12 2.9 4.9 5.6v5.2c0 4.5 2.9 8.3 7.1 10.3 4.2-2 7.1-5.8 7.1-10.3V5.6L12 2.9z',
+        'M8.9 11.9l2.2 2.2 4.1-4.4'
+      ];
+    }
+    return [
+      'M9.4 3.2H6a1.8 1.8 0 0 0-1.8 1.8v14a1.8 1.8 0 0 0 1.8 1.8h3.4',
+      'M13.6 8.2 17.4 12l-3.8 3.8',
+      'M17 12H8.6'
+    ];
+  }
+
+  build() {
+    Stack() {
+      ForEach(this.paths(), (d: string, i: number) => {
+        Path({ width: 24, height: 24, commands: d })
+          .fill('#00000000')
+          .stroke(this.iconColor)
+          .strokeWidth(1.6)
+          .strokeLineCap(LineCapStyle.Round)
+          .strokeLineJoin(LineJoinStyle.Round)
+      }, (d: string, i: number) => 'p' + i.toString())
+    }
+    .width(24)
+    .height(24)
+    .scale({ x: this.iconSize / 24, y: this.iconSize / 24 })
   }
 }

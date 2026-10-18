@@ -20,7 +20,7 @@ import {
 import { kb1Decrypt, kb1Encrypt } from '../lib/kbcrypto';
 import { getMasterKeyRaw, clearMasterKeyRaw, clearTokens } from '../lib/session';
 import { colorsOf, SKINS, ThemeColors, SkinId, SkinDef, resolveDark } from '../lib/theme';
-import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard, SkinButton } from '../components/SkinChrome';
+import { SkinBar, SkinWordmark, SkinBackdrop, skinAccentColor, skinCardTag, sheetBorderColor, panelShadow, sheetTransition, scrimColor, SkinCard, SkinButton, SkinIcon } from '../components/SkinChrome';
 import { savePrefs } from '../lib/prefs';
 import { SecretPlain, SecretWire, serializePlain, toPlain, toTags } from '../lib/secretcodec';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -679,12 +679,15 @@ struct Vault {
             .onClick(() => {
               this.showAppearance = !this.showAppearance;
             })
-          Text('退出登录')
-            .fontSize(13)
-            .fontColor(this.c().muted)
-            .onClick(() => {
-              this.signOut();
-            })
+          Row({ space: 4 }) {
+            SkinIcon({ iconName: 'logout', iconSize: 15, iconColor: this.c().muted })
+            Text('退出登录')
+              .fontSize(13)
+              .fontColor(this.c().muted)
+          }
+          .onClick(() => {
+            this.signOut();
+          })
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 10, bottom: 10 })
@@ -740,14 +743,17 @@ struct Vault {
             .onClick(() => {
               void this.runSync();
             })
-          SkinButton({
-            label: '+ 新增',
-            kind: 'primary',
-            btnHeight: 34,
-            onTap: () => {
+          // 行内按钮保持原生 Button：SkinButton 是整宽组件，放进 Row 会把 同步/新增 撑长
+          Button('+ 新增')
+            .type(ButtonType.Normal)
+            .height(34)
+            .fontSize(13)
+            .borderRadius(this.c().radius)
+            .backgroundColor(this.c().primary)
+            .fontColor(this.c().primaryContrast)
+            .onClick(() => {
               this.openNew();
-            }
-          })
+            })
         }
         .width('100%')
         .padding({ left: 16, right: 16, bottom: 4 })
