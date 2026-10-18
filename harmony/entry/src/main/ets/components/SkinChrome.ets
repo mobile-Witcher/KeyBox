@@ -861,3 +861,68 @@ export struct SkinWordmark {
     .alignItems(VerticalAlign.Center)
   }
 }
+
+/**
+ * 自绘按钮：ArkUI 的 Button 不支持 letterSpacing，这里用 Text + 背景实现，
+ * 从而做到 Web 端一致的「等宽小字 + 字距 + 每套皮肤圆角/配色」。
+ *   kind: primary | ghost | danger
+ */
+@Component
+export struct SkinButton {
+  @Prop label: string = '';
+  @Prop kind: string = 'primary';
+  @Prop disabled: boolean = false;
+  @Prop btnHeight: number = 44;
+  onTap: () => void = () => {};
+  @StorageProp('skin') skin: string = 'hud';
+  @StorageProp('darkMode') darkMode: string = 'system';
+  @StorageProp('systemDark') systemDark: boolean = false;
+
+  private skinId(): SkinId {
+    return normalizeSkinId(this.skin);
+  }
+
+  private c(): ThemeColors {
+    return colorsOf(this.skinId(), resolveDark(this.darkMode, this.systemDark));
+  }
+
+  private bg(): string {
+    if (this.kind === 'danger') return this.c().danger;
+    if (this.kind === 'ghost') return this.c().surface;
+    return this.c().primary;
+  }
+
+  private fg(): string {
+    if (this.kind === 'danger') return '#ffffff';
+    if (this.kind === 'ghost') return this.c().text;
+    return this.c().primaryContrast;
+  }
+
+  private track(): number {
+    const k: SkinId = this.skinId();
+    if (k === 'mono') return 1.6;
+    if (k === 'blueprint') return 1.2;
+    if (k === 'overprint') return 1.0;
+    return 0.8;
+  }
+
+  build() {
+    Text(this.label)
+      .width('100%')
+      .height(this.btnHeight)
+      .textAlign(TextAlign.Center)
+      .fontSize(13)
+      .fontWeight(FontWeight.Medium)
+      .letterSpacing(this.track())
+      .fontColor(this.disabled ? this.c().muted : this.fg())
+      .backgroundColor(this.disabled ? this.c().surface2 : this.bg())
+      .borderRadius(this.c().radius)
+      .border({ width: this.kind === 'ghost' ? 1 : 0, color: this.c().border })
+      .opacity(this.disabled ? 0.6 : 1)
+      .onClick(() => {
+        if (!this.disabled) {
+          this.onTap();
+        }
+      })
+  }
+}

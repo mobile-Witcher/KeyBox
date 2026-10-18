@@ -8,7 +8,7 @@ import { sendVerification, verifyCode, signIn, refreshSession } from '../lib/aut
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { loadTokens, saveTokens, clearTokens } from '../lib/session';
 import { colorsOf, SkinId, ThemeColors, resolveDark } from '../lib/theme';
-import { SkinBar } from '../components/SkinChrome';
+import { SkinBar, SkinBackdrop, SkinButton } from '../components/SkinChrome';
 import { probeActivation } from '../lib/kbapi';
 
 const TAG: string = 'KeyBoxIndex';
@@ -140,8 +140,25 @@ struct Index {
     }
   }
 
+  /** 输入框边框：hud/lab 为下划线式，其余为整框（对齐 Web 端不同皮肤的处理）。 */
+  private inputBorder(): BorderOptions {
+    if (this.skin === 'hud' || this.skin === 'lab') {
+      return { width: { bottom: 1.5 }, color: this.c().borderStrong };
+    }
+    return { width: 1, color: this.c().border };
+  }
+
+  /** 输入框背景：下划线式皮肤用透明底，其余用表面色。 */
+  private inputBg(): string {
+    if (this.skin === 'hud' || this.skin === 'lab') {
+      return '#00000000';
+    }
+    return this.c().surface;
+  }
   build() {
-    Column({ space: 14 }) {
+    Stack() {
+      SkinBackdrop()
+      Column({ space: 14 }) {
       SkinBar({ title: '登录', bleed: 32 })
       Text('KeyBox')
         .fontSize(26)
@@ -160,23 +177,20 @@ struct Index {
           .width('100%')
           .height(44)
           .borderRadius(this.c().radius)
-          .backgroundColor(this.c().surface)
+          .border(this.inputBorder())
+          .backgroundColor(this.inputBg())
           .fontColor(this.c().text)
           .onChange((value: string) => {
             this.phone = value;
           })
 
-        Button('获取验证码')
-          .type(ButtonType.Normal)
-          .width('100%')
-          .height(44)
-          .borderRadius(this.c().radius)
-          .backgroundColor(this.c().primary)
-          .fontColor(this.c().primaryContrast)
-          .enabled(!this.busy)
-          .onClick(() => {
+        SkinButton({
+          label: '获取验证码',
+          disabled: this.busy,
+          onTap: () => {
             void this.sendCode();
-          })
+          }
+        })
       }
       .alignItems(HorizontalAlign.Start)
       .width('100%')
@@ -191,38 +205,32 @@ struct Index {
             .width('100%')
             .height(44)
             .borderRadius(this.c().radius)
-            .backgroundColor(this.c().surface)
+            .border(this.inputBorder())
+            .backgroundColor(this.inputBg())
             .fontColor(this.c().text)
             .onChange((value: string) => {
               this.code = value;
             })
-          Button('登录')
-            .type(ButtonType.Normal)
-            .width('100%')
-            .height(44)
-            .borderRadius(this.c().radius)
-            .backgroundColor(this.c().primary)
-            .fontColor(this.c().primaryContrast)
-            .enabled(!this.busy)
-            .onClick(() => {
+          SkinButton({
+            label: '登录',
+            disabled: this.busy,
+            onTap: () => {
               void this.login();
-            })
+            }
+          })
         }
         .alignItems(HorizontalAlign.Start)
         .width('100%')
       }
 
-      Button('没有账号？注册')
-        .type(ButtonType.Normal)
-        .width('100%')
-        .height(44)
-        .borderRadius(this.c().radius)
-        .backgroundColor(this.c().surface)
-        .fontColor(this.c().text)
-        .enabled(!this.busy)
-        .onClick(() => {
+      SkinButton({
+        label: '没有账号？注册',
+        kind: 'ghost',
+        disabled: this.busy,
+        onTap: () => {
           router.replaceUrl({ url: 'pages/Register' });
-        })
+        }
+      })
 
       if (this.status !== '') {
         Text(this.status)
@@ -234,7 +242,8 @@ struct Index {
     .height('100%')
     .justifyContent(FlexAlign.Center)
     .padding({ left: '8%', right: '8%' })
-    .backgroundColor(this.c().bg)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      }
+    }
   }
-}
+
