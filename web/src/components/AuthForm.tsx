@@ -132,8 +132,8 @@ export function AuthCard({
               <span className="kb-mass-no">No.0042 / 2026</span>
             </div>
             <p className="kb-mass-title">
-              The Masses
-              <span>’ Travels</span>
+              The Masses’
+              <span>Travels</span>
             </p>
             <p className="kb-mass-cn">众生行记 · 密钥保管</p>
             <p className="kb-mass-note">

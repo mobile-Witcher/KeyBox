@@ -659,6 +659,8 @@ body {
   --kb-heading-tracking: 0.08em;
   --kb-grid: rgba(16, 18, 20, 0.055);
   --kb-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  /* .kb-scan（扫描场）依赖这个变量；不定义会渲染成空盒子 */
+  --kb-holo: #2fb6b0;
   color-scheme: light;
 }
 [data-skin="rhine"].dark {
@@ -679,6 +681,7 @@ body {
   --kb-shadow: none;
   --kb-shadow-lg: none;
   --kb-grid: rgba(232, 237, 234, 0.05);
+  --kb-holo: #43d6cf;
   color-scheme: dark;
 }
 
